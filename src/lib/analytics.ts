@@ -22,7 +22,7 @@ const DEFAULT_APPS_SCRIPT_URL =
 export const ANALYTICS_ENDPOINT: string =
   (typeof import.meta !== "undefined" &&
     import.meta.env &&
-    import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL) ||
+    import.meta.env.VITE_ANALYTICS_ENDPOINT) ||
   DEFAULT_APPS_SCRIPT_URL;
 
 export type AnalyticsTab =
@@ -112,57 +112,49 @@ export function sanitizeChatTopic(rawMessage: string): string {
 export function trackEvent({ tab, event, value, page }: AnalyticsPayload): void {
   if (typeof window === "undefined") return;
 
-  const timestamp = new Date().toISOString();
   const pagePath = page || getCurrentPage();
   const sessionId = getSessionId();
 
-  // Construct tab-specific row mapping matching the Google Sheets column structure
-  const rowData: Record<string, string> = {
-    Timestamp: timestamp,
-    Event: event,
-    Page: pagePath,
-    "Session ID": sessionId,
+  // Keep the payload flat so it can be handled directly by the Apps Script web app.
+  const payload: Record<string, string> = {
+    sheet: tab,
+    event,
+    page: pagePath,
+    sessionId,
   };
 
   switch (tab) {
     case "Navigation":
-      rowData["Destination"] = value;
+      payload.destination = value;
       break;
     case "Regions":
-      rowData["Region"] = value;
+      payload.region = value;
       break;
     case "Infrastructure":
-      rowData["Capability"] = value;
+      payload.capability = value;
       break;
     case "Energy":
-      rowData["Topic"] = value;
+      payload.topic = value;
       break;
     case "Automation":
-      rowData["Feature"] = value;
+      payload.feature = value;
       break;
     case "Solutions":
-      rowData["Solution"] = value;
+      payload.solution = value;
       break;
     case "Industries":
-      rowData["Industry"] = value;
+      payload.industry = value;
       break;
     case "Locations":
-      rowData["Location"] = value;
+      payload.location = value;
       break;
     case "AI Assistant":
-      rowData["Input / Selection"] = value;
+      payload.inputSelection = value;
       break;
     case "CTA Interactions":
-      rowData["CTA"] = value;
+      payload.cta = value;
       break;
   }
-
-  const payload = {
-    tab,
-    data: rowData,
-    // Flat top-level convenience properties supported by standard Apps Script dispatchers
-    ...rowData,
-  };
 
   try {
     const body = JSON.stringify(payload);
@@ -174,13 +166,10 @@ export function trackEvent({ tab, event, value, page }: AnalyticsPayload): void 
       if (sent) return;
     }
 
-    // Fallback to fetch with mode: 'no-cors' to avoid browser CORS blocks on Google Apps Script redirects
+    // Use a simple request to avoid a CORS preflight on the Apps Script endpoint.
     fetch(ANALYTICS_ENDPOINT, {
       method: "POST",
       mode: "no-cors",
-      headers: {
-        "Content-Type": "text/plain;charset=UTF-8",
-      },
       body,
     }).catch(() => {
       // Graceful silence: analytics should never break user interactions
