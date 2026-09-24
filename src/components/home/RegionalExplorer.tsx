@@ -1,8 +1,8 @@
-﻿import { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import { REGIONS_DATA, REGIONAL_NETWORK_DISCLAIMER, RegionInfo } from "../../data/regions";
 import { SOUTH_INDIA_STATES, GEO_BOUNDS } from "../../data/southIndiaGeo";
-import { Globe2, ArrowRight, ShieldCheck, CheckCircle2, Radio } from "lucide-react";
+import { Globe2, ArrowRight, ShieldCheck, CheckCircle2, Radio } from "../icons";
 import { trackEvent } from "../../lib/analytics";
 import maduraiImg from "../../assets/madurai-infrastructure.jpg";
 import coimbatoreImg from "../../assets/coimbatore-infrastructure.jpg";

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Cpu, Zap, Snowflake, Gauge, ArrowRight, ShieldCheck } from "lucide-react";
+import { Cpu, Zap, Snowflake, Gauge, ArrowRight, ShieldCheck } from "../icons";
 import { trackEvent } from "../../lib/analytics";
 import aiComputeImg from "../../assets/ai-compute-cluster.jpg";
 import powerImg from "../../assets/power-distribution.jpg";

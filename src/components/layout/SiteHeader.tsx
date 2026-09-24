@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Leaf, ChevronDown, Menu, X, ArrowRight, MessageCircle, ExternalLink } from "lucide-react";
+import { Leaf, ChevronDown, Menu, X, ArrowRight, MessageCircle, ExternalLink } from "../icons";
 import { NAVIGATION_STRUCTURE, NavigationCategory } from "../../data/navigation";
 import { WHATSAPP_CONFIG } from "../../data/whatsapp";
 import { WhatsAppDemoModal, openQuickInquiry } from "../common/FloatingContact";

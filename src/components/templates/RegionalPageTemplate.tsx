@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { REGIONS_DATA, REGIONAL_NETWORK_DISCLAIMER, RegionInfo } from "../../data/regions";
 import { PageHero } from "../common/PageHero";
 import { LongFormCta } from "../common/CtaBlock";
-import { CheckCircle2, ShieldCheck, ArrowRight, ExternalLink, Globe2 } from "lucide-react";
+import { CheckCircle2, ShieldCheck, ArrowRight, ExternalLink, Globe2 } from "../icons";
 import { trackEvent } from "../../lib/analytics";
 import maduraiImg from "../../assets/madurai-infrastructure.jpg";
 import coimbatoreImg from "../../assets/coimbatore-infrastructure.jpg";

@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { SolutionItem } from "../../data/solutions";
 import { PageHero } from "../common/PageHero";
 import { LongFormCta } from "../common/CtaBlock";
-import { AlertCircle, CheckCircle2, TrendingUp, ArrowRight, Layers } from "lucide-react";
+import { AlertCircle, CheckCircle2, TrendingUp, ArrowRight, Layers } from "../icons";
 import { trackEvent } from "../../lib/analytics";
 import aiComputeImg from "../../assets/ai-compute-cluster.jpg";
 import coolingImg from "../../assets/cooling-systems.jpg";

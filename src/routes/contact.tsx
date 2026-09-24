@@ -19,7 +19,7 @@ import {
   Clock,
   Search,
   Users,
-} from "lucide-react";
+} from "../components/icons";
 import facilityImg from "../assets/datacenter-facility-exterior.jpg";
 
 export const Route = createFileRoute("/contact")({
@@ -131,7 +131,7 @@ export function ContactPage() {
             <div className="lg:col-span-7">
               <LongFormInquiry
                 title="Infrastructure Requirements Inquiry"
-                subtitle="Submit your technical infrastructure parameters below. This interactive form operates in demonstration mode."
+                subtitle="Submit your technical infrastructure parameters below to connect directly with the GreenNext infrastructure planning team."
               />
             </div>
 
@@ -164,7 +164,7 @@ export function ContactPage() {
                   <span>Open Quick Inquiry</span>
                 </button>
                 <p className="text-[11px] text-[#64748B] mt-3">
-                  Opens our interactive inquiry modal in demonstration mode.
+                  Opens the GreenNext quick inquiry modal for rapid technical requirements routing.
                 </p>
               </div>
 

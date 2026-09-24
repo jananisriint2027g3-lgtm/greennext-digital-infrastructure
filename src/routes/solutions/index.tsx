@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SOLUTIONS_DATA } from "../../data/solutions";
 import { PageHero } from "../../components/common/PageHero";
 import { LongFormCta } from "../../components/common/CtaBlock";
-import { ArrowRight, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, ShieldCheck, AlertCircle } from "../../components/icons";
 
 export const Route = createFileRoute("/solutions/")({
   head: () => ({

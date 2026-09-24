@@ -1,4 +1,4 @@
-import { ExternalLink } from "lucide-react";
+import { ExternalLink } from "../icons";
 import type { AssistantLink } from "./chatService";
 import { trackEvent, getCurrentPage } from "../../lib/analytics";
 

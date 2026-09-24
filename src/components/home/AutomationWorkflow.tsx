@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   ChevronRight,
   ArrowRight,
-} from "lucide-react";
+} from "../icons";
 import nocImg from "../../assets/operations-noc.jpg";
 import { trackEvent } from "../../lib/analytics";
 

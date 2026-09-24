@@ -1,5 +1,5 @@
 import { useState, FormEvent } from "react";
-import { Send, CheckCircle2, ShieldCheck } from "lucide-react";
+import { Send, CheckCircle2, ShieldCheck, AlertCircle } from "../icons";
 import { CONTACT_CONFIG } from "../../data/contactConfig";
 import { trackEvent, getCurrentPage } from "../../lib/analytics";
 
@@ -41,6 +41,7 @@ export function LongFormInquiry({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof LongFormState, string>>>({});
 
   const validate = (): boolean => {
@@ -61,17 +62,33 @@ export function LongFormInquiry({
     if (!validate()) return;
 
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
-      // Isolated demo simulation — no network call, no data storage
-      await CONTACT_CONFIG.submitInquiryDemo(formData);
-      // Track submission — category & region only, no PII
-      trackEvent({
-        tab: "CTA Interactions",
-        event: "long_form_inquiry_submit",
-        value: `${formData.category} | ${formData.region}`,
+      const result = await CONTACT_CONFIG.submitLongFormInquiry({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        organization: formData.organization.trim(),
+        category: formData.category,
+        region: formData.region,
+        message: formData.message.trim(),
         page: getCurrentPage(),
       });
-      setSubmitted(true);
+
+      if (result.success) {
+        // Track submission — category & region only, no PII
+        trackEvent({
+          tab: "CTA Interactions",
+          event: "long_form_inquiry_submit",
+          value: `${formData.category} | ${formData.region}`,
+          page: getCurrentPage(),
+        });
+        setSubmitted(true);
+      } else {
+        setSubmitError(result.error || "Unable to submit inquiry. Please try again.");
+      }
+    } catch {
+      setSubmitError("A network error occurred. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -80,6 +97,7 @@ export function LongFormInquiry({
   const handleReset = () => {
     setFormData(INITIAL_FORM);
     setErrors({});
+    setSubmitError(null);
     setSubmitted(false);
   };
 
@@ -98,18 +116,17 @@ export function LongFormInquiry({
           <div className="w-14 h-14 rounded-full bg-[#10B981]/20 flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 size={32} className="text-[#10B981]" />
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">Inquiry Acknowledged</h3>
+          <h3 className="text-xl font-bold text-white mb-2">Inquiry Submitted Successfully</h3>
           <p className="text-base text-[#E2E8F0] font-medium max-w-lg mx-auto mb-2">
-            “Thank you. Your inquiry has been received for demonstration purposes.”
+            Thank you. Your infrastructure requirements have been transmitted to the GreenNext planning team.
           </p>
           <p className="text-xs text-[#94A3B8] max-w-md mx-auto mb-6 leading-relaxed">
-            This is a frontend demonstration prototype. No information has been stored, transmitted,
-            or processed on a backend server.
+            Our engineering team will evaluate your submitted parameters against regional grid capacity, thermal profiles, and corridor models.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={handleReset}
-              className="px-6 py-2.5 rounded-lg bg-[#10B981] hover:bg-[#34D399] text-[#070A0E] text-xs font-semibold transition-colors shadow-lg shadow-[#10B981]/20"
+              className="px-6 py-2.5 rounded-lg bg-[#10B981] hover:bg-[#34D399] text-[#070A0E] text-xs font-semibold transition-colors shadow-lg shadow-[#10B981]/20 cursor-pointer"
             >
               Submit Another Inquiry
             </button>
@@ -231,23 +248,30 @@ export function LongFormInquiry({
             {errors.message && <p className="text-red-400 text-[11px] mt-1">{errors.message}</p>}
           </div>
 
+          {submitError && (
+            <div className="p-3.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 text-xs flex items-center gap-2">
+              <AlertCircle size={16} className="text-red-400 flex-shrink-0" />
+              <span>{submitError}</span>
+            </div>
+          )}
+
           <div className="pt-2">
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 rounded-lg bg-[#10B981] hover:bg-[#34D399] disabled:opacity-60 text-[#070A0E] text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#10B981]/20 hover:shadow-[#10B981]/30"
+              className="w-full py-3 rounded-lg bg-[#10B981] hover:bg-[#34D399] disabled:opacity-60 text-[#070A0E] text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#10B981]/20 hover:shadow-[#10B981]/30 cursor-pointer"
             >
               <Send size={15} />
-              <span>{isSubmitting ? "Submitting Inquiry..." : "Submit Technical Inquiry"}</span>
+              <span>{isSubmitting ? "Transmitting Requirements..." : "Submit Technical Inquiry"}</span>
             </button>
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-[#64748B] pt-2 border-t border-[#1E293B]/60">
             <div className="flex items-center gap-1.5">
               <ShieldCheck size={13} className="text-[#10B981]" />
-              <span>Demonstration UI interaction · No data stored</span>
+              <span>Direct infrastructure review · Transmitted securely to GreenNext</span>
             </div>
-            <span>Frontend Prototype</span>
+            <span>Verified Integration</span>
           </div>
         </form>
       )}

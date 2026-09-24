@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { DedicatedPageData } from "../../data/pagesContent";
 import { PageHero } from "../common/PageHero";
 import { LongFormCta, ShortFormCta } from "../common/CtaBlock";
-import { ArrowRight, CheckCircle2, ChevronRight, Sparkles, Layers } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight, Sparkles, Layers } from "../icons";
 import { trackEvent } from "../../lib/analytics";
 import datacenterExteriorImg from "../../assets/datacenter-facility-exterior.jpg";
 import aiComputeImg from "../../assets/ai-compute-cluster.jpg";

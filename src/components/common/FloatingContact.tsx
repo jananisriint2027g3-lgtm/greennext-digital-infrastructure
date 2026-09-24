@@ -1,5 +1,5 @@
 import { useState, FormEvent, useEffect } from "react";
-import { MessageCircle, X, ArrowRight, Send, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
+import { MessageCircle, X, ArrowRight, Send, CheckCircle2, ShieldCheck, AlertCircle } from "../icons";
 import { Link } from "@tanstack/react-router";
 import { WHATSAPP_CONFIG } from "../../data/whatsapp";
 import { CONTACT_CONFIG } from "../../data/contactConfig";
@@ -134,6 +134,7 @@ export function QuickInquiryModal({
   const [form, setForm] = useState<QuickFormState>(INITIAL_QUICK_STATE);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<QuickFormState>>({});
 
   useEffect(() => {
@@ -177,17 +178,31 @@ export function QuickInquiryModal({
     if (!validate()) return;
 
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
-      // Demo-only submission — isolates simulated logic in contactConfig
-      await CONTACT_CONFIG.submitInquiryDemo(form);
-      // Track the submission — record only selected interest category, no PII
-      trackEvent({
-        tab: "CTA Interactions",
-        event: "quick_inquiry_submit",
-        value: form.interest || "No Interest Selected",
+      const result = await CONTACT_CONFIG.submitQuickInquiry({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        interest: form.interest || "General Inquiry",
+        message: form.message.trim(),
         page: getCurrentPage(),
       });
-      setSubmitted(true);
+
+      if (result.success) {
+        // Track the submission — record only selected interest category, no PII
+        trackEvent({
+          tab: "CTA Interactions",
+          event: "quick_inquiry_submit",
+          value: form.interest || "No Interest Selected",
+          page: getCurrentPage(),
+        });
+        setSubmitted(true);
+      } else {
+        setSubmitError(result.error || "Unable to submit inquiry. Please try again.");
+      }
+    } catch {
+      setSubmitError("A network error occurred. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -196,6 +211,7 @@ export function QuickInquiryModal({
   const handleReset = () => {
     setForm(INITIAL_QUICK_STATE);
     setErrors({});
+    setSubmitError(null);
     setSubmitted(false);
   };
 
@@ -229,13 +245,13 @@ export function QuickInquiryModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#1E293B] flex-shrink-0">
           <div>
             <span className="text-[10px] font-mono uppercase tracking-widest text-[#10B981] block mb-0.5">
-              Quick Inquiry · Demonstration UI
+              Quick Inquiry · Regional Infrastructure
             </span>
             <h2 className="text-base font-bold text-white">Send Infrastructure Inquiry</h2>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 rounded-lg text-[#94A3B8] hover:text-white hover:bg-[#1E293B] transition-colors"
+            className="p-2 rounded-lg text-[#94A3B8] hover:text-white hover:bg-[#1E293B] transition-colors cursor-pointer"
             aria-label="Close inquiry form"
           >
             <X size={18} />
@@ -249,23 +265,23 @@ export function QuickInquiryModal({
               <div className="w-14 h-14 rounded-full bg-[#10B981]/15 flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 size={30} className="text-[#10B981]" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Inquiry Acknowledged</h3>
+              <h3 className="text-lg font-bold text-white mb-2">Inquiry Submitted Successfully</h3>
               <p className="text-sm text-[#E2E8F0] font-medium leading-relaxed mb-3 max-w-sm mx-auto">
-                “Thank you. Your inquiry has been received for demonstration purposes.”
+                Thank you. Your inquiry has been received by the GreenNext planning team.
               </p>
               <p className="text-xs text-[#94A3B8] mb-6 max-w-sm mx-auto">
-                This is a UI prototype. No information has been stored, transmitted to a server, or sent via email.
+                Our infrastructure architects will review your parameters against regional corridor capacity and connect with you.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={handleReset}
-                  className="px-4 py-2.5 rounded-lg border border-[#334155] bg-[#121824] text-white text-xs font-semibold hover:bg-[#1A2234] transition-colors"
+                  className="px-4 py-2.5 rounded-lg border border-[#334155] bg-[#121824] text-white text-xs font-semibold hover:bg-[#1A2234] transition-colors cursor-pointer"
                 >
                   Submit Another Inquiry
                 </button>
                 <button
                   onClick={handleClose}
-                  className="px-5 py-2.5 rounded-lg bg-[#10B981] text-[#070A0E] text-xs font-semibold hover:bg-[#34D399] transition-colors"
+                  className="px-5 py-2.5 rounded-lg bg-[#10B981] text-[#070A0E] text-xs font-semibold hover:bg-[#34D399] transition-colors cursor-pointer"
                 >
                   Close
                 </button>
@@ -362,19 +378,26 @@ export function QuickInquiryModal({
                 {errors.message && <p className="text-red-400 text-[10px] mt-1">{errors.message}</p>}
               </div>
 
+              {submitError && (
+                <div className="p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 text-xs flex items-center gap-2">
+                  <AlertCircle size={15} className="text-red-400 flex-shrink-0" />
+                  <span>{submitError}</span>
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-2.5 rounded-lg bg-[#10B981] hover:bg-[#34D399] disabled:opacity-60 text-[#070A0E] text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#10B981]/20"
+                className="w-full py-2.5 rounded-lg bg-[#10B981] hover:bg-[#34D399] disabled:opacity-60 text-[#070A0E] text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#10B981]/20 cursor-pointer"
                 id="quick-inquiry-submit"
               >
                 <Send size={14} />
-                <span>{isSubmitting ? "Simulating Submission..." : "Submit Inquiry"}</span>
+                <span>{isSubmitting ? "Transmitting Inquiry..." : "Submit Inquiry"}</span>
               </button>
 
               <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#64748B] pt-1">
                 <ShieldCheck size={12} className="text-[#10B981]" />
-                <span>Demonstration UI interaction · No data stored or emailed</span>
+                <span>Direct technical routing · Transmitted securely to GreenNext</span>
               </div>
             </form>
           )}

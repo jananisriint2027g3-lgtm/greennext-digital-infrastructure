@@ -16,7 +16,7 @@ import {
   Radio,
   ArrowRight,
   ShieldAlert,
-} from "lucide-react";
+} from "../icons";
 import { trackEvent } from "../../lib/analytics";
 
 export function DashboardPreview() {

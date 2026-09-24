@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Home } from "lucide-react";
+import { ChevronRight, Home } from "../icons";
 
 export interface BreadcrumbItem {
   label: string;

@@ -24,7 +24,7 @@ import {
   Server,
   Activity,
   CloudCog,
-} from "lucide-react";
+} from "../components/icons";
 import aiComputeImg from "../assets/ai-compute-cluster.jpg";
 
 export const Route = createFileRoute("/")({

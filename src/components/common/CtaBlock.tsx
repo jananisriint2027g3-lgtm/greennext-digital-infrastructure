@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, MessageCircle, ExternalLink, Send } from "lucide-react";
+import { ArrowRight, MessageCircle, ExternalLink, Send } from "../icons";
 import { WHATSAPP_CONFIG } from "../../data/whatsapp";
 import { openQuickInquiry, WhatsAppDemoModal } from "./FloatingContact";
 import { trackEvent, getCurrentPage } from "../../lib/analytics";

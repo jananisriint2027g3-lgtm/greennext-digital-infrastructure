@@ -12,7 +12,7 @@ import {
   ArrowUp,
   ChevronRight,
   ExternalLink,
-} from "lucide-react";
+} from "../icons";
 import { trackEvent } from "../../lib/analytics";
 
 interface LayerData {

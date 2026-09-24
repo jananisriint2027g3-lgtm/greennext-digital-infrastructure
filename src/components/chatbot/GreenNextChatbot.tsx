@@ -1,4 +1,4 @@
-import { Bot, RotateCcw, Send, X } from "lucide-react";
+import { Bot, RotateCcw, Send, X } from "../icons";
 import { useEffect, useRef, useState } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatSuggestions } from "./ChatSuggestions";

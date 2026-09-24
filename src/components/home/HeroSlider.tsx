@@ -16,7 +16,7 @@ import {
   Snowflake,
   ShieldCheck,
   CircleDot,
-} from "lucide-react";
+} from "../icons";
 import { HERO_SLIDES, HeroSlide } from "../../data/heroSlides";
 import datacenterHeroImg from "../../assets/greennext-datacenter.jpg";
 

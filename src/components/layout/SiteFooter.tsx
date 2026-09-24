@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Leaf, MessageCircle, ExternalLink, ShieldCheck } from "lucide-react";
+import { Leaf, MessageCircle, ExternalLink, ShieldCheck } from "../icons";
 import { NAVIGATION_STRUCTURE } from "../../data/navigation";
 import { WHATSAPP_CONFIG } from "../../data/whatsapp";
 import { WhatsAppDemoModal, openQuickInquiry } from "../common/FloatingContact";

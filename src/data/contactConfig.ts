@@ -1,23 +1,48 @@
 /**
  * GreenNext Central Contact & Inquiry Configuration
  *
- * Current State: Website Prototype / Demo
- * All submissions are isolated frontend simulations.
- * No real email sending, backend storage, CRM, or external API communication.
+ * Connected directly to the GreenNext Google Apps Script backend and Google Sheets.
+ * Dispatches real form submissions to the dedicated Raw Data spreadsheets.
  */
+
+import {
+  submitQuickInquiry,
+  submitLongFormInquiry,
+  type QuickInquiryData,
+  type LongFormInquiryData,
+  type InquiryResult,
+} from "../lib/inquiry";
+
 export const CONTACT_CONFIG = {
-  // Demo submission handler isolating simulation logic in a single location for future integration
+  submitQuickInquiry: async (data: QuickInquiryData): Promise<InquiryResult> => {
+    return submitQuickInquiry(data);
+  },
+
+  submitLongFormInquiry: async (data: LongFormInquiryData): Promise<InquiryResult> => {
+    return submitLongFormInquiry(data);
+  },
+
+  /**
+   * Compatibility wrapper for existing callers.
+   * Directs payload to real inquiry backend.
+   */
   submitInquiryDemo: async (
-    _payload: Record<string, any>,
-  ): Promise<{ success: boolean; message: string }> => {
-    // Pure frontend simulation — no network request, no data storage
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          message: "Thank you. Your inquiry has been received for demonstration purposes.",
-        });
-      }, 350);
-    });
+    payload: Record<string, any>,
+  ): Promise<{ success: boolean; message: string; error?: string }> => {
+    if ("category" in payload || "organization" in payload) {
+      const res = await submitLongFormInquiry(payload as LongFormInquiryData);
+      return {
+        success: res.success,
+        message: res.message || (res.success ? "Inquiry submitted successfully." : "Submission failed."),
+        error: res.error,
+      };
+    } else {
+      const res = await submitQuickInquiry(payload as QuickInquiryData);
+      return {
+        success: res.success,
+        message: res.message || (res.success ? "Inquiry submitted successfully." : "Submission failed."),
+        error: res.error,
+      };
+    }
   },
 };

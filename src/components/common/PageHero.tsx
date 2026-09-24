@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Breadcrumbs, BreadcrumbItem } from "./Breadcrumbs";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "../icons";
 
 interface PageHeroProps {
   breadcrumbs: BreadcrumbItem[];
