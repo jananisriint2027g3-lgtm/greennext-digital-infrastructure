@@ -17,6 +17,7 @@ import {
   ArrowRight,
   ShieldAlert,
 } from "lucide-react";
+import { trackEvent } from "../../lib/analytics";
 
 export function DashboardPreview() {
   const [selectedRegionKey, setSelectedRegionKey] = useState<string>("madurai");
@@ -85,7 +86,14 @@ export function DashboardPreview() {
           return (
             <button
               key={m.id}
-              onClick={() => setSelectedRegionKey(m.id)}
+              onClick={() => {
+                setSelectedRegionKey(m.id);
+                trackEvent({
+                  tab: "Automation",
+                  event: "automation_dashboard_node_select",
+                  value: `${m.name} (${m.code}) Dashboard Node`,
+                });
+              }}
               className={`py-3 px-4 font-mono text-xs font-semibold transition-all border-b-2 -mb-px flex items-center gap-2 ${
                 isSelected
                   ? "border-[#10B981] text-[#10B981] bg-[#121824]/50"

@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { REGIONS_DATA, REGIONAL_NETWORK_DISCLAIMER, RegionInfo } from "../../data/regions";
 import { SOUTH_INDIA_STATES, GEO_BOUNDS } from "../../data/southIndiaGeo";
 import { Globe2, ArrowRight, ShieldCheck, CheckCircle2, Radio } from "lucide-react";
+import { trackEvent } from "../../lib/analytics";
 import maduraiImg from "../../assets/madurai-infrastructure.jpg";
 import coimbatoreImg from "../../assets/coimbatore-infrastructure.jpg";
 import trichyImg from "../../assets/trichy-infrastructure.jpg";
@@ -375,11 +376,27 @@ export function RegionalExplorer() {
                     key={id}
                     className="focus:outline-none focus-visible:outline-none"
                     style={{ cursor: "pointer", outline: "none" }}
-                    onClick={() => setSelectedRegionId(id)}
+                    onClick={() => {
+                      setSelectedRegionId(id);
+                      trackEvent({
+                        tab: "Regions",
+                        event: "region_tab_select",
+                        value: `${loc.label} (${loc.code})`,
+                      });
+                    }}
                     role="button"
                     aria-label={"Select " + loc.label}
                     tabIndex={0}
-                    onKeyDown={(e) => e.key === "Enter" && setSelectedRegionId(id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        setSelectedRegionId(id);
+                        trackEvent({
+                          tab: "Regions",
+                          event: "region_tab_select",
+                          value: `${loc.label} (${loc.code})`,
+                        });
+                      }
+                    }}
                   >
                     {isActive ? (
                       <>
@@ -579,7 +596,17 @@ export function RegionalExplorer() {
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2.5">
                 {activeRegion.transitInfo.map((item) => (
-                  <div key={item} className="flex items-start gap-2 text-[12px] sm:text-[13px] leading-snug text-[#94A3B8]">
+                  <div
+                    key={item}
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Locations",
+                        event: "location_corridor_inspect",
+                        value: `${activeRegion.name}: ${item}`,
+                      })
+                    }
+                    className="flex items-start gap-2 text-[12px] sm:text-[13px] leading-snug text-[#94A3B8] cursor-pointer hover:text-white transition-colors"
+                  >
                     <CheckCircle2 size={13} className="mt-0.5 text-[#10B981] flex-shrink-0" />
                     <span>{item}</span>
                   </div>

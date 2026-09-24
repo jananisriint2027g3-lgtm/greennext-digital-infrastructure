@@ -13,6 +13,7 @@ import {
   ChevronRight,
   ExternalLink,
 } from "lucide-react";
+import { trackEvent } from "../../lib/analytics";
 
 interface LayerData {
   id: string;
@@ -140,7 +141,14 @@ export function SevenLayerStack() {
           return (
             <button
               key={layer.id}
-              onClick={() => setSelectedLayer(layer.id)}
+              onClick={() => {
+                setSelectedLayer(layer.id);
+                trackEvent({
+                  tab: "Infrastructure",
+                  event: "infra_stack_layer_select",
+                  value: `Layer ${layer.number}: ${layer.name}`,
+                });
+              }}
               className={`w-full p-3.5 sm:p-4 rounded-xl border text-left transition-all flex items-center justify-between group ${
                 isSelected
                   ? "bg-[#1A2234] border-[#10B981] shadow-lg shadow-[#10B981]/10 translate-x-1"

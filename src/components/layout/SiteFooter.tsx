@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Leaf, MessageCircle, ExternalLink, ShieldCheck } from "lucide-react";
 import { NAVIGATION_STRUCTURE } from "../../data/navigation";
 import { WHATSAPP_CONFIG } from "../../data/whatsapp";
 import { WhatsAppDemoModal, openQuickInquiry } from "../common/FloatingContact";
+import { trackEvent } from "../../lib/analytics";
 
 export function SiteFooter() {
+  const router = useRouterState();
+  const currentPath = router.location.pathname;
   const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
 
   return (
@@ -76,32 +79,100 @@ export function SiteFooter() {
                   About
                 </span>
                 <div className="flex flex-col gap-2 text-xs text-[#94A3B8]">
-                  <Link to="/about/what-we-are" className="hover:text-white transition-colors">
+                  <Link
+                    to="/about/what-we-are"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/about/what-we-are",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     What GreenNext Is
                   </Link>
-                  <Link to="/about/why-we-exist" className="hover:text-white transition-colors">
+                  <Link
+                    to="/about/why-we-exist"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/about/why-we-exist",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Why GreenNext Exists
                   </Link>
-                  <Link to="/about/our-approach" className="hover:text-white transition-colors">
+                  <Link
+                    to="/about/our-approach"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/about/our-approach",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     The GreenNext Approach
                   </Link>
-                  <Link to="/about/direction" className="hover:text-white transition-colors">
+                  <Link
+                    to="/about/direction"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/about/direction",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Long-Term Direction
                   </Link>
                   <Link
                     to="/sustainability"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/sustainability",
+                        page: currentPath,
+                      })
+                    }
                     className="hover:text-white transition-colors pt-2 font-medium text-white"
                   >
                     Sustainability
                   </Link>
                   <Link
                     to="/sustainability/energy-aware"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/sustainability/energy-aware",
+                        page: currentPath,
+                      })
+                    }
                     className="hover:text-white transition-colors"
                   >
                     Energy-Aware Infra
                   </Link>
                   <Link
                     to="/sustainability/sustainable-growth"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/sustainability/sustainable-growth",
+                        page: currentPath,
+                      })
+                    }
                     className="hover:text-white transition-colors"
                   >
                     Sustainable Growth
@@ -117,21 +188,70 @@ export function SiteFooter() {
                 <div className="flex flex-col gap-2 text-xs text-[#94A3B8]">
                   <Link
                     to="/infrastructure/ai-ready"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/infrastructure/ai-ready",
+                        page: currentPath,
+                      })
+                    }
                     className="hover:text-white transition-colors"
                   >
                     AI-Ready Infrastructure
                   </Link>
-                  <Link to="/infrastructure/compute" className="hover:text-white transition-colors">
+                  <Link
+                    to="/infrastructure/compute"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/infrastructure/compute",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Compute Systems
                   </Link>
-                  <Link to="/infrastructure/storage" className="hover:text-white transition-colors">
+                  <Link
+                    to="/infrastructure/storage"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/infrastructure/storage",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Storage & Data
                   </Link>
-                  <Link to="/infrastructure/network" className="hover:text-white transition-colors">
+                  <Link
+                    to="/infrastructure/network"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/infrastructure/network",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Network & Connectivity
                   </Link>
                   <Link
                     to="/infrastructure/architecture"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/infrastructure/architecture",
+                        page: currentPath,
+                      })
+                    }
                     className="hover:text-white transition-colors"
                   >
                     7-Layer Architecture
@@ -145,28 +265,102 @@ export function SiteFooter() {
                   Energy & Automation
                 </span>
                 <div className="flex flex-col gap-2 text-xs text-[#94A3B8]">
-                  <Link to="/energy/monitoring" className="hover:text-white transition-colors">
+                  <Link
+                    to="/energy/monitoring"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/energy/monitoring",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Power Monitoring
                   </Link>
-                  <Link to="/energy/cooling" className="hover:text-white transition-colors">
+                  <Link
+                    to="/energy/cooling"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/energy/cooling",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Cooling Efficiency
                   </Link>
-                  <Link to="/energy/workload-aware" className="hover:text-white transition-colors">
+                  <Link
+                    to="/energy/workload-aware"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/energy/workload-aware",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Workload-Aware Res.
                   </Link>
-                  <Link to="/energy/analytics" className="hover:text-white transition-colors">
+                  <Link
+                    to="/energy/analytics"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/energy/analytics",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Energy Analytics
                   </Link>
                   <Link
                     to="/automation/monitoring"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/automation/monitoring",
+                        page: currentPath,
+                      })
+                    }
                     className="hover:text-white transition-colors pt-2 font-medium text-white"
                   >
                     Intelligent Monitoring
                   </Link>
-                  <Link to="/automation/anomaly" className="hover:text-white transition-colors">
+                  <Link
+                    to="/automation/anomaly"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/automation/anomaly",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Anomaly Detection
                   </Link>
-                  <Link to="/automation/alerts" className="hover:text-white transition-colors">
+                  <Link
+                    to="/automation/alerts"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/automation/alerts",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Automated Alerts
                   </Link>
                 </div>
@@ -180,30 +374,98 @@ export function SiteFooter() {
                 <div className="flex flex-col gap-2 text-xs text-[#94A3B8]">
                   <Link
                     to="/regions/overview"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/regions/overview",
+                        page: currentPath,
+                      })
+                    }
                     className="hover:text-white transition-colors font-medium text-white"
                   >
                     Regional Overview
                   </Link>
-                  <Link to="/regions/madurai" className="hover:text-white transition-colors">
+                  <Link
+                    to="/regions/madurai"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/regions/madurai",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Madurai (MDU)
                   </Link>
-                  <Link to="/regions/coimbatore" className="hover:text-white transition-colors">
+                  <Link
+                    to="/regions/coimbatore"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/regions/coimbatore",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Coimbatore (CJB)
                   </Link>
-                  <Link to="/regions/trichy" className="hover:text-white transition-colors">
+                  <Link
+                    to="/regions/trichy"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/regions/trichy",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Trichy (TRZ)
                   </Link>
-                  <Link to="/regions/mangalore" className="hover:text-white transition-colors">
+                  <Link
+                    to="/regions/mangalore"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/regions/mangalore",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
                     Mangalore (IXE)
                   </Link>
                   <Link
                     to="/solutions"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/solutions",
+                        page: currentPath,
+                      })
+                    }
                     className="hover:text-white transition-colors pt-2 font-medium text-white"
                   >
                     All Solutions
                   </Link>
                   <Link
                     to="/contact"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/contact",
+                        page: currentPath,
+                      })
+                    }
                     className="hover:text-white transition-colors font-medium text-[#10B981]"
                   >
                     Contact Team

@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { SolutionItem } from "../../data/solutions";
 import { PageHero } from "../common/PageHero";
 import { LongFormCta } from "../common/CtaBlock";
 import { AlertCircle, CheckCircle2, TrendingUp, ArrowRight, Layers } from "lucide-react";
+import { trackEvent } from "../../lib/analytics";
 import aiComputeImg from "../../assets/ai-compute-cluster.jpg";
 import coolingImg from "../../assets/cooling-systems.jpg";
 import powerImg from "../../assets/power-distribution.jpg";
@@ -54,6 +56,15 @@ function getSolutionImage(solutionId: string) {
 }
 
 export function SolutionPageTemplate({ solution }: { solution: SolutionItem }) {
+  useEffect(() => {
+    trackEvent({
+      tab: "Solutions",
+      event: "solution_view",
+      value: solution.title,
+      page: `/solutions/${solution.id}`,
+    });
+  }, [solution.id, solution.title]);
+
   const breadcrumbs = [{ label: "Solutions", path: "/solutions" }, { label: solution.title }];
   const solutionImg = getSolutionImage(solution.id);
 

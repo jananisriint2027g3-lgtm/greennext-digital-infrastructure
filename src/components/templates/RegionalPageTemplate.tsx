@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { REGIONS_DATA, REGIONAL_NETWORK_DISCLAIMER, RegionInfo } from "../../data/regions";
 import { PageHero } from "../common/PageHero";
 import { LongFormCta } from "../common/CtaBlock";
 import { CheckCircle2, ShieldCheck, ArrowRight, ExternalLink, Globe2 } from "lucide-react";
+import { trackEvent } from "../../lib/analytics";
 import maduraiImg from "../../assets/madurai-infrastructure.jpg";
 import coimbatoreImg from "../../assets/coimbatore-infrastructure.jpg";
 import trichyImg from "../../assets/trichy-infrastructure.jpg";
@@ -28,6 +30,22 @@ const REGION_IMAGES: Record<string, { src: string; alt: string }> = {
 };
 
 export function RegionalPageTemplate({ region }: { region: RegionInfo }) {
+  useEffect(() => {
+    trackEvent({
+      tab: "Regions",
+      event: "region_page_view",
+      value: `${region.name} (${region.code})`,
+      page: `/regions/${region.id}`,
+    });
+
+    trackEvent({
+      tab: "Industries",
+      event: "industry_ecosystem_view",
+      value: `${region.name}: ${region.category}`,
+      page: `/regions/${region.id}`,
+    });
+  }, [region.id, region.name, region.code, region.category]);
+
   const otherRegions = Object.values(REGIONS_DATA).filter((r) => r.id !== region.id);
   const regionImg = REGION_IMAGES[region.id] ?? REGION_IMAGES.madurai;
 

@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { DedicatedPageData } from "../../data/pagesContent";
 import { PageHero } from "../common/PageHero";
 import { LongFormCta, ShortFormCta } from "../common/CtaBlock";
 import { ArrowRight, CheckCircle2, ChevronRight, Sparkles, Layers } from "lucide-react";
+import { trackEvent } from "../../lib/analytics";
 import datacenterExteriorImg from "../../assets/datacenter-facility-exterior.jpg";
 import aiComputeImg from "../../assets/ai-compute-cluster.jpg";
 import coolingImg from "../../assets/cooling-systems.jpg";
@@ -60,6 +62,24 @@ export function PageTemplate({
   data: DedicatedPageData;
   showCta?: boolean;
 }) {
+  useEffect(() => {
+    if (data.route?.startsWith("/infrastructure") || data.category === "Infrastructure") {
+      trackEvent({
+        tab: "Infrastructure",
+        event: "infra_capability_view",
+        value: data.slug || data.title,
+        page: data.route,
+      });
+    } else if (data.route?.startsWith("/energy") || data.category === "Energy") {
+      trackEvent({
+        tab: "Energy",
+        event: "energy_topic_view",
+        value: data.slug || data.title,
+        page: data.route,
+      });
+    }
+  }, [data.route, data.category, data.slug, data.title]);
+
   const breadcrumbs = [{ label: data.category, path: data.parentPath }, { label: data.title }];
   const featuredImage = getPageFeaturedImage(data);
 

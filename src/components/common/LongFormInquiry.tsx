@@ -1,6 +1,7 @@
 import { useState, FormEvent } from "react";
 import { Send, CheckCircle2, ShieldCheck } from "lucide-react";
 import { CONTACT_CONFIG } from "../../data/contactConfig";
+import { trackEvent, getCurrentPage } from "../../lib/analytics";
 
 export interface LongFormState {
   name: string;
@@ -63,6 +64,13 @@ export function LongFormInquiry({
     try {
       // Isolated demo simulation — no network call, no data storage
       await CONTACT_CONFIG.submitInquiryDemo(formData);
+      // Track submission — category & region only, no PII
+      trackEvent({
+        tab: "CTA Interactions",
+        event: "long_form_inquiry_submit",
+        value: `${formData.category} | ${formData.region}`,
+        page: getCurrentPage(),
+      });
       setSubmitted(true);
     } finally {
       setIsSubmitting(false);

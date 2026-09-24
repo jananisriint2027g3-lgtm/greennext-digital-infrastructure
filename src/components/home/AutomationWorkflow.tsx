@@ -12,6 +12,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import nocImg from "../../assets/operations-noc.jpg";
+import { trackEvent } from "../../lib/analytics";
 
 interface AutoStep {
   id: string;
@@ -113,7 +114,14 @@ export function AutomationWorkflow() {
           return (
             <button
               key={step.id}
-              onClick={() => setActiveStep(step.id)}
+              onClick={() => {
+                setActiveStep(step.id);
+                trackEvent({
+                  tab: "Automation",
+                  event: "automation_step_select",
+                  value: `Step ${step.stepNumber}: ${step.name} - ${step.action}`,
+                });
+              }}
               className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between min-h-[120px] group ${
                 isSelected
                   ? "bg-[#1A2234] border-[#10B981] shadow-lg shadow-[#10B981]/10"

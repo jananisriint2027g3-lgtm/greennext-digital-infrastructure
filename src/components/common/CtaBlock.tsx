@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight, MessageCircle, ExternalLink, Send } from "lucide-react";
 import { WHATSAPP_CONFIG } from "../../data/whatsapp";
 import { openQuickInquiry, WhatsAppDemoModal } from "./FloatingContact";
+import { trackEvent, getCurrentPage } from "../../lib/analytics";
 
 interface LongFormCtaProps {
   eyebrow?: string;
@@ -73,6 +74,14 @@ export function LongFormCta({
             {primaryAction && (
               <Link
                 to={primaryAction.path}
+                onClick={() =>
+                  trackEvent({
+                    tab: "CTA Interactions",
+                    event: "cta_block_click",
+                    value: `${primaryAction.label} -> ${primaryAction.path}`,
+                    page: getCurrentPage(),
+                  })
+                }
                 className="px-6 py-3 rounded-lg bg-[#10B981] text-[#070A0E] font-semibold text-sm hover:bg-[#34D399] transition-all flex items-center gap-2 shadow-lg shadow-[#10B981]/25 hover:shadow-[#10B981]/35"
               >
                 <span>{primaryAction.label}</span>
@@ -83,7 +92,15 @@ export function LongFormCta({
             {showQuickInquiry && (
               <button
                 type="button"
-                onClick={() => openQuickInquiry()}
+                onClick={() => {
+                  trackEvent({
+                    tab: "CTA Interactions",
+                    event: "quick_inquiry_open",
+                    value: "CTA Block Quick Inquiry",
+                    page: getCurrentPage(),
+                  });
+                  openQuickInquiry();
+                }}
                 className="px-5 py-3 rounded-lg border border-[#10B981]/40 bg-[#10B981]/10 text-[#10B981] font-semibold text-sm hover:bg-[#10B981]/20 transition-all flex items-center gap-2"
               >
                 <Send size={14} />

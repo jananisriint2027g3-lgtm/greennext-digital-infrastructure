@@ -3,6 +3,7 @@ import { MessageCircle, X, ArrowRight, Send, CheckCircle2, ShieldCheck, AlertCir
 import { Link } from "@tanstack/react-router";
 import { WHATSAPP_CONFIG } from "../../data/whatsapp";
 import { CONTACT_CONFIG } from "../../data/contactConfig";
+import { trackEvent, getCurrentPage } from "../../lib/analytics";
 
 /**
  * Global helper to trigger the Quick Inquiry modal from anywhere on the website.
@@ -179,6 +180,13 @@ export function QuickInquiryModal({
     try {
       // Demo-only submission — isolates simulated logic in contactConfig
       await CONTACT_CONFIG.submitInquiryDemo(form);
+      // Track the submission — record only selected interest category, no PII
+      trackEvent({
+        tab: "CTA Interactions",
+        event: "quick_inquiry_submit",
+        value: form.interest || "No Interest Selected",
+        page: getCurrentPage(),
+      });
       setSubmitted(true);
     } finally {
       setIsSubmitting(false);
@@ -401,6 +409,12 @@ export function FloatingContact() {
   const openInquiryModal = () => {
     setExpanded(false);
     setModalOpen(true);
+    trackEvent({
+      tab: "CTA Interactions",
+      event: "quick_inquiry_open",
+      value: "Floating Contact Widget",
+      page: getCurrentPage(),
+    });
   };
 
   const handleWhatsAppAction = (e: React.MouseEvent) => {
@@ -408,6 +422,12 @@ export function FloatingContact() {
       e.preventDefault();
       setExpanded(false);
       setWhatsAppModalOpen(true);
+      trackEvent({
+        tab: "CTA Interactions",
+        event: "whatsapp_modal_trigger",
+        value: "Floating Contact Widget WhatsApp",
+        page: getCurrentPage(),
+      });
     }
   };
 

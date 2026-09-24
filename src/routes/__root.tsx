@@ -115,9 +115,22 @@ import { SiteHeader } from "../components/layout/SiteHeader";
 import { SiteFooter } from "../components/layout/SiteFooter";
 import { FloatingContact } from "../components/common/FloatingContact";
 import { GreenNextChatbot } from "../components/chatbot/GreenNextChatbot";
+import { useRouterState } from "@tanstack/react-router";
+import { trackEvent } from "../lib/analytics";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const routerState = useRouterState();
+  const pathname = routerState.location.pathname;
+
+  useEffect(() => {
+    trackEvent({
+      tab: "Navigation",
+      event: "nav_page_view",
+      value: pathname,
+      page: pathname,
+    });
+  }, [pathname]);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Cpu, Zap, Snowflake, Gauge, ArrowRight, ShieldCheck } from "lucide-react";
+import { trackEvent } from "../../lib/analytics";
 import aiComputeImg from "../../assets/ai-compute-cluster.jpg";
 import powerImg from "../../assets/power-distribution.jpg";
 import coolingImg from "../../assets/cooling-systems.jpg";
@@ -116,7 +117,14 @@ export function EnergyFlowModel() {
           return (
             <button
               key={step.id}
-              onClick={() => setActiveStep(step.id)}
+              onClick={() => {
+                setActiveStep(step.id);
+                trackEvent({
+                  tab: "Energy",
+                  event: "energy_flow_step_select",
+                  value: `${step.stepNumber}: ${step.title}`,
+                });
+              }}
               className={`p-5 rounded-xl border text-left transition-all relative overflow-hidden group ${
                 isSelected
                   ? "bg-[#1A2234] border-[#10B981] shadow-lg shadow-[#10B981]/10"

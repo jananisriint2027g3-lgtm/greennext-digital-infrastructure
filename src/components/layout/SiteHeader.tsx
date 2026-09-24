@@ -4,6 +4,7 @@ import { Leaf, ChevronDown, Menu, X, ArrowRight, MessageCircle, ExternalLink } f
 import { NAVIGATION_STRUCTURE, NavigationCategory } from "../../data/navigation";
 import { WHATSAPP_CONFIG } from "../../data/whatsapp";
 import { WhatsAppDemoModal, openQuickInquiry } from "../common/FloatingContact";
+import { trackEvent } from "../../lib/analytics";
 
 export function SiteHeader() {
   const router = useRouterState();
@@ -84,6 +85,14 @@ export function SiteHeader() {
                 <Link
                   key={cat.id}
                   to={cat.path}
+                  onClick={() =>
+                    trackEvent({
+                      tab: "Navigation",
+                      event: "nav_header_click",
+                      value: cat.path,
+                      page: currentPath,
+                    })
+                  }
                   className={`px-3 py-1.5 rounded text-[13px] font-medium transition-colors ${
                     isCurrent
                       ? "text-[#10B981] bg-[#10B981]/10"
@@ -106,6 +115,14 @@ export function SiteHeader() {
               >
                 <Link
                   to={cat.path}
+                  onClick={() =>
+                    trackEvent({
+                      tab: "Navigation",
+                      event: "nav_header_click",
+                      value: cat.path,
+                      page: currentPath,
+                    })
+                  }
                   className={`px-3 py-1.5 rounded text-[13px] font-medium flex items-center gap-1 transition-colors ${
                     isCurrent || isOpen
                       ? "text-[#10B981] bg-[#10B981]/10"
@@ -137,6 +154,14 @@ export function SiteHeader() {
                         </span>
                         <Link
                           to={cat.path}
+                          onClick={() =>
+                            trackEvent({
+                              tab: "Navigation",
+                              event: "nav_header_click",
+                              value: cat.path,
+                              page: currentPath,
+                            })
+                          }
                           className="text-[11px] text-[#94A3B8] hover:text-white flex items-center gap-1 group"
                         >
                           <span>Overview</span>
@@ -158,6 +183,14 @@ export function SiteHeader() {
                             <Link
                               key={item.id}
                               to={item.path}
+                              onClick={() =>
+                                trackEvent({
+                                  tab: "Navigation",
+                                  event: "nav_header_click",
+                                  value: item.path,
+                                  page: currentPath,
+                                })
+                              }
                               className={`p-2.5 rounded-lg border transition-all text-left flex flex-col group ${
                                 isSubCurrent
                                   ? "bg-[#1A2234] border-[#10B981]/50 text-white"
@@ -197,6 +230,14 @@ export function SiteHeader() {
               href={WHATSAPP_CONFIG.getUrl()}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() =>
+                trackEvent({
+                  tab: "CTA Interactions",
+                  event: "whatsapp_modal_trigger",
+                  value: "Header WhatsApp Link",
+                  page: currentPath,
+                })
+              }
               className="p-2 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-[#10B981] hover:border-[#10B981]/40 hover:bg-[#10B981]/5 transition-colors"
               title="Discuss Infrastructure on WhatsApp"
               aria-label="Discuss Infrastructure on WhatsApp"
@@ -206,7 +247,15 @@ export function SiteHeader() {
           ) : (
             <button
               type="button"
-              onClick={() => setWhatsAppModalOpen(true)}
+              onClick={() => {
+                trackEvent({
+                  tab: "CTA Interactions",
+                  event: "whatsapp_modal_trigger",
+                  value: "Header WhatsApp Button",
+                  page: currentPath,
+                })
+                setWhatsAppModalOpen(true);
+              }}
               className="p-2 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-[#10B981] hover:border-[#10B981]/40 hover:bg-[#10B981]/5 transition-colors"
               title="WhatsApp Inquiry"
               aria-label="WhatsApp Inquiry"
@@ -218,6 +267,14 @@ export function SiteHeader() {
           {/* Primary Contact CTA */}
           <Link
             to="/contact"
+            onClick={() =>
+              trackEvent({
+                tab: "CTA Interactions",
+                event: "cta_block_click",
+                value: "Header Connect Button -> /contact",
+                page: currentPath,
+              })
+            }
             className="px-3.5 py-1.5 rounded-lg bg-[#10B981] text-[#070A0E] text-[13px] font-semibold hover:bg-[#34D399] transition-all flex items-center gap-1.5 shadow-lg shadow-[#10B981]/20 hover:shadow-[#10B981]/30"
           >
             <span>Connect</span>

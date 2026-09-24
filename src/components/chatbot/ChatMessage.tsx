@@ -1,5 +1,6 @@
 import { ExternalLink } from "lucide-react";
 import type { AssistantLink } from "./chatService";
+import { trackEvent, getCurrentPage } from "../../lib/analytics";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -27,6 +28,14 @@ export function ChatMessage({ role, text, links }: ChatMessageProps) {
               <a
                 key={link.href}
                 href={link.href}
+                onClick={() =>
+                  trackEvent({
+                    tab: "AI Assistant",
+                    event: "chatbot_link_click",
+                    value: link.label,
+                    page: getCurrentPage(),
+                  })
+                }
                 className="inline-flex items-center gap-1 rounded-md border border-[#245044] px-2 py-1 text-[11px] font-medium text-[#6EE7B7] transition-colors hover:border-[#10B981] hover:bg-[#10B981]/10"
               >
                 {link.label}

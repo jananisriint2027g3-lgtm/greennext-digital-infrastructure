@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatSuggestions } from "./ChatSuggestions";
 import { getAssistantResponse, type AssistantResponse } from "./chatService";
+import { trackEvent, sanitizeChatTopic, getCurrentPage } from "../../lib/analytics";
 
 interface ChatEntry {
   id: number;
@@ -66,6 +67,14 @@ export function GreenNextChatbot() {
   const sendMessage = (value = input) => {
     const trimmedValue = value.trim();
     if (!trimmedValue || isTyping) return;
+
+    // Track query — sanitize to topic category, never store raw user text
+    trackEvent({
+      tab: "AI Assistant",
+      event: "chatbot_query_send",
+      value: sanitizeChatTopic(trimmedValue),
+      page: getCurrentPage(),
+    });
 
     const userMessage: ChatEntry = {
       id: nextId.current++,
@@ -229,7 +238,18 @@ export function GreenNextChatbot() {
 
       <button
         type="button"
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={() => {
+          const opening = !isOpen;
+          setIsOpen((open) => !open);
+          if (opening) {
+            trackEvent({
+              tab: "AI Assistant",
+              event: "chatbot_open",
+              value: "GreenNext AI Assistant",
+              page: getCurrentPage(),
+            });
+          }
+        }}
         aria-label={isOpen ? "Close GreenNext AI Assistant" : "Open GreenNext AI Assistant"}
         aria-expanded={isOpen}
         title="GreenNext AI Assistant"
