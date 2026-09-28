@@ -19,11 +19,30 @@
 const DEFAULT_APPS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbzP-MhwkC997UhXNzrORh9u3KQFw9Sf66RW9n4Ut7ZhK0HiFeRtjdX1tBRbM7pUIGsY/exec";
 
+function isPublicAppsScriptEndpoint(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      url.hostname === "script.google.com" &&
+      /^\/macros\/s\/[^/]+\/exec$/.test(url.pathname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+const configuredAnalyticsEndpoint =
+  typeof import.meta !== "undefined" && import.meta.env
+    ? import.meta.env["VITE_ANALYTICS_ENDPOINT"]?.trim()
+    : undefined;
+
+// Only the public /macros/s/.../exec form is accepted. Legacy account-scoped values
+// from stale deployment configuration are rejected and cannot override the current endpoint.
 export const ANALYTICS_ENDPOINT: string =
-  (typeof import.meta !== "undefined" &&
-    import.meta.env &&
-    import.meta.env["VITE_ANALYTICS_ENDPOINT"]) ||
-  DEFAULT_APPS_SCRIPT_URL;
+  configuredAnalyticsEndpoint && isPublicAppsScriptEndpoint(configuredAnalyticsEndpoint)
+    ? configuredAnalyticsEndpoint
+    : DEFAULT_APPS_SCRIPT_URL;
 
 export type AnalyticsTab =
   | "Navigation"
