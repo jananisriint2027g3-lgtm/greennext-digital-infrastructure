@@ -1,9 +1,16 @@
-import { useState, FormEvent, useEffect } from "react";
+import { useState, FormEvent, useEffect, useRef } from "react";
 import { MessageCircle, X, ArrowRight, Send, CheckCircle2, ShieldCheck, AlertCircle } from "../icons";
 import { Link } from "@tanstack/react-router";
 import { WHATSAPP_CONFIG } from "../../data/whatsapp";
 import { CONTACT_CONFIG } from "../../data/contactConfig";
-import { trackEvent, getCurrentPage } from "../../lib/analytics";
+import {
+  getCurrentPage,
+  trackEvent,
+  trackFormAbandon,
+  trackFormOpen,
+  trackFormStart,
+} from "../../lib/analytics";
+import { LEAD_TYPES } from "../../lib/inquiry";
 
 /**
  * Global helper to trigger the Quick Inquiry modal from anywhere on the website.
@@ -129,13 +136,44 @@ export function QuickInquiryModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  initialInterest?: string;
+  initialInterest?: string | undefined;
 }) {
   const [form, setForm] = useState<QuickFormState>(INITIAL_QUICK_STATE);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<QuickFormState>>({});
+  const startedRef = useRef(false);
+  const submittedRef = useRef(false);
+  const abandonedRef = useRef(false);
+
+  const markFormStarted = () => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    trackFormStart(LEAD_TYPES.general);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    startedRef.current = false;
+    submittedRef.current = false;
+    abandonedRef.current = false;
+    trackFormOpen(LEAD_TYPES.general);
+    const onPageHide = () => {
+      if (startedRef.current && !submittedRef.current && !abandonedRef.current) {
+        abandonedRef.current = true;
+        trackFormAbandon(LEAD_TYPES.general);
+      }
+    };
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      if (startedRef.current && !submittedRef.current && !abandonedRef.current) {
+        abandonedRef.current = true;
+        trackFormAbandon(LEAD_TYPES.general);
+      }
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (initialInterest) {
@@ -190,6 +228,7 @@ export function QuickInquiryModal({
       });
 
       if (result.success) {
+        submittedRef.current = true;
         // Track the submission — record only selected interest category, no PII
         trackEvent({
           tab: "CTA Interactions",
@@ -208,15 +247,23 @@ export function QuickInquiryModal({
     }
   };
 
-  const handleReset = () => {
+  const handleReset = (trackNewForm = true) => {
     setForm(INITIAL_QUICK_STATE);
     setErrors({});
     setSubmitError(null);
     setSubmitted(false);
+    startedRef.current = false;
+    submittedRef.current = false;
+    abandonedRef.current = false;
+    if (trackNewForm) trackFormOpen(LEAD_TYPES.general);
   };
 
   const handleClose = () => {
-    handleReset();
+    if (startedRef.current && !submittedRef.current && !abandonedRef.current) {
+      abandonedRef.current = true;
+      trackFormAbandon(LEAD_TYPES.general);
+    }
+    handleReset(false);
     onClose();
   };
 
@@ -274,7 +321,7 @@ export function QuickInquiryModal({
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
-                  onClick={handleReset}
+                  onClick={() => handleReset()}
                   className="px-4 py-2.5 rounded-lg border border-[#334155] bg-[#121824] text-white text-xs font-semibold hover:bg-[#1A2234] transition-colors cursor-pointer"
                 >
                   Submit Another Inquiry
@@ -288,7 +335,7 @@ export function QuickInquiryModal({
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-3.5" noValidate>
+            <form onSubmit={handleSubmit} onChange={markFormStarted} className="space-y-3.5" noValidate>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-mono uppercase tracking-wider text-[#94A3B8] mb-1">

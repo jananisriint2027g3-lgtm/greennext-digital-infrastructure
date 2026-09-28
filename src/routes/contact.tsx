@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { PageHero } from "../components/common/PageHero";
 import { LongFormInquiry } from "../components/common/LongFormInquiry";
+import { LeadInquiryForm } from "../components/common/LeadInquiryForm";
+import { LEAD_TYPES, type LeadType } from "../lib/inquiry";
 import { WhatsAppDemoModal, openQuickInquiry } from "../components/common/FloatingContact";
 import { WHATSAPP_CONFIG } from "../data/whatsapp";
 import {
@@ -38,6 +40,7 @@ export const Route = createFileRoute("/contact")({
 
 export function ContactPage() {
   const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
+  const [leadType, setLeadType] = useState<LeadType>(LEAD_TYPES.session);
 
   const handleWhatsAppAction = (e: React.MouseEvent) => {
     if (!WHATSAPP_CONFIG.isConfigured()) {
@@ -124,6 +127,19 @@ export function ContactPage() {
       />
 
       <main className="w-full">
+        <section className="border-b border-[#1E293B] bg-[#0B0F17]/60 py-14">
+          <div className="mx-auto grid max-w-[1340px] grid-cols-1 gap-8 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
+            <div className="lg:col-span-4">
+              <span className="mb-2 block text-xs font-mono font-semibold uppercase tracking-widest text-[#10B981]">Choose a pathway</span>
+              <h2 className="mb-3 text-2xl font-bold tracking-tight text-white">What would you like to discuss?</h2>
+              <p className="text-sm leading-relaxed text-[#94A3B8]">Use the focused GreenNext form for a technical session, collaboration, or infrastructure question. Existing quick and detailed inquiry options remain available below.</p>
+              <div className="mt-6 space-y-2">
+                {[{ type: LEAD_TYPES.session, label: "Book a Technical Session" }, { type: LEAD_TYPES.partner, label: "Partner With GreenNext" }, { type: LEAD_TYPES.technical, label: "Technical Infrastructure Inquiry" }].map((item) => <button key={item.type} type="button" onClick={() => setLeadType(item.type)} className={`w-full rounded-lg border px-4 py-3 text-left text-sm transition-colors ${leadType === item.type ? "border-[#10B981] bg-[#10B981]/10 text-[#10B981]" : "border-[#1E293B] bg-[#121824] text-[#CBD5E1] hover:border-[#334155]"}`}>{item.label}</button>)}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-[#1E293B] bg-[#0B0F17] p-6 shadow-2xl sm:p-8 lg:col-span-8"><LeadInquiryForm leadType={leadType} onLeadTypeChange={setLeadType} /></div>
+          </div>
+        </section>
         {/* 2. INQUIRY + DIRECT CORRESPONDENCE (Balanced Two-Column Section) */}
         <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">

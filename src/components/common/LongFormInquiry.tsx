@@ -1,7 +1,15 @@
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect, useRef } from "react";
 import { Send, CheckCircle2, ShieldCheck, AlertCircle } from "../icons";
 import { CONTACT_CONFIG } from "../../data/contactConfig";
-import { trackEvent, getCurrentPage } from "../../lib/analytics";
+import {
+  getCurrentPage,
+  trackDocumentSelected,
+  trackEvent,
+  trackFormAbandon,
+  trackFormOpen,
+} from "../../lib/analytics";
+import { ACCEPTED_DOCUMENT_EXTENSIONS, ACCEPTED_DOCUMENT_TYPES, MAX_DOCUMENT_SIZE, serializeLeadDocument } from "../../lib/inquiry";
+import { LEAD_TYPES } from "../../lib/inquiry";
 
 export interface LongFormState {
   name: string;
@@ -42,7 +50,45 @@ export function LongFormInquiry({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [document, setDocument] = useState<File | null>(null);
+  const startedRef = useRef(false);
+  const submittedRef = useRef(false);
+  const abandonedRef = useRef(false);
   const [errors, setErrors] = useState<Partial<Record<keyof LongFormState, string>>>({});
+
+  const markFormStarted = () => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    trackEvent({
+      tab: "CTA Interactions",
+      event: "form_start",
+      value: LEAD_TYPES.technical,
+      page: getCurrentPage(),
+    });
+  };
+
+  useEffect(() => {
+    trackEvent({
+      tab: "CTA Interactions",
+      event: "form_open",
+      value: LEAD_TYPES.technical,
+      page: getCurrentPage(),
+    });
+    const onPageHide = () => {
+      if (startedRef.current && !submittedRef.current && !abandonedRef.current) {
+        abandonedRef.current = true;
+        trackFormAbandon(LEAD_TYPES.technical);
+      }
+    };
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      if (startedRef.current && !submittedRef.current && !abandonedRef.current) {
+        abandonedRef.current = true;
+        trackFormAbandon(LEAD_TYPES.technical);
+      }
+    };
+  }, []);
 
   const validate = (): boolean => {
     const errs: Partial<Record<keyof LongFormState, string>> = {};
@@ -72,10 +118,12 @@ export function LongFormInquiry({
         category: formData.category,
         region: formData.region,
         message: formData.message.trim(),
+        document: await serializeLeadDocument(document),
         page: getCurrentPage(),
       });
 
       if (result.success) {
+        submittedRef.current = true;
         // Track submission — category & region only, no PII
         trackEvent({
           tab: "CTA Interactions",
@@ -99,6 +147,16 @@ export function LongFormInquiry({
     setErrors({});
     setSubmitError(null);
     setSubmitted(false);
+    setDocument(null);
+    startedRef.current = false;
+    submittedRef.current = false;
+    abandonedRef.current = false;
+    trackEvent({
+      tab: "CTA Interactions",
+      event: "form_open",
+      value: LEAD_TYPES.technical,
+      page: getCurrentPage(),
+    });
   };
 
   return (
@@ -133,7 +191,7 @@ export function LongFormInquiry({
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        <form onSubmit={handleSubmit} onChange={markFormStarted} className="space-y-4" noValidate>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
@@ -246,6 +304,28 @@ export function LongFormInquiry({
               }`}
             />
             {errors.message && <p className="text-red-400 text-[11px] mt-1">{errors.message}</p>}
+          </div>
+
+          <div>
+            <label className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">Optional Supporting Document</label>
+            <input
+              type="file"
+              accept={ACCEPTED_DOCUMENT_EXTENSIONS}
+              onChange={(e) => {
+                const selected = e.target.files?.[0] || null;
+                if (selected && (!ACCEPTED_DOCUMENT_TYPES.includes(selected.type as (typeof ACCEPTED_DOCUMENT_TYPES)[number]) || selected.size > MAX_DOCUMENT_SIZE)) {
+                  setSubmitError("Please choose a supported document no larger than 10 MB.");
+                  setDocument(null);
+                  return;
+                }
+                setSubmitError(null);
+                setDocument(selected);
+                if (selected) trackDocumentSelected(LEAD_TYPES.technical);
+              }}
+              className="block w-full text-xs text-[#94A3B8] file:mr-3 file:rounded-md file:border-0 file:bg-[#1E293B] file:px-3 file:py-2 file:text-xs file:text-white"
+            />
+            {document && <p className="text-[11px] text-[#CBD5E1] mt-1.5">Selected: {document.name} ({(document.size / 1024 / 1024).toFixed(2)} MB)</p>}
+            <p className="text-[11px] text-[#64748B] mt-1">PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, or TXT · maximum 10 MB</p>
           </div>
 
           {submitError && (

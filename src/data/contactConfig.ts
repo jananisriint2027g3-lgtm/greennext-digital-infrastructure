@@ -8,8 +8,10 @@
 import {
   submitQuickInquiry,
   submitLongFormInquiry,
+  submitLead,
   type QuickInquiryData,
   type LongFormInquiryData,
+  type LeadPayload,
   type InquiryResult,
 } from "../lib/inquiry";
 
@@ -22,13 +24,15 @@ export const CONTACT_CONFIG = {
     return submitLongFormInquiry(data);
   },
 
+  submitLead: async (data: LeadPayload): Promise<InquiryResult> => submitLead(data),
+
   /**
    * Compatibility wrapper for existing callers.
    * Directs payload to real inquiry backend.
    */
   submitInquiryDemo: async (
     payload: Record<string, any>,
-  ): Promise<{ success: boolean; message: string; error?: string }> => {
+  ): Promise<{ success: boolean; message: string; error?: string | undefined }> => {
     if ("category" in payload || "organization" in payload) {
       const res = await submitLongFormInquiry(payload as LongFormInquiryData);
       return {

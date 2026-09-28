@@ -17,12 +17,12 @@
  */
 
 const DEFAULT_APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzk_tlffmviPdB8wpH4eg5Yb5bqDBvGKhOVF1lh1B9JEZnOgq6CLZxPU5dAlyTXTz4/exec";
+  "https://script.google.com/macros/s/AKfycbzax1WrPLesbX6b2qhHd8-g5PkvSRUPJ6Kj3dfJ99g0KgKckovgcfA2iqPfUogRmbsg/exec";
 
 export const ANALYTICS_ENDPOINT: string =
   (typeof import.meta !== "undefined" &&
     import.meta.env &&
-    import.meta.env.VITE_ANALYTICS_ENDPOINT) ||
+    import.meta.env["VITE_ANALYTICS_ENDPOINT"]) ||
   DEFAULT_APPS_SCRIPT_URL;
 
 export type AnalyticsTab =
@@ -45,6 +45,14 @@ export interface AnalyticsPayload {
 }
 
 const SESSION_KEY = "gn_analytics_session_id";
+const SESSION_SEEN_KEY = "gn_analytics_session_seen";
+const SESSION_KIND_KEY = "gn_analytics_session_kind";
+let lastPageViewKey = "";
+let lastPageViewAt = 0;
+let lastFormOpenKey = "";
+let lastFormOpenAt = 0;
+
+export type SessionKind = "new_session" | "returning_session";
 
 /**
  * Retrieves or initializes an anonymous persistent session ID for the current browser session.
@@ -60,6 +68,26 @@ export function getSessionId(): string {
     return sid;
   } catch {
     return "session_fallback";
+  }
+}
+
+/** Returns an anonymous browser-local session classification without identifying a person. */
+export function getSessionKind(): SessionKind {
+  if (typeof window === "undefined") return "new_session";
+  try {
+    const currentSessionId = getSessionId();
+    const existingKind = sessionStorage.getItem(SESSION_KIND_KEY);
+    if (existingKind === "new_session" || existingKind === "returning_session") {
+      return existingKind;
+    }
+    const kind: SessionKind = localStorage.getItem(SESSION_SEEN_KEY)
+      ? "returning_session"
+      : "new_session";
+    localStorage.setItem(SESSION_SEEN_KEY, currentSessionId);
+    sessionStorage.setItem(SESSION_KIND_KEY, kind);
+    return kind;
+  } catch {
+    return "new_session";
   }
 }
 
@@ -121,38 +149,40 @@ export function trackEvent({ tab, event, value, page }: AnalyticsPayload): void 
     event,
     page: pagePath,
     sessionId,
+    sessionKind: getSessionKind(),
+    timestamp: new Date().toISOString(),
   };
 
   switch (tab) {
     case "Navigation":
-      payload.destination = value;
+      payload["destination"] = value;
       break;
     case "Regions":
-      payload.region = value;
+      payload["region"] = value;
       break;
     case "Infrastructure":
-      payload.capability = value;
+      payload["capability"] = value;
       break;
     case "Energy":
-      payload.topic = value;
+      payload["topic"] = value;
       break;
     case "Automation":
-      payload.feature = value;
+      payload["feature"] = value;
       break;
     case "Solutions":
-      payload.solution = value;
+      payload["solution"] = value;
       break;
     case "Industries":
-      payload.industry = value;
+      payload["industry"] = value;
       break;
     case "Locations":
-      payload.location = value;
+      payload["location"] = value;
       break;
     case "AI Assistant":
-      payload.inputSelection = value;
+      payload["inputSelection"] = value;
       break;
     case "CTA Interactions":
-      payload.cta = value;
+      payload["cta"] = value;
       break;
   }
 
@@ -177,4 +207,42 @@ export function trackEvent({ tab, event, value, page }: AnalyticsPayload): void 
   } catch {
     // Graceful error suppression
   }
+}
+
+/** PII-free page-view signal. One call should be made per actual route visit. */
+export function trackPageView(page = getCurrentPage()): void {
+  const now = Date.now();
+  if (lastPageViewKey === page && now - lastPageViewAt < 500) return;
+  lastPageViewKey = page;
+  lastPageViewAt = now;
+  trackEvent({ tab: "CTA Interactions", event: "page_view", value: page, page });
+}
+
+export function trackScrollDepth(depth: 25 | 50 | 75 | 90 | 100, page = getCurrentPage()): void {
+  trackEvent({ tab: "CTA Interactions", event: `scroll_${depth}`, value: `${depth}%`, page });
+}
+
+export function trackEngagement(seconds: 30 | 60 | 120, page = getCurrentPage()): void {
+  trackEvent({ tab: "CTA Interactions", event: `engagement_${seconds}s`, value: `${seconds}s`, page });
+}
+
+export function trackFormOpen(formType: string, page = getCurrentPage()): void {
+  const key = `${page}|${formType}`;
+  const now = Date.now();
+  if (lastFormOpenKey === key && now - lastFormOpenAt < 500) return;
+  lastFormOpenKey = key;
+  lastFormOpenAt = now;
+  trackEvent({ tab: "CTA Interactions", event: "form_open", value: formType, page });
+}
+
+export function trackFormStart(formType: string, page = getCurrentPage()): void {
+  trackEvent({ tab: "CTA Interactions", event: "form_start", value: formType, page });
+}
+
+export function trackDocumentSelected(formType: string, page = getCurrentPage()): void {
+  trackEvent({ tab: "CTA Interactions", event: "document_selected", value: formType, page });
+}
+
+export function trackFormAbandon(formType: string, page = getCurrentPage()): void {
+  trackEvent({ tab: "CTA Interactions", event: "form_abandon", value: formType, page });
 }

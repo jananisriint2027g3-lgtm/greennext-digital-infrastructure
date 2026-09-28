@@ -12,6 +12,62 @@
 
 import { ANALYTICS_ENDPOINT, getSessionId, getCurrentPage } from "./analytics";
 
+export const LEAD_TYPES = {
+  session: "Technical Consultation / Session Booking",
+  partner: "Partner / Collaboration Inquiry",
+  technical: "Technical Infrastructure Inquiry",
+  general: "General Contact Inquiry",
+  career: "Career Inquiry",
+} as const;
+
+export type LeadType = (typeof LEAD_TYPES)[keyof typeof LEAD_TYPES];
+
+export interface LeadDocument {
+  fileName: string;
+  mimeType: string;
+  data: string;
+}
+
+export interface LeadPayload {
+  leadType: LeadType;
+  name: string;
+  email: string;
+  phone?: string;
+  organization?: string;
+  region?: string;
+  topic: string;
+  message: string;
+  page?: string;
+  sessionId?: string;
+  timestamp?: string;
+  document: LeadDocument | null;
+}
+
+export const ACCEPTED_DOCUMENT_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/plain",
+] as const;
+
+export const ACCEPTED_DOCUMENT_EXTENSIONS = ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt";
+export const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024;
+
+export async function serializeLeadDocument(file: File | null): Promise<LeadDocument | null> {
+  if (!file) return null;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  }
+  return { fileName: file.name, mimeType: file.type || "application/octet-stream", data: btoa(binary) };
+}
+
 export interface QuickInquiryData {
   name: string;
   email: string;
@@ -30,12 +86,29 @@ export interface LongFormInquiryData {
   region: string;
   message: string;
   page?: string;
+  document?: LeadDocument | null;
 }
 
 export interface InquiryResult {
   success: boolean;
   message?: string;
   error?: string;
+}
+
+/** Shared website-side lead payload for the next Apps Script integration step. */
+export async function submitLead(data: LeadPayload): Promise<InquiryResult> {
+  const payload = {
+    ...data,
+    phone: data.phone || "",
+    organization: data.organization || "",
+    region: data.region || "",
+    page: data.page || getCurrentPage(),
+    sessionId: data.sessionId || getSessionId(),
+    timestamp: data.timestamp || new Date().toISOString(),
+    document: data.document || null,
+    formType: "lead_inquiry",
+  };
+  return postInquiryPayload(payload, `Lead: ${data.leadType}`);
 }
 
 /**
@@ -140,6 +213,7 @@ export async function submitQuickInquiry(data: QuickInquiryData): Promise<Inquir
     sheet: "Quick_Inquiries",
     formType: "quick_inquiry",
     event: "quick_inquiry_submit",
+    leadType: LEAD_TYPES.general,
     name: data.name,
     email: data.email,
     phone: data.phone || "",
@@ -167,6 +241,7 @@ export async function submitLongFormInquiry(data: LongFormInquiryData): Promise<
     sheet: "Contact_Submissions",
     formType: "long_form_inquiry",
     event: "long_form_inquiry_submit",
+    leadType: LEAD_TYPES.technical,
     name: data.name,
     email: data.email,
     phone: data.phone || "",
@@ -177,6 +252,7 @@ export async function submitLongFormInquiry(data: LongFormInquiryData): Promise<
     page,
     sessionId,
     timestamp,
+    document: data.document || null,
   };
 
   const fallbackCta = `Long Form: ${data.category} | ${data.region}`;

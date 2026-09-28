@@ -116,6 +116,8 @@ import { FloatingContact } from "../components/common/FloatingContact";
 import { GreenNextChatbot } from "../components/chatbot/GreenNextChatbot";
 import { useRouterState } from "@tanstack/react-router";
 import { trackEvent } from "../lib/analytics";
+import { trackPageView } from "../lib/analytics";
+import { usePageBehaviorTracking } from "../hooks/usePageBehaviorTracking";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
@@ -123,6 +125,7 @@ function RootComponent() {
   const pathname = routerState.location.pathname;
 
   useEffect(() => {
+    trackPageView(pathname);
     trackEvent({
       tab: "Navigation",
       event: "nav_page_view",
@@ -130,6 +133,8 @@ function RootComponent() {
       page: pathname,
     });
   }, [pathname]);
+
+  usePageBehaviorTracking(pathname);
 
   return (
     <QueryClientProvider client={queryClient}>

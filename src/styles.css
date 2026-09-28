@@ -2,6 +2,11 @@
 @source "../src";
 @import "tw-animate-css";
 
+@layer components {
+  .label { @apply mb-1.5 block text-[11px] font-mono uppercase tracking-wider text-[#94A3B8]; }
+  .input { @apply w-full rounded-lg border border-[#1E293B] bg-[#121824] px-3.5 py-2.5 text-sm text-white transition-colors focus:border-[#10B981] focus:outline-none; }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
