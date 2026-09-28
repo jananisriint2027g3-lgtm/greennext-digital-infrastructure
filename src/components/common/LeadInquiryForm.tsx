@@ -43,6 +43,13 @@ export function LeadInquiryForm({ leadType, onLeadTypeChange }: LeadFormProps) {
   const openedFormRef = useRef<LeadType | null>(null);
   const topics = TOPICS[leadType];
   const documentRequirement = DOCUMENT_REQUIREMENTS[leadType];
+  const formCopy = {
+    [LEAD_TYPES.session]: { title: "Book a Technical Session", subtitle: "Share the context and topic you would like to discuss with the GreenNext team." },
+    [LEAD_TYPES.partner]: { title: "Partner With GreenNext", subtitle: "Tell us about your organization and the collaboration you are exploring." },
+    [LEAD_TYPES.technical]: { title: "Infrastructure Requirements Inquiry", subtitle: "Share your technical requirements so the team can understand the infrastructure context." },
+    [LEAD_TYPES.general]: { title: "Send a General Inquiry", subtitle: "Send us the details and we will route your request to the right team." },
+    [LEAD_TYPES.career]: { title: "Join GreenNext", subtitle: "Tell us about your background, interests, and the opportunities you are looking for." },
+  }[leadType];
   const markFormStarted = () => {
     if (startedRef.current) return;
     startedRef.current = true;
@@ -124,10 +131,10 @@ export function LeadInquiryForm({ leadType, onLeadTypeChange }: LeadFormProps) {
     } catch { setStatus("error"); setErrorMessage("We could not submit your request. Please check your connection and try again."); }
   };
 
-  if (status === "success") return <div className="rounded-2xl border border-[#10B981]/30 bg-[#10B981]/5 p-8 text-center"><CheckCircle2 size={36} className="mx-auto mb-3 text-[#10B981]" /><h3 className="text-xl font-bold text-white mb-2">Your request has been submitted successfully.</h3><p className="text-sm text-[#CBD5E1] mb-5">The GreenNext team will review your request and follow up with you.</p><button type="button" onClick={() => { setForm(EMPTY); setFile(null); setErrors({}); setStatus("idle"); startedRef.current = false; submittedRef.current = false; abandonedRef.current = false; trackFormOpen(leadType); }} className="rounded-lg bg-[#10B981] px-5 py-2.5 text-sm font-semibold text-[#070A0E]">Submit another request</button></div>;
+  if (status === "success") return <div className="rounded-xl border border-[#10B981]/30 bg-[#10B981]/5 p-8 text-center"><CheckCircle2 size={36} className="mx-auto mb-3 text-[#10B981]" /><h3 className="mb-2 text-xl font-bold text-white">Inquiry submitted successfully</h3><p className="mx-auto mb-5 max-w-lg text-sm leading-relaxed text-[#CBD5E1]">Thank you for contacting GreenNext. Your request has been received and will be reviewed by the appropriate team.</p><button type="button" onClick={() => { setForm(EMPTY); setFile(null); setErrors({}); setStatus("idle"); startedRef.current = false; submittedRef.current = false; abandonedRef.current = false; trackFormOpen(leadType); }} className="rounded-lg border border-[#10B981] bg-[#10B981] px-5 py-2.5 text-sm font-semibold text-[#070A0E] transition-colors hover:bg-[#34D399]">Return to Contact Options</button></div>;
 
   return <form onSubmit={submit} noValidate className="space-y-4">
-    <div className="mb-5"><span className="text-[11px] font-mono uppercase tracking-widest text-[#10B981]">{leadType}</span><h2 className="mt-1 text-xl font-bold text-white">Start a GreenNext conversation</h2><p className="mt-1 text-xs text-[#94A3B8]">Share the context below and the right GreenNext team can respond.</p></div>
+    <div className="mb-6 border-b border-[#1E293B] pb-5"><span className="text-[11px] font-mono uppercase tracking-widest text-[#10B981]">{leadType}</span><h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">{formCopy.title}</h2><p className="mt-1 text-sm leading-relaxed text-[#94A3B8]">{formCopy.subtitle}</p></div>
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <Field label="Name *" value={form.name} error={errors["name"]} onChange={(v) => set("name", v)} autoComplete="name" />
       <Field label="Email *" type="email" value={form.email} error={errors["email"]} onChange={(v) => set("email", v)} autoComplete="email" />
@@ -146,10 +153,10 @@ export function LeadInquiryForm({ leadType, onLeadTypeChange }: LeadFormProps) {
     </div>
     <div><label className="label">Message *</label><textarea rows={5} value={form.message} onChange={(e) => set("message", e.target.value)} className={`input resize-none ${errors["message"] ? "border-red-500/70" : ""}`} placeholder="Tell us what you would like to discuss…" />{errors["message"] && <Error text={errors["message"]} />}</div>
     <div><label htmlFor="lead-document" className="label">{documentRequirement.label}</label><input id="lead-document" type="file" accept={ACCEPTED_DOCUMENT_EXTENSIONS} required={documentRequirement.required} aria-invalid={Boolean(errors["file"])} aria-describedby="lead-document-help lead-document-error" onChange={(e) => handleFile(e.target.files?.[0])} className="block w-full text-xs text-[#94A3B8] file:mr-3 file:rounded-md file:border-0 file:bg-[#1E293B] file:px-3 file:py-2 file:text-xs file:text-white" />{file && <p className="mt-2 text-xs text-[#CBD5E1]">Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</p>}<p id="lead-document-help" className="mt-1 text-[11px] text-[#64748B]">{documentRequirement.helper} Accepted: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, or TXT · maximum 10 MB.</p>{errors["file"] && <p id="lead-document-error"><Error text={errors["file"]} /></p>}</div>
-    {status === "error" && <div role="alert" className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-200"><AlertCircle size={16} />{errorMessage}</div>}
-    <button disabled={status === "loading"} type="submit" className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#10B981] py-3 text-sm font-semibold text-[#070A0E] transition hover:bg-[#34D399] disabled:opacity-60"><Send size={15} />{status === "loading" ? "Submitting request…" : "Submit request"}</button>
+    {status === "error" && <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-200"><AlertCircle size={16} className="mt-0.5 shrink-0" /><div><p className="font-semibold">We couldn't submit your inquiry.</p><p className="mt-1 text-red-200/80">Please check your connection and try again.</p></div></div>}
+    <button disabled={status === "loading"} type="submit" className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#10B981] py-3 text-sm font-semibold text-[#070A0E] transition-colors hover:bg-[#34D399] disabled:cursor-not-allowed disabled:opacity-60"><Send size={15} />{status === "loading" ? "Submitting..." : "Submit inquiry"}</button>
     <p className="flex items-center gap-1.5 border-t border-[#1E293B] pt-3 text-[11px] text-[#64748B]"><ShieldCheck size={13} className="text-[#10B981]" /> Your contact details are used to respond to this request.</p>
-    {onLeadTypeChange && <div className="flex flex-wrap gap-2 border-t border-[#1E293B] pt-3">{[LEAD_TYPES.session, LEAD_TYPES.partner, LEAD_TYPES.technical].map((type) => <button key={type} type="button" onClick={() => { onLeadTypeChange(type); setStatus("idle"); }} className={`rounded-full border px-3 py-1.5 text-[11px] ${type === leadType ? "border-[#10B981] text-[#10B981]" : "border-[#334155] text-[#94A3B8]"}`}>{type}</button>)}</div>}
+    {onLeadTypeChange && <div className="flex flex-wrap gap-2 border-t border-[#1E293B] pt-3">{[LEAD_TYPES.session, LEAD_TYPES.partner, LEAD_TYPES.technical, LEAD_TYPES.career].map((type) => <button key={type} type="button" onClick={() => { onLeadTypeChange(type); setStatus("idle"); }} className={`rounded-full border px-3 py-1.5 text-[11px] transition-colors ${type === leadType ? "border-[#10B981] text-[#10B981]" : "border-[#334155] text-[#94A3B8] hover:border-[#64748B]"}`}>{type}</button>)}</div>}
   </form>;
 }
 

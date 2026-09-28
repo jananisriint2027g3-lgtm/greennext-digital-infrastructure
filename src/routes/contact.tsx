@@ -93,21 +93,33 @@ export function ContactPage() {
       step: "01",
       icon: Send,
       title: "Share your requirements",
-      desc: "Submit your compute workload density, facility constraints, cooling preferences, or regional planning questions via the interactive inquiry form.",
+      desc: "Tell us about your requirement, question, or opportunity.",
     },
     {
       step: "02",
       icon: Search,
       title: "Review the context",
-      desc: "Our engineering and planning team reviews your submitted parameters against regional grid availability, ambient thermal profiles, and infrastructure models.",
+      desc: "The relevant GreenNext team reviews the context and determines the appropriate next step.",
     },
     {
       step: "03",
       icon: Users,
       title: "Continue the conversation",
-      desc: "We coordinate a focused technical discussion with our infrastructure architects to review layout feasibility, efficiency metrics, and collaborative scenarios.",
+      desc: "We continue the conversation through the appropriate technical or business channel.",
     },
   ];
+
+  const pathways = [
+    { index: "01", type: LEAD_TYPES.session, title: "Technical Session", description: "Discuss an infrastructure, architecture, or technology requirement with the GreenNext team." },
+    { index: "02", type: LEAD_TYPES.partner, title: "Partner With GreenNext", description: "Explore collaboration, partnerships, and opportunities to work together." },
+    { index: "03", type: LEAD_TYPES.technical, title: "Infrastructure Inquiry", description: "Share technical requirements for infrastructure, energy, cooling, automation, or monitoring." },
+    { index: "04", type: LEAD_TYPES.career, title: "Careers", description: "Explore opportunities to contribute to AI infrastructure, engineering, automation, and sustainability." },
+  ];
+
+  const selectPathway = (type: LeadType) => {
+    setLeadType(type);
+    window.requestAnimationFrame(() => document.getElementById("primary-inquiry-form")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   return (
     <div className="w-full bg-[#070A0E] text-white">
@@ -121,23 +133,31 @@ export function ContactPage() {
       {/* 1. CONTACT HERO */}
       <PageHero
         breadcrumbs={[{ label: "Contact" }]}
-        eyebrow="Start a Conversation"
-        h1="Connect With the GreenNext Team"
-        intro="If you are involved in infrastructure planning, data center operations, AI workload management, or regional digital development across South India, we want to understand your requirements."
+        eyebrow="CONTACT GREENNEXT"
+        h1="Start a conversation about your infrastructure"
+        intro="Tell us what you are planning, building, or evaluating. Our team can help identify the right infrastructure, automation, and sustainability path."
       />
 
       <main className="w-full">
-        <section className="border-b border-[#1E293B] bg-[#0B0F17]/60 py-14">
-          <div className="mx-auto grid max-w-[1340px] grid-cols-1 gap-8 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
-            <div className="lg:col-span-4">
-              <span className="mb-2 block text-xs font-mono font-semibold uppercase tracking-widest text-[#10B981]">Choose a pathway</span>
-              <h2 className="mb-3 text-2xl font-bold tracking-tight text-white">What would you like to discuss?</h2>
-              <p className="text-sm leading-relaxed text-[#94A3B8]">Use the focused GreenNext form for a technical session, collaboration, infrastructure question, or career inquiry. Existing quick and detailed inquiry options remain available below.</p>
-              <div className="mt-6 space-y-2">
-                {[{ type: LEAD_TYPES.session, label: "Book a Technical Session" }, { type: LEAD_TYPES.partner, label: "Partner With GreenNext" }, { type: LEAD_TYPES.technical, label: "Technical Infrastructure Inquiry" }, { type: LEAD_TYPES.career, label: "Career Inquiry" }].map((item) => <button key={item.type} type="button" onClick={() => setLeadType(item.type)} className={`w-full rounded-lg border px-4 py-3 text-left text-sm transition-colors ${leadType === item.type ? "border-[#10B981] bg-[#10B981]/10 text-[#10B981]" : "border-[#1E293B] bg-[#121824] text-[#CBD5E1] hover:border-[#334155]"}`}>{item.label}</button>)}
-              </div>
+        <section className="border-b border-[#1E293B] bg-[#0B0F17]/60 py-14 sm:py-16">
+          <div className="mx-auto max-w-[1340px] px-4 sm:px-6 lg:px-8">
+            <div className="mb-8 max-w-2xl">
+              <span className="mb-2 block text-xs font-mono font-semibold uppercase tracking-widest text-[#10B981]">Primary pathways</span>
+              <h2 className="mb-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">How can we help?</h2>
+              <p className="text-sm leading-relaxed text-[#94A3B8]">Choose the context that best matches your request. The form below will adapt to the pathway you select.</p>
             </div>
-            <div className="rounded-2xl border border-[#1E293B] bg-[#0B0F17] p-6 shadow-2xl sm:p-8 lg:col-span-8"><LeadInquiryForm leadType={leadType} onLeadTypeChange={setLeadType} /></div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {pathways.map((pathway) => (
+                <button key={pathway.type} type="button" onClick={() => selectPathway(pathway.type)} className={`group min-h-[156px] rounded-xl border p-5 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-[#10B981]/70 ${leadType === pathway.type ? "border-[#10B981] bg-[#10B981]/10" : "border-[#1E293B] bg-[#0B0F17] hover:border-[#334155] hover:bg-[#121824]"}`} aria-pressed={leadType === pathway.type}>
+                  <div className="mb-7 flex items-center justify-between"><span className="font-mono text-xs font-semibold tracking-widest text-[#10B981]">{pathway.index}</span><ArrowRight size={15} className={`text-[#64748B] transition-transform group-hover:translate-x-1 ${leadType === pathway.type ? "text-[#10B981]" : ""}`} /></div>
+                  <h3 className="mb-2 text-base font-semibold text-white">{pathway.title}</h3>
+                  <p className="text-xs leading-relaxed text-[#94A3B8]">{pathway.description}</p>
+                </button>
+              ))}
+            </div>
+            <div id="primary-inquiry-form" className="mt-8 scroll-mt-6 rounded-2xl border border-[#1E293B] bg-[#070A0E] p-5 sm:p-8">
+              <LeadInquiryForm leadType={leadType} onLeadTypeChange={setLeadType} />
+            </div>
           </div>
         </section>
         {/* 2. INQUIRY + DIRECT CORRESPONDENCE (Balanced Two-Column Section) */}
@@ -160,15 +180,14 @@ export function ContactPage() {
                     <Send size={18} />
                   </div>
                   <div>
-                    <span className="text-[10px] font-mono text-[#10B981] uppercase tracking-wider block">
-                      OFFICIAL CHANNEL
+                  <span className="text-[10px] font-mono text-[#10B981] uppercase tracking-wider block">
+                      GENERAL CONTACT
                     </span>
-                    <h3 className="text-base font-bold text-white">Direct Correspondence</h3>
+                    <h3 className="text-base font-bold text-white">Have a general question?</h3>
                   </div>
                 </div>
                 <p className="text-xs text-[#94A3B8] leading-relaxed mb-5">
-                  For technical discussions, infrastructure planning, and strategic inquiries, use
-                  the GreenNext inquiry interface.
+                  For questions that do not fit one of the primary pathways above, send a quick inquiry.
                 </p>
                 <button
                   type="button"
@@ -177,10 +196,10 @@ export function ContactPage() {
                   id="direct-correspondence-quick-inquiry-btn"
                 >
                   <Send size={15} />
-                  <span>Open Quick Inquiry</span>
+                  <span>Send a Quick Inquiry</span>
                 </button>
                 <p className="text-[11px] text-[#64748B] mt-3">
-                  Opens the GreenNext quick inquiry modal for rapid technical requirements routing.
+                  Your question will be routed through the existing GreenNext inquiry channel.
                 </p>
               </div>
 
@@ -192,14 +211,13 @@ export function ContactPage() {
                   </div>
                   <div>
                     <span className="text-[10px] font-mono text-[#10B981] uppercase tracking-wider block">
-                      DIRECT MESSAGING
+                      DIRECT CONTACT
                     </span>
-                    <h3 className="text-base font-bold text-white">WhatsApp Inquiry</h3>
+                    <h3 className="text-base font-bold text-white">Prefer a direct conversation?</h3>
                   </div>
                 </div>
                 <p className="text-xs text-[#CBD5E1] leading-relaxed mb-5">
-                  Direct WhatsApp routing channel for real-time technical coordination and
-                  preliminary feasibility discussions.
+                  Connect with GreenNext through WhatsApp for a quick discussion.
                 </p>
 
                 {WHATSAPP_CONFIG.isConfigured() ? (
@@ -211,7 +229,7 @@ export function ContactPage() {
                     id="contact-whatsapp-link"
                   >
                     <MessageCircle size={15} />
-                    <span>Open WhatsApp Discussion</span>
+                    <span>Start WhatsApp Inquiry</span>
                     <ExternalLink size={12} />
                   </a>
                 ) : (
@@ -222,7 +240,7 @@ export function ContactPage() {
                     id="contact-whatsapp-demo-btn"
                   >
                     <MessageCircle size={15} />
-                    <span>WhatsApp Inquiry</span>
+                    <span>Start WhatsApp Inquiry</span>
                   </button>
                 )}
               </div>
@@ -235,14 +253,13 @@ export function ContactPage() {
                   </div>
                   <div>
                     <span className="text-[10px] font-mono text-[#06B6D4] uppercase tracking-wider block">
-                      SOUTH INDIA CORRIDOR
+                      REGIONAL INFRASTRUCTURE NETWORK
                     </span>
-                    <h4 className="text-base font-bold text-white">Regional Focus Nodes</h4>
+                    <h4 className="text-base font-bold text-white">Regional Infrastructure Network</h4>
                   </div>
                 </div>
                 <p className="text-xs text-[#94A3B8] leading-relaxed mb-3">
-                  GreenNext digital infrastructure initiatives focus across four strategic regional
-                  nodes:
+                  Four connected infrastructure nodes supporting regional capacity distribution across South India.
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-xs font-mono text-[#CBD5E1]">
                   <Link
@@ -425,15 +442,14 @@ export function ContactPage() {
         <section className="border-t border-[#1E293B] bg-[#0B0F17]/60 py-16">
           <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl mb-12">
-              <span className="text-xs font-mono uppercase tracking-widest text-[#10B981] font-semibold block mb-2">
-                Consultative Engagement
+                <span className="text-xs font-mono uppercase tracking-widest text-[#10B981] font-semibold block mb-2">
+                The GreenNext process
               </span>
               <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-3">
                 What Happens Next
               </h2>
               <p className="text-sm text-[#94A3B8] leading-relaxed">
-                Our engagement methodology is engineering-led, collaborative, and focused on
-                specific operational specifications.
+                A clear, engineering-led path from your first question to the right technical or business conversation.
               </p>
             </div>
 
@@ -454,7 +470,7 @@ export function ContactPage() {
                           <StepIcon size={15} />
                         </div>
                       </div>
-                      <h3 className="text-base font-bold text-white mb-2">{step.title}</h3>
+                      <h3 className="text-base font-bold text-white mb-2">{step.title === "Share your requirements" ? "Share" : step.title === "Review the context" ? "Review" : "Continue"}</h3>
                       <p className="text-xs text-[#94A3B8] leading-relaxed">{step.desc}</p>
                     </div>
                   </div>
