@@ -183,6 +183,11 @@ function processLeadSubmission(payload, rawSs, timestamp) {
 
     var leadTimestamp = payload.timestamp || timestamp;
     var document = normalizeLeadDocument(payload.document);
+    if ((payload.leadType === "Partner / Collaboration Inquiry" || payload.leadType === "Career Inquiry") && !document) {
+      return jsonResponse(false, payload.leadType === "Partner / Collaboration Inquiry"
+        ? "Please upload a partnership or company document."
+        : "Please upload your resume or CV.");
+    }
     var duplicateRow = findRecentLeadDuplicate(leadSheet, payload, leadTimestamp, document);
     if (duplicateRow > 0) {
       return jsonResponse(true, "Lead submission already recorded.");
@@ -293,6 +298,35 @@ function sameLeadTimestamp(left, right) {
 }
 
 function buildLeadEmailBody(payload, document) {
+  if (payload.leadType === "Career Inquiry") {
+    var careerLines = [
+      "GreenNext Lead Submission",
+      "",
+      "Lead Type: Career Inquiry",
+      "Full Name: " + (payload.name || ""),
+      "Email: " + (payload.email || "")
+    ];
+    if (payload.phone) careerLines.push("Phone: " + payload.phone);
+    careerLines.push(
+      "Current Role / Student Status: " + (payload.currentRole || ""),
+      "Area of Interest: " + (payload.topic || ""),
+      "Experience Level: " + (payload.experienceLevel || ""),
+      "Preferred Region: " + (payload.region || ""),
+      "Message: " + (payload.message || ""),
+      "Page: " + (payload.page || ""),
+      "Session ID: " + (payload.sessionId || ""),
+      "Session Kind: " + (payload.sessionKind || "")
+    );
+    if (payload.linkedinUrl) careerLines.push("LinkedIn URL: " + payload.linkedinUrl);
+    if (payload.portfolioUrl) careerLines.push("Portfolio / GitHub URL: " + payload.portfolioUrl);
+    careerLines.push(
+      "Resume Attachment: " + (document ? document.fileName : "None"),
+      "Resume MIME Type: " + (document ? document.mimeType : "None"),
+      "Resume Attached: " + (document ? "Yes" : "No")
+    );
+    return careerLines.join("\n");
+  }
+
   return [
     "GreenNext Lead Submission",
     "",
@@ -2663,13 +2697,74 @@ function formatRawDataSheets() {
       return;
     }
 
-    formatExistingRawDataSheet(sheet);
+    if (name === "Locations") {
+      formatLocationsRawDataSheet(sheet);
+    } else {
+      formatExistingRawDataSheet(sheet);
+    }
     formatted.push(name);
   });
 
   Logger.log("RAW DATA sheets formatted: " + formatted.join(", "));
   if (skipped.length > 0) Logger.log("RAW DATA sheets skipped because they do not exist: " + skipped.join(", "));
   return { formattedSheets: formatted, skippedSheets: skipped };
+}
+
+/**
+ * Applies the Locations-specific presentation without changing its values or
+ * the existing header colors/design. Body formatting spans the available sheet
+ * rows so later appendRow() calls inherit the same presentation.
+ */
+function formatLocationsRawDataSheet(sheet) {
+  var lastRow = sheet.getLastRow();
+  var maxRows = sheet.getMaxRows();
+  var bodyRows = Math.max(maxRows - 1, 0);
+  var lastColumn = 5;
+  var headerRange = sheet.getRange(1, 1, 1, lastColumn);
+
+  // Apply the font and column behavior to the whole Locations sheet body,
+  // including currently blank rows that may receive future appendRow() data.
+  sheet.getRange(1, 1, Math.max(maxRows, 1), lastColumn).setFontFamily("Times New Roman");
+  if (bodyRows > 0) {
+    var bodyRange = sheet.getRange(2, 1, bodyRows, lastColumn);
+    bodyRange
+      .setFontColor("#000000")
+      .setVerticalAlignment("middle");
+
+    sheet.getRange(2, 1, bodyRows, 1)
+      .setHorizontalAlignment("center")
+      .setNumberFormat("M/d/yyyy HH:mm:ss")
+      .setWrap(false);
+    sheet.getRange(2, 2, bodyRows, 3)
+      .setHorizontalAlignment("left")
+      .setWrap(true);
+    sheet.getRange(2, 5, bodyRows, 1)
+      .setHorizontalAlignment("left")
+      .setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
+
+    var usedBodyRows = Math.max(lastRow - 1, 0);
+    if (usedBodyRows > 0) {
+      sheet.getRange(2, 1, usedBodyRows, lastColumn)
+        .setBorder(true, true, true, true, true, true, "#D9E4DC", SpreadsheetApp.BorderStyle.SOLID);
+    }
+    sheet.setRowHeights(2, bodyRows, 28);
+    if (lastRow > 1) sheet.autoResizeRows(2, lastRow - 1);
+  }
+
+  // Only alignment/wrapping/font are changed here; existing header colors,
+  // borders, weight, and other intentional styling are preserved.
+  headerRange
+    .setFontFamily("Times New Roman")
+    .setHorizontalAlignment("center")
+    .setVerticalAlignment("middle")
+    .setWrap(true);
+  sheet.setRowHeight(1, 33);
+  sheet.setColumnWidth(1, 170);
+  sheet.setColumnWidth(2, 190);
+  sheet.setColumnWidth(3, 260);
+  sheet.setColumnWidth(4, 220);
+  sheet.setColumnWidth(5, 260);
+  sheet.setFrozenRows(1);
 }
 
 function formatExistingRawDataSheet(sheet) {

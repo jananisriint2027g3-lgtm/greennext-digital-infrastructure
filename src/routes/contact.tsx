@@ -132,9 +132,9 @@ export function ContactPage() {
             <div className="lg:col-span-4">
               <span className="mb-2 block text-xs font-mono font-semibold uppercase tracking-widest text-[#10B981]">Choose a pathway</span>
               <h2 className="mb-3 text-2xl font-bold tracking-tight text-white">What would you like to discuss?</h2>
-              <p className="text-sm leading-relaxed text-[#94A3B8]">Use the focused GreenNext form for a technical session, collaboration, or infrastructure question. Existing quick and detailed inquiry options remain available below.</p>
+              <p className="text-sm leading-relaxed text-[#94A3B8]">Use the focused GreenNext form for a technical session, collaboration, infrastructure question, or career inquiry. Existing quick and detailed inquiry options remain available below.</p>
               <div className="mt-6 space-y-2">
-                {[{ type: LEAD_TYPES.session, label: "Book a Technical Session" }, { type: LEAD_TYPES.partner, label: "Partner With GreenNext" }, { type: LEAD_TYPES.technical, label: "Technical Infrastructure Inquiry" }].map((item) => <button key={item.type} type="button" onClick={() => setLeadType(item.type)} className={`w-full rounded-lg border px-4 py-3 text-left text-sm transition-colors ${leadType === item.type ? "border-[#10B981] bg-[#10B981]/10 text-[#10B981]" : "border-[#1E293B] bg-[#121824] text-[#CBD5E1] hover:border-[#334155]"}`}>{item.label}</button>)}
+                {[{ type: LEAD_TYPES.session, label: "Book a Technical Session" }, { type: LEAD_TYPES.partner, label: "Partner With GreenNext" }, { type: LEAD_TYPES.technical, label: "Technical Infrastructure Inquiry" }, { type: LEAD_TYPES.career, label: "Career Inquiry" }].map((item) => <button key={item.type} type="button" onClick={() => setLeadType(item.type)} className={`w-full rounded-lg border px-4 py-3 text-left text-sm transition-colors ${leadType === item.type ? "border-[#10B981] bg-[#10B981]/10 text-[#10B981]" : "border-[#1E293B] bg-[#121824] text-[#CBD5E1] hover:border-[#334155]"}`}>{item.label}</button>)}
               </div>
             </div>
             <div className="rounded-2xl border border-[#1E293B] bg-[#0B0F17] p-6 shadow-2xl sm:p-8 lg:col-span-8"><LeadInquiryForm leadType={leadType} onLeadTypeChange={setLeadType} /></div>

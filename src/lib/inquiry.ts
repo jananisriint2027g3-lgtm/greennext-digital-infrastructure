@@ -22,6 +22,34 @@ export const LEAD_TYPES = {
 
 export type LeadType = (typeof LEAD_TYPES)[keyof typeof LEAD_TYPES];
 
+export const DOCUMENT_REQUIREMENTS: Record<LeadType, { required: boolean; label: string; helper: string }> = {
+  [LEAD_TYPES.session]: {
+    required: false,
+    label: "Supporting Document (Optional)",
+    helper: "Upload requirements, architecture notes, specifications, or other supporting material.",
+  },
+  [LEAD_TYPES.partner]: {
+    required: true,
+    label: "Partnership / Company Document *",
+    helper: "Upload a company profile, partnership proposal, capability document, or relevant material.",
+  },
+  [LEAD_TYPES.technical]: {
+    required: false,
+    label: "Technical Document (Optional)",
+    helper: "Upload technical requirements, specifications, architecture documents, or related material.",
+  },
+  [LEAD_TYPES.general]: {
+    required: false,
+    label: "Supporting Document (Optional)",
+    helper: "Upload relevant supporting material if helpful.",
+  },
+  [LEAD_TYPES.career]: {
+    required: true,
+    label: "Resume / CV *",
+    helper: "Upload your latest resume or CV.",
+  },
+};
+
 export interface LeadDocument {
   fileName: string;
   mimeType: string;
@@ -37,8 +65,13 @@ export interface LeadPayload {
   region?: string;
   topic: string;
   message: string;
+  currentRole?: string;
+  experienceLevel?: string;
+  linkedinUrl?: string;
+  portfolioUrl?: string;
   page?: string;
   sessionId?: string;
+  sessionKind?: string;
   timestamp?: string;
   document: LeadDocument | null;
 }
@@ -102,8 +135,13 @@ export async function submitLead(data: LeadPayload): Promise<InquiryResult> {
     phone: data.phone || "",
     organization: data.organization || "",
     region: data.region || "",
+    currentRole: data.currentRole || "",
+    experienceLevel: data.experienceLevel || "",
+    linkedinUrl: data.linkedinUrl || "",
+    portfolioUrl: data.portfolioUrl || "",
     page: data.page || getCurrentPage(),
     sessionId: data.sessionId || getSessionId(),
+    sessionKind: data.sessionKind || "",
     timestamp: data.timestamp || new Date().toISOString(),
     document: data.document || null,
     formType: "lead_inquiry",
