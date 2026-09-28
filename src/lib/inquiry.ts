@@ -11,6 +11,7 @@
  */
 
 import { ANALYTICS_ENDPOINT, getSessionId, getCurrentPage } from "./analytics";
+import { submitTechnicalInfrastructureInquiryToJira } from "./jira-inquiry.server-fn";
 
 export const LEAD_TYPES = {
   session: "Technical Consultation / Session Booking",
@@ -294,5 +295,36 @@ export async function submitLongFormInquiry(data: LongFormInquiryData): Promise<
   };
 
   const fallbackCta = `Long Form: ${data.category} | ${data.region}`;
-  return postInquiryPayload(payload, fallbackCta);
+  const inquiryResult = await postInquiryPayload(payload, fallbackCta);
+  if (!inquiryResult.success) return inquiryResult;
+
+  try {
+    const jiraResult = await submitTechnicalInfrastructureInquiryToJira({
+      name: data.name,
+      email: data.email,
+      phone: data.phone || "",
+      organization: data.organization || "",
+      region: data.region || "South India",
+      category: data.category || "General Requirements",
+      message: data.message,
+      page,
+      sessionId,
+      timestamp,
+      documentFileName: data.document?.fileName || null,
+    });
+
+    if (jiraResult.status === "failed") {
+      return {
+        ...inquiryResult,
+        message: "Inquiry recorded successfully. Jira follow-up is pending.",
+      };
+    }
+  } catch {
+    return {
+      ...inquiryResult,
+      message: "Inquiry recorded successfully. Jira follow-up is pending.",
+    };
+  }
+
+  return inquiryResult;
 }

@@ -17,7 +17,7 @@
  */
 
 const DEFAULT_APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzax1WrPLesbX6b2qhHd8-g5PkvSRUPJ6Kj3dfJ99g0KgKckovgcfA2iqPfUogRmbsg/exec";
+  "https://script.google.com/macros/s/AKfycbzP-MhwkC997UhXNzrORh9u3KQFw9Sf66RW9n4Ut7ZhK0HiFeRtjdX1tBRbM7pUIGsY/exec";
 
 export const ANALYTICS_ENDPOINT: string =
   (typeof import.meta !== "undefined" &&
