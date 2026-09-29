@@ -43,6 +43,8 @@ function doGet(e) {
  * Ingestion handler for both behavioral telemetry and actual inquiry submissions.
  */
 function doPost(e) {
+  var diagStartedAt = Date.now();
+  greenNextDiag("REQUEST START", diagStartedAt);
   try {
     if (!e || !e.postData || !e.postData.contents) {
       return jsonResponse(false, "No payload received.");
@@ -50,13 +52,18 @@ function doPost(e) {
 
     var payload = JSON.parse(e.postData.contents);
     var targetSheet = payload.sheet;
+    greenNextDiag("OPEN SPREADSHEET START", diagStartedAt);
     var rawSs = SpreadsheetApp.openById(RAW_DATA_SPREADSHEET_ID);
+    greenNextDiag("OPEN SPREADSHEET COMPLETE", diagStartedAt);
     var timestamp = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
 
     // ── Unified Lead Submission ──
     // Lead payloads intentionally do not need a sheet name; they are routed by formType.
     if (payload.formType === "lead_inquiry") {
-      return processLeadSubmission(payload, rawSs, timestamp);
+      greenNextDiag("PROCESS LEAD START", diagStartedAt);
+      var leadResponse = processLeadSubmission(payload, rawSs, timestamp, diagStartedAt);
+      greenNextDiag("PROCESS LEAD COMPLETE", diagStartedAt);
+      return leadResponse;
     }
 
     if (!targetSheet) {
@@ -158,7 +165,7 @@ function doPost(e) {
  * Stores a website lead in the dedicated raw-data sheet and sends the internal
  * notification after the metadata row has been persisted.
  */
-function processLeadSubmission(payload, rawSs, timestamp) {
+function processLeadSubmission(payload, rawSs, timestamp, diagStartedAt) {
   var validLeadTypes = [
     "Technical Consultation / Session Booking",
     "Partner / Collaboration Inquiry",
@@ -172,14 +179,18 @@ function processLeadSubmission(payload, rawSs, timestamp) {
   }
 
   var lock = LockService.getScriptLock();
+  greenNextDiag("LOCK WAIT START", diagStartedAt);
   lock.waitLock(20000);
+  greenNextDiag("LOCK ACQUIRED", diagStartedAt);
 
   try {
+    greenNextDiag("GET/CREATE SHEET START", diagStartedAt);
     var leadSheet = getOrCreateSheet(rawSs, "Lead_Submissions", [
       "Timestamp", "Lead Type", "Name", "Email", "Phone", "Organization",
       "Region", "Topic / Category", "Message", "Page", "Session ID",
       "Session Kind", "Document Attached", "Document Name", "Document MIME Type", "Status"
     ]);
+    greenNextDiag("GET/CREATE SHEET COMPLETE", diagStartedAt);
 
     var leadTimestamp = payload.timestamp || timestamp;
     var document = normalizeLeadDocument(payload.document);
@@ -188,12 +199,15 @@ function processLeadSubmission(payload, rawSs, timestamp) {
         ? "Please upload a partnership or company document."
         : "Please upload your resume or CV.");
     }
+    greenNextDiag("DUPLICATE CHECK START", diagStartedAt);
     var duplicateRow = findRecentLeadDuplicate(leadSheet, payload, leadTimestamp, document);
+    greenNextDiag("DUPLICATE CHECK COMPLETE", diagStartedAt);
     if (duplicateRow > 0) {
       return jsonResponse(true, "Lead submission already recorded.");
     }
 
     var rowNumber = leadSheet.getLastRow() + 1;
+    greenNextDiag("APPEND START", diagStartedAt);
     leadSheet.appendRow([
       leadTimestamp,
       payload.leadType,
@@ -212,6 +226,7 @@ function processLeadSubmission(payload, rawSs, timestamp) {
       document ? document.mimeType : "",
       ""
     ]);
+    greenNextDiag("APPEND COMPLETE row=" + rowNumber, diagStartedAt);
 
     var emailStatus = "EMAIL_FAILED";
     try {
@@ -228,17 +243,31 @@ function processLeadSubmission(payload, rawSs, timestamp) {
       var emailBody = buildLeadEmailBody(payload, document);
       var emailOptions = { to: "jananisri.int2027g3@gmail.com", subject: emailSubject, body: emailBody };
       if (attachment) emailOptions.attachments = [attachment];
+      greenNextDiag("EMAIL START", diagStartedAt);
       MailApp.sendEmail(emailOptions);
+      greenNextDiag("EMAIL COMPLETE", diagStartedAt);
       emailStatus = document ? "EMAIL_SENT" : "EMAIL_SENT_WITHOUT_DOCUMENT";
     } catch (emailError) {
       Logger.log("Lead email failed: " + safeErrorMessage(emailError));
     }
 
+    greenNextDiag("STATUS UPDATE START", diagStartedAt);
     leadSheet.getRange(rowNumber, 16).setValue(emailStatus);
+    greenNextDiag("STATUS UPDATE COMPLETE", diagStartedAt);
+    greenNextDiag("RESPONSE START", diagStartedAt);
     return jsonResponse(true, "Lead submission recorded successfully.");
   } finally {
+    greenNextDiag("LOCK RELEASE START", diagStartedAt);
     lock.releaseLock();
+    greenNextDiag("LOCK RELEASE COMPLETE", diagStartedAt);
   }
+}
+
+function greenNextDiag(operation, startedAt) {
+  var now = new Date();
+  Logger.log(
+    "[GREENNEXT_DIAG] " + now.toISOString() + " | " + operation + " | elapsedMs=" + (Date.now() - startedAt),
+  );
 }
 
 function getLeadEmailSubject(leadType) {
