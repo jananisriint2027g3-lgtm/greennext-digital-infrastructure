@@ -1,15 +1,14 @@
 const AIRTABLE_BASE_ID = "appFek2Mm1ztlCT5D";
-const AIRTABLE_TABLE_NAME = "Leads";
+const AIRTABLE_TABLE_NAME = "Website_Behaviour";
 
-export interface AirtableLeadRecord {
-  name: string;
-  email: string;
-  phone: string;
-  organization: string;
-  region: string;
-  inquiryType: string;
-  message: string;
+export interface AirtableBehaviorEvent {
   timestamp: string;
+  sessionId: string;
+  sessionKind: string;
+  page: string;
+  event: string;
+  value: string;
+  sourceTab: string;
 }
 
 function getAirtablePat(): string | undefined {
@@ -17,7 +16,7 @@ function getAirtablePat(): string | undefined {
   return process.env["AIRTABLE_PAT"]?.trim() || undefined;
 }
 
-export async function createAirtableLeadRecord(record: AirtableLeadRecord): Promise<void> {
+export async function createAirtableBehaviorEvent(event: AirtableBehaviorEvent): Promise<void> {
   const pat = getAirtablePat();
   if (!pat) throw new Error("Airtable is not configured on the server.");
 
@@ -29,7 +28,17 @@ export async function createAirtableLeadRecord(record: AirtableLeadRecord): Prom
         Authorization: `Bearer ${pat}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ fields: record }),
+      body: JSON.stringify({
+        fields: {
+          Timestamp: event.timestamp,
+          "Session ID": event.sessionId,
+          "Session Kind": event.sessionKind,
+          Page: event.page,
+          Event: event.event,
+          Value: event.value,
+          "Source Tab": event.sourceTab,
+        },
+      }),
     },
   );
 
