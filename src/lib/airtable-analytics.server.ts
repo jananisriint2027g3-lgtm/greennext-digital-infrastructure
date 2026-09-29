@@ -42,6 +42,9 @@ export async function createAirtableBehaviorEvent(event: AirtableBehaviorEvent):
   );
 
   if (!response.ok) {
-    throw new Error(`Airtable request failed with status ${response.status}.`);
+    const errorBody = await response.text();
+    throw new Error(
+      `Airtable request failed with status ${response.status}: ${errorBody}`,
+    );
   }
 }
