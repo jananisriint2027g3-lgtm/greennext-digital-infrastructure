@@ -2,7 +2,6 @@ const AIRTABLE_BASE_ID = "appFek2Mm1ztlCT5D";
 const AIRTABLE_TABLE_NAME = "Website_Behaviour";
 
 export interface AirtableBehaviorEvent {
-  timestamp: string;
   sessionId: string;
   sessionKind: string;
   page: string;
@@ -30,7 +29,7 @@ export async function createAirtableBehaviorEvent(event: AirtableBehaviorEvent):
       },
       body: JSON.stringify({
         fields: {
-          Timestamp: event.timestamp,
+          Timestamp: new Date().toISOString(),
           "Session ID": event.sessionId,
           "Session Kind": event.sessionKind,
           Page: event.page,

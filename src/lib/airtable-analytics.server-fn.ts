@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { createAirtableBehaviorEvent } from "./airtable-behavior-poc.server";
+import { createAirtableBehaviorEvent } from "./airtable-analytics.server";
 
 const airtableBehaviorEventSchema = z.object({
   sessionId: z.string().trim().min(1).max(200),
@@ -9,17 +9,14 @@ const airtableBehaviorEventSchema = z.object({
   page: z.string().trim().min(1).max(500),
   event: z.string().trim().min(1).max(200),
   value: z.string().trim().max(500),
-  sourceTab: z.literal("CTA Interactions"),
+  sourceTab: z.string().trim().min(1).max(100),
 });
 
 export const submitAirtableBehaviorEvent = createServerFn({ method: "POST" })
   .validator(airtableBehaviorEventSchema)
   .handler(async ({ data }) => {
     try {
-      await createAirtableBehaviorEvent({
-        ...data,
-        timestamp: new Date().toISOString(),
-      });
+      await createAirtableBehaviorEvent(data);
       return { success: true } as const;
     } catch (error) {
       console.error(

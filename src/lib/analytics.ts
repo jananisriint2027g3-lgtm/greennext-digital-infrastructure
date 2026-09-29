@@ -16,6 +16,8 @@
  * 10. CTA Interactions: Timestamp | Event | CTA | Page | Session ID
  */
 
+import { submitAirtableBehaviorEvent } from "./airtable-analytics.server-fn";
+
 const DEFAULT_APPS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbzP-MhwkC997UhXNzrORh9u3KQFw9Sf66RW9n4Ut7ZhK0HiFeRtjdX1tBRbM7pUIGsY/exec";
 
@@ -212,20 +214,42 @@ export function trackEvent({ tab, event, value, page }: AnalyticsPayload): void 
     if (typeof navigator !== "undefined" && navigator.sendBeacon) {
       const blob = new Blob([body], { type: "text/plain;charset=UTF-8" });
       const sent = navigator.sendBeacon(ANALYTICS_ENDPOINT, blob);
-      if (sent) return;
+      if (!sent) {
+        // Use a simple request to avoid a CORS preflight on the Apps Script endpoint.
+        fetch(ANALYTICS_ENDPOINT, {
+          method: "POST",
+          mode: "no-cors",
+          body,
+        }).catch(() => {
+          // Graceful silence: analytics should never break user interactions
+        });
+      }
+    } else {
+      // Use a simple request to avoid a CORS preflight on the Apps Script endpoint.
+      fetch(ANALYTICS_ENDPOINT, {
+        method: "POST",
+        mode: "no-cors",
+        body,
+      }).catch(() => {
+        // Graceful silence: analytics should never break user interactions
+      });
     }
-
-    // Use a simple request to avoid a CORS preflight on the Apps Script endpoint.
-    fetch(ANALYTICS_ENDPOINT, {
-      method: "POST",
-      mode: "no-cors",
-      body,
-    }).catch(() => {
-      // Graceful silence: analytics should never break user interactions
-    });
   } catch {
     // Graceful error suppression
   }
+
+  void submitAirtableBehaviorEvent({
+    data: {
+      sessionId,
+      sessionKind: getSessionKind(),
+      page: pagePath,
+      event,
+      value,
+      sourceTab: tab,
+    },
+  }).catch(() => {
+    // Airtable is an optional POC destination and must never affect analytics.
+  });
 }
 
 /** PII-free page-view signal. One call should be made per actual route visit. */
