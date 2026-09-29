@@ -31,8 +31,17 @@ export const submitTechnicalInfrastructureInquiryToJira = createServerFn({ metho
 
     try {
       const result = await createTechnicalInfrastructureInquiryWorkflow({
-        ...data,
-        document: data.documentFileName,
+        name: data.name,
+        email: data.email,
+        phone: data.phone ?? "",
+        organization: data.organization ?? "",
+        region: data.region,
+        category: data.category,
+        message: data.message,
+        ...(data.page !== undefined ? { page: data.page } : {}),
+        ...(data.sessionId !== undefined ? { sessionId: data.sessionId } : {}),
+        ...(data.timestamp !== undefined ? { timestamp: data.timestamp } : {}),
+        document: data.documentFileName ?? null,
       });
       return {
         status: "created",

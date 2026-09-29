@@ -300,17 +300,19 @@ export async function submitLongFormInquiry(data: LongFormInquiryData): Promise<
 
   try {
     const jiraResult = await submitTechnicalInfrastructureInquiryToJira({
-      name: data.name,
-      email: data.email,
-      phone: data.phone || "",
-      organization: data.organization || "",
-      region: data.region || "South India",
-      category: data.category || "General Requirements",
-      message: data.message,
-      page,
-      sessionId,
-      timestamp,
-      documentFileName: data.document?.fileName || null,
+      data: {
+        name: data.name,
+        email: data.email,
+        phone: data.phone || "",
+        organization: data.organization || "",
+        region: data.region || "South India",
+        category: data.category || "General Requirements",
+        message: data.message,
+        page,
+        sessionId,
+        timestamp,
+        documentFileName: data.document?.fileName || null,
+      },
     });
 
     if (jiraResult.status === "failed") {
