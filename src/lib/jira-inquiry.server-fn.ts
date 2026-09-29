@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createTechnicalInfrastructureInquiryWorkflow, isJiraEnabled } from "./jira.server";
 
 const technicalInquirySchema = z.object({
+  leadType: z.enum(["session", "partner", "technical", "career", "general"]),
   name: z.string().min(1).max(200),
   email: z.string().email().max(320),
   phone: z.string().max(100).optional(),
@@ -31,6 +32,7 @@ export const submitTechnicalInfrastructureInquiryToJira = createServerFn({ metho
 
     try {
       const result = await createTechnicalInfrastructureInquiryWorkflow({
+        leadType: data.leadType,
         name: data.name,
         email: data.email,
         phone: data.phone ?? "",

@@ -77,6 +77,14 @@ export interface LeadPayload {
   document: LeadDocument | null;
 }
 
+const JIRA_LEAD_TYPES = {
+  [LEAD_TYPES.session]: "session",
+  [LEAD_TYPES.partner]: "partner",
+  [LEAD_TYPES.technical]: "technical",
+  [LEAD_TYPES.career]: "career",
+  [LEAD_TYPES.general]: "general",
+} as const;
+
 export const ACCEPTED_DOCUMENT_TYPES = [
   "application/pdf",
   "application/msword",
@@ -147,7 +155,41 @@ export async function submitLead(data: LeadPayload): Promise<InquiryResult> {
     document: data.document || null,
     formType: "lead_inquiry",
   };
-  return postInquiryPayload(payload, `Lead: ${data.leadType}`);
+  const inquiryResult = await postInquiryPayload(payload, `Lead: ${data.leadType}`);
+  if (!inquiryResult.success) return inquiryResult;
+
+  try {
+    const jiraResult = await submitTechnicalInfrastructureInquiryToJira({
+      data: {
+        leadType: JIRA_LEAD_TYPES[data.leadType],
+        name: data.name,
+        email: data.email,
+        phone: data.phone || "",
+        organization: data.organization || "",
+        region: data.region || "South India",
+        category: data.topic || "General Requirements",
+        message: data.message,
+        page: payload.page,
+        sessionId: payload.sessionId,
+        timestamp: payload.timestamp,
+        documentFileName: data.document?.fileName || null,
+      },
+    });
+
+    if (jiraResult.status === "failed") {
+      return {
+        ...inquiryResult,
+        message: "Inquiry recorded successfully. Jira follow-up is pending.",
+      };
+    }
+  } catch {
+    return {
+      ...inquiryResult,
+      message: "Inquiry recorded successfully. Jira follow-up is pending.",
+    };
+  }
+
+  return inquiryResult;
 }
 
 /**
@@ -264,7 +306,41 @@ export async function submitQuickInquiry(data: QuickInquiryData): Promise<Inquir
   };
 
   const fallbackCta = `Quick Inquiry: ${data.interest || "General"}`;
-  return postInquiryPayload(payload, fallbackCta);
+  const inquiryResult = await postInquiryPayload(payload, fallbackCta);
+  if (!inquiryResult.success) return inquiryResult;
+
+  try {
+    const jiraResult = await submitTechnicalInfrastructureInquiryToJira({
+      data: {
+        leadType: "general",
+        name: data.name,
+        email: data.email,
+        phone: data.phone || "",
+        organization: "",
+        region: "South India",
+        category: data.interest || "General Inquiry",
+        message: data.message,
+        page,
+        sessionId,
+        timestamp,
+        documentFileName: null,
+      },
+    });
+
+    if (jiraResult.status === "failed") {
+      return {
+        ...inquiryResult,
+        message: "Inquiry recorded successfully. Jira follow-up is pending.",
+      };
+    }
+  } catch {
+    return {
+      ...inquiryResult,
+      message: "Inquiry recorded successfully. Jira follow-up is pending.",
+    };
+  }
+
+  return inquiryResult;
 }
 
 /**
@@ -301,6 +377,7 @@ export async function submitLongFormInquiry(data: LongFormInquiryData): Promise<
   try {
     const jiraResult = await submitTechnicalInfrastructureInquiryToJira({
       data: {
+        leadType: "technical",
         name: data.name,
         email: data.email,
         phone: data.phone || "",

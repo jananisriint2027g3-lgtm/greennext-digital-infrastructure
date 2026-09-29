@@ -19,6 +19,7 @@ export interface JiraIssueFields {
 }
 
 export interface TechnicalInfrastructureInquiryPayload {
+  leadType?: JiraLeadType;
   name: string;
   email: string;
   phone?: string;
@@ -31,6 +32,8 @@ export interface TechnicalInfrastructureInquiryPayload {
   timestamp?: string;
   document?: { fileName: string } | string | null;
 }
+
+export type JiraLeadType = "session" | "partner" | "technical" | "career" | "general";
 
 export interface TechnicalInfrastructureInquiryWorkflowResult {
   parent: JiraIssueRef;
@@ -206,6 +209,7 @@ async function createIdempotencyLabel(
   payload: TechnicalInfrastructureInquiryPayload,
 ): Promise<string> {
   const canonicalPayload = [
+    ...(payload.leadType && payload.leadType !== "technical" ? [payload.leadType] : []),
     payload.name,
     payload.email,
     payload.phone || "",
@@ -340,11 +344,78 @@ export async function createJiraConnectionTestSubtask(parentKey: string): Promis
   });
 }
 
+const leadWorkflowConfig: Record<
+  JiraLeadType,
+  { parentPrefix: string; descriptionHeading: string; labels: string[]; subtasks: string[] }
+> = {
+  session: {
+    parentPrefix: "Technical Session",
+    descriptionHeading: "TECHNICAL SESSION REQUEST",
+    labels: ["lead-inquiry", "technical-session"],
+    subtasks: [
+      "Review Session Request",
+      "Review Technical Context",
+      "Prepare Session / Technical Response",
+      "Contact Lead & Schedule Follow-up",
+      "Record Outcome & Next Action",
+    ],
+  },
+  partner: {
+    parentPrefix: "Partner Collaboration Inquiry",
+    descriptionHeading: "PARTNERSHIP INQUIRY",
+    labels: ["lead-inquiry", "partnership"],
+    subtasks: [
+      "Review Partnership Inquiry",
+      "Analyze Collaboration Context",
+      "Prepare Partnership Response",
+      "Contact Lead & Coordinate Follow-up",
+      "Record Outcome & Next Action",
+    ],
+  },
+  technical: {
+    parentPrefix: "Infrastructure Inquiry",
+    descriptionHeading: "TECHNICAL INFRASTRUCTURE INQUIRY",
+    labels: ["lead-inquiry", "infrastructure"],
+    subtasks: [
+      "Review Inquiry & Requirements",
+      "Analyze Technical Requirements",
+      "Prepare Technical Response / Recommendation",
+      "Contact Lead & Coordinate Follow-up",
+      "Record Outcome & Next Action",
+    ],
+  },
+  career: {
+    parentPrefix: "Career Inquiry",
+    descriptionHeading: "CAREER INQUIRY",
+    labels: ["lead-inquiry", "career"],
+    subtasks: [
+      "Review Career Inquiry",
+      "Review Candidate / Role Context",
+      "Prepare Career Response",
+      "Contact Lead & Coordinate Follow-up",
+      "Record Outcome & Next Action",
+    ],
+  },
+  general: {
+    parentPrefix: "General Contact Inquiry",
+    descriptionHeading: "GENERAL CONTACT INQUIRY",
+    labels: ["lead-inquiry", "general"],
+    subtasks: [
+      "Review General Inquiry",
+      "Review Contact Context",
+      "Prepare General Response",
+      "Contact Lead & Coordinate Follow-up",
+      "Record Outcome & Next Action",
+    ],
+  },
+};
+
 function formatInfrastructureDescription(payload: TechnicalInfrastructureInquiryPayload): string {
+  const workflow = leadWorkflowConfig[payload.leadType || "technical"];
   const documentName =
     typeof payload.document === "string" ? payload.document : payload.document?.fileName || "None";
 
-  return `TECHNICAL INFRASTRUCTURE INQUIRY
+  return `${workflow.descriptionHeading}
 
 CONTACT DETAILS
 Name: ${payload.name}
@@ -369,6 +440,7 @@ Document: ${documentName}`;
 export async function createTechnicalInfrastructureInquiryWorkflow(
   payload: TechnicalInfrastructureInquiryPayload,
 ): Promise<TechnicalInfrastructureInquiryWorkflowResult> {
+  const workflow = leadWorkflowConfig[payload.leadType || "technical"];
   const config = getRequiredConfig();
   const { jananiAccountId, rubaAccountId } = getRequiredWorkflowAssignees();
   const idempotencyLabel = await createIdempotencyLabel(payload);
@@ -380,23 +452,17 @@ export async function createTechnicalInfrastructureInquiryWorkflow(
   const parent =
     (await findIssueByLabel(config, idempotencyLabel)) ||
     (await createJiraTask({
-      summary: `Infrastructure Inquiry – ${contactLabel}`,
+      summary: `${workflow.parentPrefix} – ${contactLabel}`,
       description,
       priority: "Medium",
-      labels: ["lead-inquiry", "infrastructure", idempotencyLabel],
+      labels: [...workflow.labels, idempotencyLabel],
       assigneeAccountId: jananiAccountId,
     }));
 
-  const subtaskDefinitions = [
-    { summary: "Review Inquiry & Requirements", assigneeAccountId: jananiAccountId },
-    { summary: "Analyze Technical Requirements", assigneeAccountId: rubaAccountId },
-    {
-      summary: "Prepare Technical Response / Recommendation",
-      assigneeAccountId: rubaAccountId,
-    },
-    { summary: "Contact Lead & Coordinate Follow-up", assigneeAccountId: jananiAccountId },
-    { summary: "Record Outcome & Next Action", assigneeAccountId: jananiAccountId },
-  ];
+  const subtaskDefinitions = workflow.subtasks.map((summary, index) => ({
+    summary,
+    assigneeAccountId: index === 1 || index === 2 ? rubaAccountId : jananiAccountId,
+  }));
 
   const existingSubtasks = await findSubtasks(config, parent.key);
   const subtasks: TechnicalInfrastructureInquiryWorkflowResult["subtasks"] = [];
@@ -410,7 +476,7 @@ export async function createTechnicalInfrastructureInquiryWorkflow(
         summary: definition.summary,
         description: `Follow-up step for ${parent.key}: ${definition.summary}.`,
         priority: "Medium",
-        labels: ["lead-inquiry", "infrastructure"],
+        labels: workflow.labels,
         assigneeAccountId: definition.assigneeAccountId,
       }));
     subtasks.push({ summary: definition.summary, issue });
