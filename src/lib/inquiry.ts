@@ -141,6 +141,7 @@ export interface InquiryResult {
 export async function submitLead(data: LeadPayload): Promise<InquiryResult> {
   const payload = {
     ...data,
+    sheet: "Contact_Submissions",
     phone: data.phone || "",
     organization: data.organization || "",
     region: data.region || "",
