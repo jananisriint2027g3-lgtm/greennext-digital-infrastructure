@@ -3,7 +3,6 @@ import { useState } from "react";
 import { PageHero } from "../components/common/PageHero";
 import { LongFormInquiry } from "../components/common/LongFormInquiry";
 import { LeadInquiryForm } from "../components/common/LeadInquiryForm";
-import { AirtablePrototypeTest } from "../components/common/AirtablePrototypeTest";
 import { LEAD_TYPES, type LeadType } from "../lib/inquiry";
 import { WhatsAppDemoModal, openQuickInquiry } from "../components/common/FloatingContact";
 import { WHATSAPP_CONFIG } from "../data/whatsapp";
@@ -140,7 +139,6 @@ export function ContactPage() {
       />
 
       <main className="w-full">
-        <AirtablePrototypeTest />
         <section className="border-b border-[#1E293B] bg-[#0B0F17]/60 py-14 sm:py-16">
           <div className="mx-auto max-w-[1340px] px-4 sm:px-6 lg:px-8">
             <div className="mb-8 max-w-2xl">
