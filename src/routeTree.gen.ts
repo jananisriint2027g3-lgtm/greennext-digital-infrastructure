@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AirtableDemoRouteImport } from './routes/airtable-demo'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as AboutSlugRouteImport } from './routes/about/$slug'
@@ -29,6 +30,11 @@ import { Route as SustainabilitySlugRouteImport } from './routes/sustainability/
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AirtableDemoRoute = AirtableDemoRouteImport.update({
+  id: '/airtable-demo',
+  path: '/airtable-demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -109,6 +115,7 @@ const SustainabilitySlugRoute = SustainabilitySlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/airtable-demo': typeof AirtableDemoRoute
   '/contact': typeof ContactRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/airtable-demo': typeof AirtableDemoRoute
   '/contact': typeof ContactRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
@@ -146,6 +154,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/airtable-demo': typeof AirtableDemoRoute
   '/contact': typeof ContactRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/airtable-demo'
     | '/contact'
     | '/about/$slug'
     | '/automation/$slug'
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/airtable-demo'
     | '/contact'
     | '/about/$slug'
     | '/automation/$slug'
@@ -202,6 +213,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/airtable-demo'
     | '/contact'
     | '/about/$slug'
     | '/automation/$slug'
@@ -221,6 +233,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AirtableDemoRoute: typeof AirtableDemoRoute
   ContactRoute: typeof ContactRoute
   AboutSlugRoute: typeof AboutSlugRoute
   AutomationSlugRoute: typeof AutomationSlugRoute
@@ -245,6 +258,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/airtable-demo': {
+      id: '/airtable-demo'
+      path: '/airtable-demo'
+      fullPath: '/airtable-demo'
+      preLoaderRoute: typeof AirtableDemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -357,6 +377,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AirtableDemoRoute: AirtableDemoRoute,
   ContactRoute: ContactRoute,
   AboutSlugRoute: AboutSlugRoute,
   AutomationSlugRoute: AutomationSlugRoute,
