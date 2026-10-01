@@ -19,6 +19,8 @@ import {
 } from "../icons";
 import { HERO_SLIDES, HeroSlide } from "../../data/heroSlides";
 import datacenterHeroImg from "../../assets/greennext-datacenter.jpg";
+import datacenterHeroImg1280 from "../../assets/greennext-datacenter-1280.jpg";
+import datacenterHeroImg768 from "../../assets/greennext-datacenter-768.jpg";
 
 export function HeroSlider() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -79,13 +81,26 @@ export function HeroSlider() {
     >
       {/* Cinematic Enterprise Infrastructure Photographic Background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <img
-          src={datacenterHeroImg}
-          alt="Enterprise AI-ready data center corridor with high-density server racks and overhead cooling infrastructure"
-          fetchPriority="high"
-          decoding="async"
-          className="w-full h-full object-cover object-center opacity-75"
-        />
+        <picture>
+          <source
+            media="(max-width: 767px)"
+            srcSet={`${datacenterHeroImg768} 768w, ${datacenterHeroImg1280} 1280w`}
+            sizes="100vw"
+          />
+          <source
+            srcSet={`${datacenterHeroImg1280} 1280w, ${datacenterHeroImg} 1920w`}
+            sizes="100vw"
+          />
+          <img
+            src={datacenterHeroImg}
+            alt="Enterprise AI-ready data center corridor with high-density server racks and overhead cooling infrastructure"
+            width="1920"
+            height="1088"
+            fetchPriority="high"
+            decoding="async"
+            className="w-full h-full object-cover object-center opacity-75"
+          />
+        </picture>
 
         {/* Left-bias gradient: keeps text readable while revealing the infrastructure photo */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#070A0E]/85 via-[#070A0E]/45 to-[#070A0E]/10" />
