@@ -275,6 +275,28 @@ export const NAVIGATION_STRUCTURE: NavigationCategory[] = [
         description: "Timely, contextual alerts that reduce response latency and fatigue.",
         isConceptual: true,
       },
+      {
+        id: "configurator",
+        label: "Infrastructure Configurator",
+        path: "/solutions/configurator",
+        description:
+          "Build an illustrative starting profile for workload, scale, and planning priority.",
+        isConceptual: true,
+      },
+      {
+        id: "architecture-explorer",
+        label: "Architecture Explorer",
+        path: "/solutions/architecture-explorer",
+        description: "Explore the conceptual compute, network, storage, cooling, and power layers.",
+        isConceptual: true,
+      },
+      {
+        id: "energy-calculator",
+        label: "Energy Impact Calculator",
+        path: "/solutions/energy-calculator",
+        description: "Create a transparent, illustrative workload energy estimate.",
+        isConceptual: true,
+      },
     ],
   },
   {

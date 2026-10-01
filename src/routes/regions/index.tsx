@@ -3,6 +3,7 @@ import { PAGES_CONTENT } from "../../data/pagesContent";
 import { PageTemplate } from "../../components/templates/PageTemplate";
 import { RegionalExplorer } from "../../components/home/RegionalExplorer";
 import { DashboardPreview } from "../../components/home/DashboardPreview";
+import { RegionalComparison } from "../../components/solutions/RegionalComparison";
 import { LongFormCta } from "../../components/common/CtaBlock";
 
 export const Route = createFileRoute("/regions/")({
@@ -26,6 +27,7 @@ function RegionsIndexPage() {
       <PageTemplate data={content} showCta={false} />
       <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 space-y-16 pb-16">
         <RegionalExplorer />
+        <RegionalComparison />
         <DashboardPreview />
         <LongFormCta
           eyebrow="Regional Capacity"

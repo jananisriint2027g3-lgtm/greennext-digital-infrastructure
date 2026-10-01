@@ -5,6 +5,7 @@ import { EnergyFlowModel } from "../components/home/EnergyFlowModel";
 import { AutomationWorkflow } from "../components/home/AutomationWorkflow";
 import { RegionalExplorer } from "../components/home/RegionalExplorer";
 import { DashboardPreview } from "../components/home/DashboardPreview";
+import { InfrastructureIntelligence } from "../components/home/InfrastructureIntelligence";
 import { LongFormCta, ShortFormCta } from "../components/common/CtaBlock";
 import { SOLUTIONS_DATA } from "../data/solutions";
 import {
@@ -264,7 +265,10 @@ function HomePage() {
         </div>
       </section>
 
-      {/* 04. AI-DRIVEN INFRASTRUCTURE PIPELINE */}
+      {/* 04. INFRASTRUCTURE INTELLIGENCE JOURNEY */}
+      <InfrastructureIntelligence />
+
+      {/* 05. AI-DRIVEN INFRASTRUCTURE PIPELINE */}
       <section className="py-20 border-b border-[#1E293B] bg-[#0B0F17]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center mb-12">
@@ -340,28 +344,28 @@ function HomePage() {
         </div>
       </section>
 
-      {/* 05. ENERGY EFFICIENCY DISCIPLINE */}
+      {/* 06. ENERGY EFFICIENCY DISCIPLINE */}
       <section className="py-20 border-b border-[#1E293B] bg-[#070A0E]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <EnergyFlowModel />
         </div>
       </section>
 
-      {/* 06. INTELLIGENT AUTOMATION */}
+      {/* 07. INTELLIGENT AUTOMATION */}
       <section className="py-20 border-b border-[#1E293B] bg-[#0B0F17]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <AutomationWorkflow />
         </div>
       </section>
 
-      {/* 07. REGIONAL DIGITAL INFRASTRUCTURE */}
+      {/* 08. REGIONAL DIGITAL INFRASTRUCTURE */}
       <section className="py-20 border-b border-[#1E293B] bg-[#070A0E]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <RegionalExplorer />
         </div>
       </section>
 
-      {/* 08. 7-LAYER INFRASTRUCTURE ARCHITECTURE */}
+      {/* 09. 7-LAYER INFRASTRUCTURE ARCHITECTURE */}
       <section className="py-20 border-b border-[#1E293B] bg-[#0B0F17]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mb-12">
@@ -382,7 +386,7 @@ function HomePage() {
         </div>
       </section>
 
-      {/* 09. DASHBOARD PREVIEW */}
+      {/* 10. DASHBOARD PREVIEW */}
       <section className="py-20 border-b border-[#1E293B] bg-[#070A0E]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl mb-8">
@@ -402,7 +406,7 @@ function HomePage() {
         </div>
       </section>
 
-      {/* 10. OPERATIONAL USE CASES */}
+      {/* 11. OPERATIONAL USE CASES */}
       <section className="py-20 border-b border-[#1E293B] bg-[#0B0F17]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">

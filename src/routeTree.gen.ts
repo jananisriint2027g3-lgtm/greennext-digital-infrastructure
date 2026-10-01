@@ -23,6 +23,9 @@ import { Route as RegionsIndexRouteImport } from './routes/regions/index'
 import { Route as RegionsSlugRouteImport } from './routes/regions/$slug'
 import { Route as SolutionsIndexRouteImport } from './routes/solutions/index'
 import { Route as SolutionsSlugRouteImport } from './routes/solutions/$slug'
+import { Route as SolutionsArchitectureExplorerRouteImport } from './routes/solutions/architecture-explorer'
+import { Route as SolutionsConfiguratorRouteImport } from './routes/solutions/configurator'
+import { Route as SolutionsEnergyCalculatorRouteImport } from './routes/solutions/energy-calculator'
 import { Route as SustainabilityIndexRouteImport } from './routes/sustainability/index'
 import { Route as SustainabilitySlugRouteImport } from './routes/sustainability/$slug'
 
@@ -96,6 +99,23 @@ const SolutionsSlugRoute = SolutionsSlugRouteImport.update({
   path: '/solutions/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SolutionsArchitectureExplorerRoute =
+  SolutionsArchitectureExplorerRouteImport.update({
+    id: '/solutions/architecture-explorer',
+    path: '/solutions/architecture-explorer',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SolutionsConfiguratorRoute = SolutionsConfiguratorRouteImport.update({
+  id: '/solutions/configurator',
+  path: '/solutions/configurator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolutionsEnergyCalculatorRoute =
+  SolutionsEnergyCalculatorRouteImport.update({
+    id: '/solutions/energy-calculator',
+    path: '/solutions/energy-calculator',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const SustainabilityIndexRoute = SustainabilityIndexRouteImport.update({
   id: '/sustainability/',
   path: '/sustainability/',
@@ -116,6 +136,9 @@ export interface FileRoutesByFullPath {
   '/infrastructure/$slug': typeof InfrastructureSlugRoute
   '/regions/$slug': typeof RegionsSlugRoute
   '/solutions/$slug': typeof SolutionsSlugRoute
+  '/solutions/architecture-explorer': typeof SolutionsArchitectureExplorerRoute
+  '/solutions/configurator': typeof SolutionsConfiguratorRoute
+  '/solutions/energy-calculator': typeof SolutionsEnergyCalculatorRoute
   '/sustainability/$slug': typeof SustainabilitySlugRoute
   '/about/': typeof AboutIndexRoute
   '/automation/': typeof AutomationIndexRoute
@@ -134,6 +157,9 @@ export interface FileRoutesByTo {
   '/infrastructure/$slug': typeof InfrastructureSlugRoute
   '/regions/$slug': typeof RegionsSlugRoute
   '/solutions/$slug': typeof SolutionsSlugRoute
+  '/solutions/architecture-explorer': typeof SolutionsArchitectureExplorerRoute
+  '/solutions/configurator': typeof SolutionsConfiguratorRoute
+  '/solutions/energy-calculator': typeof SolutionsEnergyCalculatorRoute
   '/sustainability/$slug': typeof SustainabilitySlugRoute
   '/about': typeof AboutIndexRoute
   '/automation': typeof AutomationIndexRoute
@@ -153,6 +179,9 @@ export interface FileRoutesById {
   '/infrastructure/$slug': typeof InfrastructureSlugRoute
   '/regions/$slug': typeof RegionsSlugRoute
   '/solutions/$slug': typeof SolutionsSlugRoute
+  '/solutions/architecture-explorer': typeof SolutionsArchitectureExplorerRoute
+  '/solutions/configurator': typeof SolutionsConfiguratorRoute
+  '/solutions/energy-calculator': typeof SolutionsEnergyCalculatorRoute
   '/sustainability/$slug': typeof SustainabilitySlugRoute
   '/about/': typeof AboutIndexRoute
   '/automation/': typeof AutomationIndexRoute
@@ -173,6 +202,9 @@ export interface FileRouteTypes {
     | '/infrastructure/$slug'
     | '/regions/$slug'
     | '/solutions/$slug'
+    | '/solutions/architecture-explorer'
+    | '/solutions/configurator'
+    | '/solutions/energy-calculator'
     | '/sustainability/$slug'
     | '/about/'
     | '/automation/'
@@ -191,6 +223,9 @@ export interface FileRouteTypes {
     | '/infrastructure/$slug'
     | '/regions/$slug'
     | '/solutions/$slug'
+    | '/solutions/architecture-explorer'
+    | '/solutions/configurator'
+    | '/solutions/energy-calculator'
     | '/sustainability/$slug'
     | '/about'
     | '/automation'
@@ -209,6 +244,9 @@ export interface FileRouteTypes {
     | '/infrastructure/$slug'
     | '/regions/$slug'
     | '/solutions/$slug'
+    | '/solutions/architecture-explorer'
+    | '/solutions/configurator'
+    | '/solutions/energy-calculator'
     | '/sustainability/$slug'
     | '/about/'
     | '/automation/'
@@ -228,6 +266,9 @@ export interface RootRouteChildren {
   InfrastructureSlugRoute: typeof InfrastructureSlugRoute
   RegionsSlugRoute: typeof RegionsSlugRoute
   SolutionsSlugRoute: typeof SolutionsSlugRoute
+  SolutionsArchitectureExplorerRoute: typeof SolutionsArchitectureExplorerRoute
+  SolutionsConfiguratorRoute: typeof SolutionsConfiguratorRoute
+  SolutionsEnergyCalculatorRoute: typeof SolutionsEnergyCalculatorRoute
   SustainabilitySlugRoute: typeof SustainabilitySlugRoute
   AboutIndexRoute: typeof AboutIndexRoute
   AutomationIndexRoute: typeof AutomationIndexRoute
@@ -338,6 +379,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SolutionsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/solutions/architecture-explorer': {
+      id: '/solutions/architecture-explorer'
+      path: '/solutions/architecture-explorer'
+      fullPath: '/solutions/architecture-explorer'
+      preLoaderRoute: typeof SolutionsArchitectureExplorerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solutions/configurator': {
+      id: '/solutions/configurator'
+      path: '/solutions/configurator'
+      fullPath: '/solutions/configurator'
+      preLoaderRoute: typeof SolutionsConfiguratorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solutions/energy-calculator': {
+      id: '/solutions/energy-calculator'
+      path: '/solutions/energy-calculator'
+      fullPath: '/solutions/energy-calculator'
+      preLoaderRoute: typeof SolutionsEnergyCalculatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sustainability/': {
       id: '/sustainability/'
       path: '/sustainability'
@@ -364,6 +426,9 @@ const rootRouteChildren: RootRouteChildren = {
   InfrastructureSlugRoute: InfrastructureSlugRoute,
   RegionsSlugRoute: RegionsSlugRoute,
   SolutionsSlugRoute: SolutionsSlugRoute,
+  SolutionsArchitectureExplorerRoute: SolutionsArchitectureExplorerRoute,
+  SolutionsConfiguratorRoute: SolutionsConfiguratorRoute,
+  SolutionsEnergyCalculatorRoute: SolutionsEnergyCalculatorRoute,
   SustainabilitySlugRoute: SustainabilitySlugRoute,
   AboutIndexRoute: AboutIndexRoute,
   AutomationIndexRoute: AutomationIndexRoute,
