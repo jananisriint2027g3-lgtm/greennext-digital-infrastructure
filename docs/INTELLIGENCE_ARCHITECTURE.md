@@ -66,7 +66,7 @@ Canonical raw event tabs + derived intelligence sheets
 
 The browser continues to send the existing flat analytics payload. The server adapter preserves those fields, adds only validated derived context, and forwards the payload to the existing Apps Script ingestion path. A per-event `eventId` is used only for short-lived deduplication; it is not written as a new raw-sheet column.
 
-The current build targets Cloudflare Workers. The adapter accepts only the platform-controlled `CF-Connecting-IP` header. Browser-supplied IP fields are ignored. The raw IP exists only during the provider lookup, is hashed for the short-lived in-memory cache key, and is never forwarded, logged, returned, or stored in Sheets. Provider calls have a bounded timeout, a small in-memory cache, and a per-provider rate limit.
+The production deployment targets Vercel, while Cloudflare support remains available. The adapter accepts only deployment-controlled IP headers: Vercel `X-Real-IP`, or `X-Forwarded-For` when `X-Vercel-ID` is present; Cloudflare `CF-Connecting-IP` remains supported. Browser-supplied IP fields are ignored. The raw IP exists only during the provider lookup, is hashed for the short-lived in-memory cache key, and is never forwarded, logged, returned, or stored in Sheets. Provider calls have a bounded timeout, a small in-memory cache, and a per-provider rate limit.
 
 If the server adapter cannot be reached, the browser falls back to the existing direct Apps Script endpoint. Apps Script validates the optional server enrichment signature before accepting Geo/network fields and deduplicates retryable behavioral events by `eventId` using a short-lived cache.
 
@@ -88,19 +88,19 @@ The first event in a session captures referrer, landing page, UTM fields, and a 
 
 ### Geo Intelligence
 
-The Apps Script deployment currently has no trusted request-IP/geolocation source. Country, region, and city therefore remain empty and are reported as unavailable. Browser geolocation permission and precise coordinates are not used. The provider abstraction validates country/region/city, confidence, and source metadata before storage; invalid responses are discarded.
+Geo enrichment is performed before Apps Script receives the event. When a trusted deployment IP and a configured provider are available, country, region, and city are normalized and forwarded through the existing analytics payload. Browser geolocation permission and precise coordinates are not used. The provider abstraction validates country/region/city, confidence, and source metadata before storage; invalid responses are discarded. If the provider is unavailable or no trusted IP is present, the fields remain empty.
 
-Provider configuration is server-side through Apps Script Script Properties:
-
-- `GEO_PROVIDER_URL`
-- `GEO_PROVIDER_API_KEY`
-
-The server runtime also requires the same provider URL/key contract when live lookups are enabled:
+Provider configuration is server-side through the Vercel environment (or the equivalent server runtime configuration):
 
 - `GEO_PROVIDER_URL`
 - `GEO_PROVIDER_API_KEY`
 
-The `/api/analytics` server adapter can use the deployment-controlled `CF-Connecting-IP` value when present. If it is absent, or the provider is not configured, location remains unavailable. No client-provided location is accepted.
+GreenNext is configured for IPLocation.net API v2 when live Geo enrichment is enabled. The endpoint is `https://api.iplocation.net/v2/ip-location`; it accepts an HTTPS `POST` request with `{ "ip": "..." }` and a `Bearer` API key, and returns location/network fields including `country` or `country_code`, `region` or `region_name`, `city`, ISP, ASN, and network type. Optional `confidence` and `provider`/`source` metadata are retained when valid. The server runtime uses the following URL/key contract when live lookups are enabled:
+
+- `GEO_PROVIDER_URL`
+- `GEO_PROVIDER_API_KEY`
+
+The `/api/analytics` server adapter uses the deployment-controlled Vercel IP headers described above. If they are absent, or the provider is not configured, location remains unavailable. No client-provided location is accepted. The single IPLocation.net response is also used for supported network fields when no separate network provider is configured. No provider credentials are committed to this repository; live Geo Intelligence requires configuring the two server-only variables in Vercel.
 
 ### Time Zone Intelligence
 

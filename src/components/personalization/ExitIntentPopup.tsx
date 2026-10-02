@@ -14,7 +14,9 @@ import { getCurrentPage, getSessionId, trackEvent } from "../../lib/analytics";
 import { getVisitorActionContext } from "../../lib/action-layer";
 import { useExitIntent } from "../../hooks/useExitIntent";
 
-const DESTINATIONS: Record<string, { label: string; href: string }> = {
+type Destination = { label: string; href: string };
+
+const DESTINATIONS = {
   infrastructure: { label: "Explore AI-ready infrastructure", href: "/infrastructure/ai-ready" },
   automation: { label: "Explore automation capabilities", href: "/automation/monitoring" },
   energy: { label: "Explore energy and cooling", href: "/energy/monitoring" },
@@ -22,16 +24,19 @@ const DESTINATIONS: Record<string, { label: string; href: string }> = {
   solutions: { label: "Explore GreenNext solutions", href: "/solutions" },
   sustainability: { label: "Explore sustainability planning", href: "/sustainability" },
   about: { label: "Explore GreenNext", href: "/about/what-we-are" },
-};
+} satisfies Record<string, Destination>;
 
-function destinationForVisitor() {
+const DEFAULT_DESTINATION = DESTINATIONS["infrastructure"];
+
+function destinationForVisitor(): Destination {
   const context = getVisitorActionContext(getCurrentPage(), getSessionId());
-  return DESTINATIONS[context.dominantInterest] || DESTINATIONS["infrastructure"];
+  const destination = DESTINATIONS[context.dominantInterest as keyof typeof DESTINATIONS];
+  return destination ?? DEFAULT_DESTINATION;
 }
 
 export function ExitIntentPopup() {
   const [open, setOpen] = useState(false);
-  const [destination, setDestination] = useState(DESTINATIONS["infrastructure"]);
+  const [destination, setDestination] = useState(DEFAULT_DESTINATION);
   const closingAction = useRef<"cta" | null>(null);
 
   const showPopup = useCallback(() => {

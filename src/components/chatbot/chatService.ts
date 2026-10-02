@@ -1,5 +1,6 @@
 import { REGIONS_DATA, REGIONAL_NETWORK_DISCLAIMER } from "../../data/regions";
 import type { VisitorActionContext } from "../../lib/action-layer";
+import { getChatPageContext, type ChatPageContext } from "../../lib/chat-page-context";
 
 export interface AssistantLink {
   label: string;
@@ -31,16 +32,16 @@ const CONTEXT_HREFS: Record<string, string> = {
   about: "/about/what-we-are",
 };
 
-export function getAssistantOpening(context?: VisitorActionContext): string {
+export function getAssistantOpening(context?: VisitorActionContext, pageContext?: ChatPageContext): string {
+  const page = pageContext || getChatPageContext(context?.currentPage || "/");
   if (!context?.returningVisitor) {
-    return "Hi! I'm the GreenNext AI Assistant. I can help you explore our infrastructure, regional focus areas, energy efficiency, automation, and digital infrastructure concepts.";
+    return `${page.welcomeMessage} Ask me a question about ${page.topic}.`;
   }
-  const focus = CONTEXT_LABELS[context.dominantInterest || ""] || "GreenNext capabilities";
-  const secondaryInterest = context.engagedSections[1];
-  const recent = secondaryInterest
-    ? ` and ${CONTEXT_LABELS[secondaryInterest] || secondaryInterest}`
+  const behaviorInterest = CONTEXT_LABELS[context.dominantInterest || ""];
+  const behaviorNote = behaviorInterest && !page.topic.toLowerCase().includes(behaviorInterest.toLowerCase().split(" ")[0] || "")
+    ? ` Your recent journey also shows interest in ${behaviorInterest}.`
     : "";
-  return `Welcome back. I can help you continue exploring ${focus}${recent}. Would you like to compare them or explore a specific area?`;
+  return `Welcome back. ${page.returningMessage}${behaviorNote} Would you like to explore a specific area?`;
 }
 
 const REGION_IDS = ["madurai", "coimbatore", "trichy", "mangalore"] as const;
@@ -61,7 +62,8 @@ function regionResponse(id: (typeof REGION_IDS)[number]): AssistantResponse {
   };
 }
 
-export function getAssistantResponse(message: string, context?: VisitorActionContext): AssistantResponse {
+export function getAssistantResponse(message: string, context?: VisitorActionContext, pageContext?: ChatPageContext): AssistantResponse {
+  const page = pageContext || getChatPageContext(context?.currentPage || "/");
   const query = message.toLowerCase().trim();
 
   if (!query) {
@@ -71,10 +73,12 @@ export function getAssistantResponse(message: string, context?: VisitorActionCon
   }
 
   if ((query.includes("continue") || query.includes("what next") || query.includes("recommend")) && context?.returningVisitor) {
-    const focus = CONTEXT_LABELS[context.dominantInterest] || "GreenNext capabilities";
+    const focus = page.key === "general"
+      ? CONTEXT_LABELS[context.dominantInterest] || "GreenNext capabilities"
+      : page.topic;
     return {
-      text: `Based on your recent journey, ${focus} may be the most useful place to continue. I can also help compare the areas you have explored or take you to a related capability.`,
-      links: [{ label: `Continue with ${focus}`, href: CONTEXT_HREFS[context.dominantInterest] || CONTEXT_HREFS["infrastructure"]! }],
+      text: `Based on your current page and recent journey, ${focus} may be the most useful place to continue. I can also help compare the areas you have explored or take you to a related capability.`,
+      links: [{ label: `Continue with ${focus}`, href: page.key === "general" ? CONTEXT_HREFS[context.dominantInterest] || CONTEXT_HREFS["infrastructure"]! : page.primaryHref }],
     };
   }
 
@@ -175,6 +179,6 @@ export function getAssistantResponse(message: string, context?: VisitorActionCon
   }
 
   return {
-    text: "I can help with GreenNext's infrastructure, regional focus areas, energy efficiency, automation, solutions, and contact information. Could you rephrase your question around one of these areas?",
+    text: `I can help with ${page.topic}. I can also answer broader questions about GreenNext's infrastructure, solutions, and contact information. Could you rephrase your question around one of these areas?`,
   };
 }

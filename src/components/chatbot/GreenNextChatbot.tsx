@@ -4,7 +4,9 @@ import { ChatMessage } from "./ChatMessage";
 import { ChatSuggestions } from "./ChatSuggestions";
 import { getAssistantOpening, getAssistantResponse, type AssistantResponse } from "./chatService";
 import { getAssistantVisitorContext } from "../../lib/action-layer";
+import { getChatPageContext } from "../../lib/chat-page-context";
 import { trackEvent, sanitizeChatTopic, getCurrentPage, getSessionId } from "../../lib/analytics";
+import { useRouterState } from "@tanstack/react-router";
 
 interface ChatEntry {
   id: number;
@@ -13,23 +15,16 @@ interface ChatEntry {
   links?: AssistantResponse["links"];
 }
 
-const SUGGESTIONS = [
-  "What is GreenNext?",
-  "Explore the four regions",
-  "What is AI-ready infrastructure?",
-  "How does automation work?",
-  "Tell me about energy efficiency",
-  "Contact GreenNext",
-];
-
 export function GreenNextChatbot() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const pageContext = getChatPageContext(pathname);
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<ChatEntry[]>(() => [{
     id: 1,
     role: "assistant",
-    text: getAssistantOpening(getAssistantVisitorContext(getCurrentPage(), getSessionId())),
+    text: getAssistantOpening(getAssistantVisitorContext(pathname, getSessionId()), pageContext),
   }]);
   const nextId = useRef(2);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -48,6 +43,14 @@ export function GreenNextChatbot() {
   }, [isOpen, messages, isTyping]);
 
   useEffect(() => {
+    if (isOpen) return;
+    setMessages((current) => {
+      if (current.length !== 1 || current[0]?.role !== "assistant") return current;
+      return [{ ...current[0], text: getAssistantOpening(getAssistantVisitorContext(pathname, getSessionId()), pageContext) }];
+    });
+  }, [isOpen, pageContext, pathname]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && isOpen) setIsOpen(false);
     };
@@ -64,7 +67,7 @@ export function GreenNextChatbot() {
     setMessages([{
       id: nextId.current++,
       role: "assistant",
-      text: getAssistantOpening(getAssistantVisitorContext(getCurrentPage(), getSessionId())),
+      text: getAssistantOpening(getAssistantVisitorContext(pathname, getSessionId()), pageContext),
     }]);
   };
 
@@ -90,10 +93,12 @@ export function GreenNextChatbot() {
     setInput("");
     setIsTyping(true);
 
+    const messagePage = getChatPageContext(pathname);
     const timer = setTimeout(() => {
       const response = getAssistantResponse(
         trimmedValue,
-        getAssistantVisitorContext(getCurrentPage(), getSessionId()),
+        getAssistantVisitorContext(pathname, getSessionId()),
+        messagePage,
       );
       setMessages((current) => [
         ...current,
@@ -183,7 +188,7 @@ export function GreenNextChatbot() {
             ))}
 
             {messages.length === 1 && !isTyping && (
-              <ChatSuggestions suggestions={SUGGESTIONS} onSelect={sendMessage} />
+              <ChatSuggestions suggestions={pageContext.suggestedQuestions} onSelect={sendMessage} />
             )}
 
             {isTyping && (

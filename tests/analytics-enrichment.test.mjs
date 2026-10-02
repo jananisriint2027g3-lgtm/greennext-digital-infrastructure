@@ -91,6 +91,90 @@ test("valid enrichment forwards canonical fields without raw IP", async () => {
   }
 });
 
+test("IPLocation.net response supplies Geo and supported network fields with one lookup", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url: String(url), init });
+    return new Response(JSON.stringify({
+      country: "India",
+      country_code: "IN",
+      region_name: "Tamil Nadu",
+      city: "Chennai",
+      isp: "Example ISP",
+      asn: "AS64500",
+      network_type: "corporate",
+      provider: "iplocation.net",
+    }), { status: 200 });
+  };
+  try {
+    const enriched = await adapter.enrichCanonicalAnalyticsPayload(
+      basePayload,
+      new Request("https://example.com/api/analytics", { method: "POST", headers: { "X-Real-IP": "203.0.113.17" } }),
+      {
+        GEO_PROVIDER_URL: "https://api.iplocation.net/v2/ip-location",
+        GEO_PROVIDER_API_KEY: "geo-key",
+        ANALYTICS_ENRICHMENT_SECRET: "shared-secret",
+      },
+    );
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, "https://api.iplocation.net/v2/ip-location");
+    assert.equal(calls[0].init.method, "POST");
+    assert.equal(calls[0].init.headers.Authorization, "Bearer geo-key");
+    assert.deepEqual(JSON.parse(calls[0].init.body), { ip: "203.0.113.17" });
+    assert.equal(enriched.geoCountry, "India");
+    assert.equal(enriched.geoRegion, "Tamil Nadu");
+    assert.equal(enriched.geoCity, "Chennai");
+    assert.equal(enriched.isp, "Example ISP");
+    assert.equal(enriched.asn, "AS64500");
+    assert.equal(enriched.networkType, "corporate");
+    assert.equal(JSON.stringify(enriched).includes("203.0.113.17"), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("missing geo fields remain unavailable without fabricating location", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ country: "IN" }), { status: 200 });
+  try {
+    const enriched = await adapter.enrichCanonicalAnalyticsPayload(
+      basePayload,
+      new Request("https://example.com/api/analytics", { method: "POST", headers: { "X-Real-IP": "203.0.113.14" } }),
+      { GEO_PROVIDER_URL: "https://geo.example.test/lookup", GEO_PROVIDER_API_KEY: "geo-key" },
+    );
+    assert.equal(enriched.geoCountry, "IN");
+    assert.equal(enriched.geoRegion, "");
+    assert.equal(enriched.geoCity, "");
+    assert.equal(JSON.stringify(enriched).includes("203.0.113.14"), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("provider HTTP errors preserve analytics and invalid responses stay empty", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("upstream failure", { status: 503 });
+  try {
+    const failed = await adapter.enrichCanonicalAnalyticsPayload(
+      basePayload,
+      new Request("https://example.com/api/analytics", { method: "POST", headers: { "X-Real-IP": "203.0.113.15" } }),
+      { GEO_PROVIDER_URL: "https://geo.example.test/lookup", GEO_PROVIDER_API_KEY: "geo-key" },
+    );
+    assert.deepEqual(failed, basePayload);
+
+    globalThis.fetch = async () => new Response(JSON.stringify({ country: 123, region_name: {}, city: [] }), { status: 200 });
+    const invalid = await adapter.enrichCanonicalAnalyticsPayload(
+      basePayload,
+      new Request("https://example.com/api/analytics", { method: "POST", headers: { "X-Real-IP": "203.0.113.16" } }),
+      { GEO_PROVIDER_URL: "https://geo.example.test/lookup", GEO_PROVIDER_API_KEY: "geo-key" },
+    );
+    assert.deepEqual(invalid, basePayload);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("forwarding preserves the canonical event and performs one forward", async () => {
   const originalFetch = globalThis.fetch;
   const forwarded = [];

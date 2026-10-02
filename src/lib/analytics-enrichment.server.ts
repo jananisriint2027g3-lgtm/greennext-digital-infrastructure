@@ -170,10 +170,12 @@ export async function enrichCanonicalAnalyticsPayload(payload: Record<string, un
 
   // The raw IP is scoped to these transient provider calls only. It is never
   // returned, logged, cached, signed, or forwarded to Apps Script.
-  const [geoRaw, networkRaw] = await Promise.all([
-    callProvider("geo", config.geoUrl, config.geoApiKey, ip),
-    callProvider("network", config.networkUrl, config.networkApiKey, ip),
-  ]);
+  const geoRaw = await callProvider("geo", config.geoUrl, config.geoApiKey, ip);
+  // IPLocation.net returns both location and supported network fields. Reuse
+  // that single response unless a separate network provider is configured.
+  const networkRaw = config.networkUrl && config.networkApiKey
+    ? await callProvider("network", config.networkUrl, config.networkApiKey, ip)
+    : geoRaw;
   const geo = normalizeTrustedGeo(geoRaw);
   const network = normalizeTrustedNetwork(networkRaw);
   const enriched = { ...payload };
