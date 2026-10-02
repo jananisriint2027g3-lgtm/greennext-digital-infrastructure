@@ -19,7 +19,7 @@ export const Route = createFileRoute("/infrastructure/")({
 });
 
 function InfrastructureIndexPage() {
-  const content = PAGES_CONTENT["infrastructure"];
+  const content = PAGES_CONTENT["infrastructure"]!;
   return (
     <div className="w-full bg-[#070A0E] text-white">
       <PageTemplate data={content} showCta={false} />

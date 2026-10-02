@@ -91,7 +91,7 @@ export function PageTemplate({
         eyebrow={data.eyebrow}
         h1={data.h1}
         intro={data.intro}
-        isConceptual={data.isConceptual}
+        {...(data.isConceptual !== undefined ? { isConceptual: data.isConceptual } : {})}
         cta={data.cta}
       />
 

@@ -194,11 +194,15 @@ export function LongFormInquiry({
         <form onSubmit={handleSubmit} onChange={markFormStarted} className="space-y-4" noValidate>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
+              <label htmlFor="long-name" className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
                 Full Name *
               </label>
               <input
+                id="long-name"
+                autoFocus
                 type="text"
+                aria-invalid={Boolean(errors.name)}
+                aria-describedby={errors.name ? "long-name-error" : undefined}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g. Ramesh Kumar"
@@ -206,15 +210,18 @@ export function LongFormInquiry({
                   errors.name ? "border-red-500/70" : "border-[#1E293B]"
                 }`}
               />
-              {errors.name && <p className="text-red-400 text-[11px] mt-1">{errors.name}</p>}
+              {errors.name && <p id="long-name-error" className="text-red-400 text-[11px] mt-1">{errors.name}</p>}
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
+              <label htmlFor="long-email" className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
                 Work Email *
               </label>
               <input
+                id="long-email"
                 type="email"
+                aria-invalid={Boolean(errors.email)}
+                aria-describedby={errors.email ? "long-email-error" : undefined}
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="e.g. ramesh@organization.com"
@@ -222,16 +229,17 @@ export function LongFormInquiry({
                   errors.email ? "border-red-500/70" : "border-[#1E293B]"
                 }`}
               />
-              {errors.email && <p className="text-red-400 text-[11px] mt-1">{errors.email}</p>}
+              {errors.email && <p id="long-email-error" className="text-red-400 text-[11px] mt-1">{errors.email}</p>}
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
+              <label htmlFor="long-phone" className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
                 Phone / Contact Number
               </label>
               <input
+                id="long-phone"
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -241,10 +249,11 @@ export function LongFormInquiry({
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
+              <label htmlFor="long-organization" className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
                 Organization / Company
               </label>
               <input
+                id="long-organization"
                 type="text"
                 value={formData.organization}
                 onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
@@ -256,10 +265,11 @@ export function LongFormInquiry({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
+              <label htmlFor="long-category" className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
                 Inquiry Category
               </label>
               <select
+                id="long-category"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-lg border border-[#1E293B] bg-[#121824] text-white text-sm focus:outline-none focus:border-[#10B981] transition-colors"
@@ -273,10 +283,11 @@ export function LongFormInquiry({
             </div>
 
             <div>
-              <label className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
+              <label htmlFor="long-region" className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
                 Regional Focus Area
               </label>
               <select
+                id="long-region"
                 value={formData.region}
                 onChange={(e) => setFormData({ ...formData, region: e.target.value })}
                 className="w-full px-3.5 py-2.5 rounded-lg border border-[#1E293B] bg-[#121824] text-white text-sm focus:outline-none focus:border-[#10B981] transition-colors"
@@ -291,11 +302,14 @@ export function LongFormInquiry({
           </div>
 
           <div>
-            <label className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
+            <label htmlFor="long-message" className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">
               Infrastructure Requirements or Message *
             </label>
             <textarea
+              id="long-message"
               rows={4}
+              aria-invalid={Boolean(errors.message)}
+              aria-describedby={errors.message ? "long-message-error" : undefined}
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               placeholder="Describe compute workload profiles, power considerations, or regional planning questions..."
@@ -303,12 +317,13 @@ export function LongFormInquiry({
                 errors.message ? "border-red-500/70" : "border-[#1E293B]"
               }`}
             />
-            {errors.message && <p className="text-red-400 text-[11px] mt-1">{errors.message}</p>}
+            {errors.message && <p id="long-message-error" className="text-red-400 text-[11px] mt-1">{errors.message}</p>}
           </div>
 
           <div>
-            <label className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">Optional Supporting Document</label>
+            <label htmlFor="long-document" className="block text-xs font-mono text-[#94A3B8] mb-1.5 uppercase tracking-wider">Optional Supporting Document</label>
             <input
+              id="long-document"
               type="file"
               accept={ACCEPTED_DOCUMENT_EXTENSIONS}
               onChange={(e) => {

@@ -10,7 +10,8 @@
  * - General behavioral telemetry remains privacy-safe and free of PII.
  */
 
-import { ANALYTICS_ENDPOINT, getSessionId, getCurrentPage } from "./analytics";
+import { ANALYTICS_ENDPOINT, getSessionId, getSessionKind, getCurrentPage } from "./analytics";
+import { readClientContext } from "./layer2-intelligence";
 import { submitTechnicalInfrastructureInquiryToJira } from "./jira-inquiry.server-fn";
 
 export const LEAD_TYPES = {
@@ -137,10 +138,27 @@ export interface InquiryResult {
   error?: string;
 }
 
+async function createRequestId(parts: string[]): Promise<string> {
+  const canonical = parts.map((part) => part.trim()).join("\u001f");
+  try {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical));
+    return `gn_req_${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+  } catch {
+    return `gn_req_${btoa(canonical).replace(/[^a-z0-9]/gi, "").slice(0, 96)}`;
+  }
+}
+
 /** Shared website-side lead payload for the next Apps Script integration step. */
 export async function submitLead(data: LeadPayload): Promise<InquiryResult> {
+  const page = data.page || getCurrentPage();
+  const sessionId = data.sessionId || getSessionId();
+  const requestId = await createRequestId([
+    data.leadType, data.name, data.email, data.phone || "", data.organization || "",
+    data.region || "", data.topic, data.message, sessionId, data.document?.fileName || "",
+  ]);
   const payload = {
     ...data,
+    ...getContextPayload(page),
     sheet: "Contact_Submissions",
     phone: data.phone || "",
     organization: data.organization || "",
@@ -149,9 +167,10 @@ export async function submitLead(data: LeadPayload): Promise<InquiryResult> {
     experienceLevel: data.experienceLevel || "",
     linkedinUrl: data.linkedinUrl || "",
     portfolioUrl: data.portfolioUrl || "",
-    page: data.page || getCurrentPage(),
-    sessionId: data.sessionId || getSessionId(),
-    sessionKind: data.sessionKind || "",
+    page,
+    sessionId,
+    sessionKind: data.sessionKind || getSessionKind(),
+    requestId,
     timestamp: data.timestamp || new Date().toISOString(),
     document: data.document || null,
     formType: "lead_inquiry",
@@ -172,6 +191,7 @@ export async function submitLead(data: LeadPayload): Promise<InquiryResult> {
         message: data.message,
         page: payload.page,
         sessionId: payload.sessionId,
+        requestId,
         timestamp: payload.timestamp,
         documentFileName: data.document?.fileName || null,
       },
@@ -290,8 +310,10 @@ export async function submitQuickInquiry(data: QuickInquiryData): Promise<Inquir
   const page = data.page || getCurrentPage();
   const sessionId = getSessionId();
   const timestamp = new Date().toISOString();
+  const requestId = await createRequestId(["quick", data.name, data.email, data.phone || "", data.interest, data.message, sessionId]);
 
   const payload = {
+    ...getContextPayload(page),
     sheet: "Quick_Inquiries",
     formType: "quick_inquiry",
     event: "quick_inquiry_submit",
@@ -303,6 +325,8 @@ export async function submitQuickInquiry(data: QuickInquiryData): Promise<Inquir
     message: data.message,
     page,
     sessionId,
+    sessionKind: getSessionKind(),
+    requestId,
     timestamp,
   };
 
@@ -323,6 +347,7 @@ export async function submitQuickInquiry(data: QuickInquiryData): Promise<Inquir
         message: data.message,
         page,
         sessionId,
+        requestId,
         timestamp,
         documentFileName: null,
       },
@@ -352,8 +377,10 @@ export async function submitLongFormInquiry(data: LongFormInquiryData): Promise<
   const page = data.page || getCurrentPage();
   const sessionId = getSessionId();
   const timestamp = new Date().toISOString();
+  const requestId = await createRequestId(["long", data.name, data.email, data.phone || "", data.organization || "", data.category, data.region, data.message, sessionId, data.document?.fileName || ""]);
 
   const payload = {
+    ...getContextPayload(page),
     sheet: "Contact_Submissions",
     formType: "long_form_inquiry",
     event: "long_form_inquiry_submit",
@@ -367,6 +394,8 @@ export async function submitLongFormInquiry(data: LongFormInquiryData): Promise<
     message: data.message,
     page,
     sessionId,
+    sessionKind: getSessionKind(),
+    requestId,
     timestamp,
     document: data.document || null,
   };
@@ -388,6 +417,7 @@ export async function submitLongFormInquiry(data: LongFormInquiryData): Promise<
         message: data.message,
         page,
         sessionId,
+        requestId,
         timestamp,
         documentFileName: data.document?.fileName || null,
       },
@@ -407,4 +437,23 @@ export async function submitLongFormInquiry(data: LongFormInquiryData): Promise<
   }
 
   return inquiryResult;
+}
+
+function getContextPayload(page: string): Record<string, string> {
+  const context = readClientContext(page);
+  return {
+    siteHost: context.siteHost,
+    trafficSource: context.trafficSource,
+    referrerUrl: context.referrerUrl,
+    landingPage: context.landingPage,
+    utmSource: context.utmSource,
+    utmMedium: context.utmMedium,
+    utmCampaign: context.utmCampaign,
+    utmTerm: context.utmTerm,
+    utmContent: context.utmContent,
+    timezone: context.timezone,
+    utcOffset: context.utcOffset,
+    activityLocalHour: context.activityLocalHour,
+    activityDay: context.activityDay,
+  };
 }

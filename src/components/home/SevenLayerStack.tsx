@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { InternalLink as Link } from "../common/InternalLink";
 import {
   Sparkles,
   Network,
@@ -116,7 +116,7 @@ const LAYERS: LayerData[] = [
 
 export function SevenLayerStack() {
   const [selectedLayer, setSelectedLayer] = useState<string>("layer-3");
-  const active = LAYERS.find((l) => l.id === selectedLayer) || LAYERS[2];
+  const active = LAYERS.find((l) => l.id === selectedLayer) ?? LAYERS[2]!;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

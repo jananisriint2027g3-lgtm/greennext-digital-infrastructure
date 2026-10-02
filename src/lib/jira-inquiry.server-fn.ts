@@ -14,6 +14,7 @@ const technicalInquirySchema = z.object({
   message: z.string().min(1).max(20000),
   page: z.string().max(2000).optional(),
   sessionId: z.string().max(200).optional(),
+  requestId: z.string().max(128).optional(),
   timestamp: z.string().max(100).optional(),
   documentFileName: z.string().max(500).nullable().optional(),
 });
@@ -42,6 +43,7 @@ export const submitTechnicalInfrastructureInquiryToJira = createServerFn({ metho
         message: data.message,
         ...(data.page !== undefined ? { page: data.page } : {}),
         ...(data.sessionId !== undefined ? { sessionId: data.sessionId } : {}),
+        ...(data.requestId !== undefined ? { requestId: data.requestId } : {}),
         ...(data.timestamp !== undefined ? { timestamp: data.timestamp } : {}),
         document: data.documentFileName ?? null,
       });

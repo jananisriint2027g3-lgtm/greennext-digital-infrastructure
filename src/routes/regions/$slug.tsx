@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { REGIONS_DATA } from "../../data/regions";
 import { PAGES_CONTENT } from "../../data/pagesContent";
 import { RegionalPageTemplate } from "../../components/templates/RegionalPageTemplate";
@@ -30,6 +30,9 @@ export const Route = createFileRoute("/regions/$slug")({
       ],
     };
   },
+  loader: ({ params }) => {
+    if (!REGIONS_DATA[params.slug] && !PAGES_CONTENT[`regions/${params.slug}`]) throw notFound();
+  },
   component: RegionsSubmenuPage,
 });
 
@@ -46,7 +49,8 @@ function RegionsSubmenuPage() {
   const page = PAGES_CONTENT[key];
 
   if (!page) {
-    return (
+    throw notFound();
+    /* return (
       <div className="min-h-[60vh] flex items-center justify-center bg-[#070A0E] text-white p-6">
         <div className="text-center max-w-md">
           <h2 className="text-xl font-bold mb-2">Region Not Found</h2>
@@ -61,7 +65,7 @@ function RegionsSubmenuPage() {
           </a>
         </div>
       </div>
-    );
+    ); */
   }
 
   return (

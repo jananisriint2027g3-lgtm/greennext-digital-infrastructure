@@ -29,6 +29,7 @@ export interface TechnicalInfrastructureInquiryPayload {
   message: string;
   page?: string;
   sessionId?: string;
+  requestId?: string;
   timestamp?: string;
   document?: { fileName: string } | string | null;
 }
@@ -219,7 +220,7 @@ async function createIdempotencyLabel(
     payload.message,
     payload.page || "",
     payload.sessionId || "",
-    payload.timestamp || "",
+    payload.requestId || payload.timestamp || "",
     typeof payload.document === "string" ? payload.document : payload.document?.fileName || "",
   ]
     .map((value) => value.trim())

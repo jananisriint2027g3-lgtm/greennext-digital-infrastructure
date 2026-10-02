@@ -160,5 +160,25 @@ export function LeadInquiryForm({ leadType, onLeadTypeChange }: LeadFormProps) {
   </form>;
 }
 
-function Field({ label, value, onChange, error, type = "text", placeholder, autoComplete }: { label: string; value: string; onChange: (value: string) => void; error?: string | undefined; type?: string; placeholder?: string; autoComplete?: string }) { return <div><label className="label">{label}</label><input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} autoComplete={autoComplete} className={`input ${error ? "border-red-500/70" : ""}`} />{error && <Error text={error} />}</div>; }
+function Field({ label, value, onChange, error, type = "text", placeholder, autoComplete }: { label: string; value: string; onChange: (value: string) => void; error?: string | undefined; type?: string; placeholder?: string; autoComplete?: string }) {
+  const id = `lead-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const errorId = `${id}-error`;
+  return (
+    <div>
+      <label className="label" htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? errorId : undefined}
+        className={`input ${error ? "border-red-500/70" : ""}`}
+      />
+      {error && <p id={errorId} className="mt-1 text-[11px] text-red-400">{error}</p>}
+    </div>
+  );
+}
 function Error({ text }: { text: string }) { return <p className="mt-1 text-[11px] text-red-400">{text}</p>; }

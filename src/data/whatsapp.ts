@@ -9,8 +9,8 @@ export const WHATSAPP_CONFIG = {
   // Configured placeholder / environment variable hook
   placeholder: "WHATSAPP_NUMBER",
   phoneNumber:
-    (typeof process !== "undefined" && process.env?.VITE_WHATSAPP_PHONE) ||
-    (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_WHATSAPP_PHONE) ||
+    (typeof process !== "undefined" && process.env?.["VITE_WHATSAPP_PHONE"]) ||
+    (typeof import.meta !== "undefined" && import.meta.env["VITE_WHATSAPP_PHONE"]) ||
     "WHATSAPP_NUMBER",
   defaultMessage:
     "Hello GreenNext team, I would like to discuss digital infrastructure requirements and regional planning.",

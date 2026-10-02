@@ -19,7 +19,7 @@ export const Route = createFileRoute("/energy/")({
 });
 
 function EnergyIndexPage() {
-  const content = PAGES_CONTENT["energy"];
+  const content = PAGES_CONTENT["energy"]!;
   return (
     <div className="w-full bg-[#070A0E] text-white">
       <PageTemplate data={content} showCta={false} />

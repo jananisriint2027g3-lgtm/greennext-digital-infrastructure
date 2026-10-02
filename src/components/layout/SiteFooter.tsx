@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { useRouterState } from "@tanstack/react-router";
+import { InternalLink as Link } from "../common/InternalLink";
 import { Leaf, MessageCircle, ExternalLink, ShieldCheck } from "../icons";
 import { NAVIGATION_STRUCTURE } from "../../data/navigation";
 import { WHATSAPP_CONFIG } from "../../data/whatsapp";

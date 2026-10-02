@@ -2,8 +2,9 @@ import { Bot, RotateCcw, Send, X } from "../icons";
 import { useEffect, useRef, useState } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatSuggestions } from "./ChatSuggestions";
-import { getAssistantResponse, type AssistantResponse } from "./chatService";
-import { trackEvent, sanitizeChatTopic, getCurrentPage } from "../../lib/analytics";
+import { getAssistantOpening, getAssistantResponse, type AssistantResponse } from "./chatService";
+import { getAssistantVisitorContext } from "../../lib/action-layer";
+import { trackEvent, sanitizeChatTopic, getCurrentPage, getSessionId } from "../../lib/analytics";
 
 interface ChatEntry {
   id: number;
@@ -11,9 +12,6 @@ interface ChatEntry {
   text: string;
   links?: AssistantResponse["links"];
 }
-
-const INITIAL_GREETING =
-  "Hi! I'm the GreenNext AI Assistant. I can help you explore our infrastructure, regional focus areas, energy efficiency, automation, and digital infrastructure concepts.";
 
 const SUGGESTIONS = [
   "What is GreenNext?",
@@ -28,9 +26,11 @@ export function GreenNextChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [messages, setMessages] = useState<ChatEntry[]>([
-    { id: 1, role: "assistant", text: INITIAL_GREETING },
-  ]);
+  const [messages, setMessages] = useState<ChatEntry[]>(() => [{
+    id: 1,
+    role: "assistant",
+    text: getAssistantOpening(getAssistantVisitorContext(getCurrentPage(), getSessionId())),
+  }]);
   const nextId = useRef(2);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -61,7 +61,11 @@ export function GreenNextChatbot() {
     timersRef.current = [];
     setInput("");
     setIsTyping(false);
-    setMessages([{ id: nextId.current++, role: "assistant", text: INITIAL_GREETING }]);
+    setMessages([{
+      id: nextId.current++,
+      role: "assistant",
+      text: getAssistantOpening(getAssistantVisitorContext(getCurrentPage(), getSessionId())),
+    }]);
   };
 
   const sendMessage = (value = input) => {
@@ -87,7 +91,10 @@ export function GreenNextChatbot() {
     setIsTyping(true);
 
     const timer = setTimeout(() => {
-      const response = getAssistantResponse(trimmedValue);
+      const response = getAssistantResponse(
+        trimmedValue,
+        getAssistantVisitorContext(getCurrentPage(), getSessionId()),
+      );
       setMessages((current) => [
         ...current,
         {

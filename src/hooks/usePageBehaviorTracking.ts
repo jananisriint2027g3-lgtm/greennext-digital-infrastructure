@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { getCurrentPage, trackEngagement, trackScrollDepth } from "../lib/analytics";
+import { getCurrentPage, trackEngagement, trackPageDwell, trackScrollDepth, trackSessionEnd } from "../lib/analytics";
 
 const SCROLL_THRESHOLDS = [25, 50, 75, 90, 100] as const;
 const ENGAGEMENT_MILESTONES = [30, 60, 120] as const;
@@ -13,6 +13,7 @@ export function usePageBehaviorTracking(pathname: string): void {
     let frame: number | null = null;
     let activeSince = document.visibilityState === "visible" ? Date.now() : null;
     let accumulatedActiveMs = 0;
+    let pageDwellSent = false;
 
     const checkScroll = () => {
       frame = null;
@@ -40,6 +41,22 @@ export function usePageBehaviorTracking(pathname: string): void {
       }
     };
 
+    const recordPageDwell = () => {
+      if (activeSince !== null) accumulatedActiveMs += Date.now() - activeSince;
+      activeSince = null;
+      if (!pageDwellSent) {
+        pageDwellSent = true;
+        trackPageDwell(accumulatedActiveMs, page);
+      }
+    };
+
+    const onPageHide = (event: PageTransitionEvent) => {
+      if (!event.persisted) {
+        recordPageDwell();
+        trackSessionEnd(page);
+      }
+    };
+
     const engagementTimer = window.setInterval(() => {
       if (activeSince === null) return;
       const activeMs = accumulatedActiveMs + (Date.now() - activeSince);
@@ -53,13 +70,16 @@ export function usePageBehaviorTracking(pathname: string): void {
 
     window.addEventListener("scroll", onScroll, { passive: true });
     document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", onPageHide);
     checkScroll();
 
     return () => {
       window.removeEventListener("scroll", onScroll);
       document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", onPageHide);
       window.clearInterval(engagementTimer);
       if (frame !== null) window.cancelAnimationFrame(frame);
+      recordPageDwell();
     };
   }, [pathname]);
 }

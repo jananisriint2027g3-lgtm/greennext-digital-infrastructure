@@ -1,6 +1,6 @@
 # GreenNext Jira integration
 
-This integration is a server-only foundation for Jira REST API v3. It is not connected to any inquiry submission and does not create Jira issues automatically.
+This integration is a server-only Jira REST API v3 workflow. When explicitly enabled in the server environment, inquiry submissions can create or reuse a parent Task and its follow-up subtasks.
 
 ## Configuration
 
@@ -59,7 +59,7 @@ This manual script is the controlled real-payload test path. It is separate from
 
 ## Production submission behavior
 
-Only `submitLongFormInquiry()` invokes the server-side Jira submission function, and only after the Google Sheets/analytics request succeeds. Quick Inquiry, Technical Session, Partnership Inquiry, Career Inquiry, and other lead paths are not connected.
+Inquiry submission functions invoke the server-side Jira submission function only after the Google Sheets/analytics request succeeds. Jira creation is disabled by default and is best enabled only in a controlled staging or production environment.
 
 The server adds a deterministic idempotency label derived from the inquiry payload. On a retry of the same payload, it finds the existing parent and reuses existing subtasks by summary, creating only any missing subtasks.
 

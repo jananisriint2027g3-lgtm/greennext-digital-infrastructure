@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { PAGES_CONTENT } from "../../data/pagesContent";
 import { PageTemplate } from "../../components/templates/PageTemplate";
 import { SevenLayerStack } from "../../components/home/SevenLayerStack";
@@ -14,6 +14,9 @@ export const Route = createFileRoute("/infrastructure/$slug")({
       ],
     };
   },
+  loader: ({ params }) => {
+    if (!PAGES_CONTENT[`infrastructure/${params.slug}`]) throw notFound();
+  },
   component: InfrastructureSubmenuPage,
 });
 
@@ -23,7 +26,8 @@ function InfrastructureSubmenuPage() {
   const page = PAGES_CONTENT[key];
 
   if (!page) {
-    return (
+    throw notFound();
+    /* return (
       <div className="min-h-[60vh] flex items-center justify-center bg-[#070A0E] text-white p-6">
         <div className="text-center max-w-md">
           <h2 className="text-xl font-bold mb-2">Page Not Found</h2>
@@ -38,7 +42,7 @@ function InfrastructureSubmenuPage() {
           </a>
         </div>
       </div>
-    );
+    ); */
   }
 
   return (

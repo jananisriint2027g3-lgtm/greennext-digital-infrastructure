@@ -1,4 +1,5 @@
 import { REGIONS_DATA, REGIONAL_NETWORK_DISCLAIMER } from "../../data/regions";
+import type { VisitorActionContext } from "../../lib/action-layer";
 
 export interface AssistantLink {
   label: string;
@@ -10,10 +11,46 @@ export interface AssistantResponse {
   links?: AssistantLink[];
 }
 
+const CONTEXT_LABELS: Record<string, string> = {
+  infrastructure: "AI-ready infrastructure",
+  automation: "automation capabilities",
+  energy: "energy and cooling",
+  regions: "regional infrastructure",
+  solutions: "GreenNext solutions",
+  sustainability: "sustainability planning",
+  about: "GreenNext",
+};
+
+const CONTEXT_HREFS: Record<string, string> = {
+  infrastructure: "/infrastructure/ai-ready",
+  automation: "/automation/monitoring",
+  energy: "/energy/monitoring",
+  regions: "/regions/overview",
+  solutions: "/solutions",
+  sustainability: "/sustainability",
+  about: "/about/what-we-are",
+};
+
+export function getAssistantOpening(context?: VisitorActionContext): string {
+  if (!context?.returningVisitor) {
+    return "Hi! I'm the GreenNext AI Assistant. I can help you explore our infrastructure, regional focus areas, energy efficiency, automation, and digital infrastructure concepts.";
+  }
+  const focus = CONTEXT_LABELS[context.dominantInterest || ""] || "GreenNext capabilities";
+  const secondaryInterest = context.engagedSections[1];
+  const recent = secondaryInterest
+    ? ` and ${CONTEXT_LABELS[secondaryInterest] || secondaryInterest}`
+    : "";
+  return `Welcome back. I can help you continue exploring ${focus}${recent}. Would you like to compare them or explore a specific area?`;
+}
+
 const REGION_IDS = ["madurai", "coimbatore", "trichy", "mangalore"] as const;
 
 function regionResponse(id: (typeof REGION_IDS)[number]): AssistantResponse {
   const region = REGIONS_DATA[id];
+
+  if (!region) {
+    return { text: "That regional focus location is not currently available." };
+  }
 
   return {
     text: `${region.name} (${region.code}) is one of GreenNext's conceptual regional focus locations.\n\n${region.intro}\n\n${region.networkRole}\n\n${REGIONAL_NETWORK_DISCLAIMER}`,
@@ -24,12 +61,20 @@ function regionResponse(id: (typeof REGION_IDS)[number]): AssistantResponse {
   };
 }
 
-export function getAssistantResponse(message: string): AssistantResponse {
+export function getAssistantResponse(message: string, context?: VisitorActionContext): AssistantResponse {
   const query = message.toLowerCase().trim();
 
   if (!query) {
     return {
       text: "Ask me about GreenNext, AI-ready infrastructure, regional focus locations, energy efficiency, automation, or contact information.",
+    };
+  }
+
+  if ((query.includes("continue") || query.includes("what next") || query.includes("recommend")) && context?.returningVisitor) {
+    const focus = CONTEXT_LABELS[context.dominantInterest] || "GreenNext capabilities";
+    return {
+      text: `Based on your recent journey, ${focus} may be the most useful place to continue. I can also help compare the areas you have explored or take you to a related capability.`,
+      links: [{ label: `Continue with ${focus}`, href: CONTEXT_HREFS[context.dominantInterest] || CONTEXT_HREFS["infrastructure"]! }],
     };
   }
 

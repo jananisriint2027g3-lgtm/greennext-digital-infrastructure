@@ -19,6 +19,35 @@
 var RAW_DATA_SPREADSHEET_ID = "1X4gGWCFfs48gcTcapB1LNb-5ieThCPNO35uXGRJNdoY";
 var ANALYTICS_SPREADSHEET_ID = "1OTeDPp9JP36ztYa3ZNcE6Ev221wQIQ9Bi094zoxcF18";
 
+var ALLOWED_BEHAVIORAL_SHEETS = [
+  "Navigation", "Regions", "Infrastructure", "Energy", "Automation",
+  "Solutions", "Industries", "Locations", "AI Assistant", "CTA Interactions"
+];
+var ALLOWED_FORM_SHEETS = ["Quick_Inquiries", "Contact_Submissions"];
+var ALLOWED_FORM_TYPES = ["quick_inquiry", "long_form_inquiry", "lead_inquiry"];
+var MAX_TEXT_LENGTHS = {
+  event: 100, eventId: 128, enrichmentSignature: 128, page: 500, sessionId: 200, sessionKind: 40, value: 500,
+  name: 200, email: 320, phone: 100, organization: 200, interest: 200,
+  category: 200, region: 200, topic: 200, message: 20000, requestId: 128,
+  referrerUrl: 2000, landingPage: 500, trafficSource: 40, utmSource: 200,
+  utmMedium: 200, utmCampaign: 300, utmTerm: 300, utmContent: 300,
+  timezone: 100, utcOffset: 20, activityLocalHour: 5, activityDay: 20, siteHost: 255
+};
+var ALLOWED_DOCUMENT_MIME_TYPES = [
+  "application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "text/plain"
+];
+var MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
+var INTELLIGENCE_PROVIDER_PROPERTY_NAMES = {
+  geoUrl: "GEO_PROVIDER_URL",
+  geoApiKey: "GEO_PROVIDER_API_KEY",
+  networkUrl: "NETWORK_PROVIDER_URL",
+  networkApiKey: "NETWORK_PROVIDER_API_KEY",
+  enrichmentSecret: "ANALYTICS_ENRICHMENT_SECRET"
+};
+
 // ─── 1. HTTP GET & POST ENDPOINTS ──────────────────────────────────────────
 
 /**
@@ -29,11 +58,7 @@ function doGet(e) {
     status: "online",
     system: "GreenNext Digital Infrastructure Data Platform",
     version: "2.0.0",
-    timestamp: new Date().toISOString(),
-    endpoints: {
-      rawDataSpreadsheetId: RAW_DATA_SPREADSHEET_ID,
-      analyticsSpreadsheetId: ANALYTICS_SPREADSHEET_ID,
-    },
+    timestamp: new Date().toISOString()
   };
   return ContentService.createTextOutput(JSON.stringify(output))
     .setMimeType(ContentService.MimeType.JSON);
@@ -51,11 +76,13 @@ function doPost(e) {
     }
 
     var payload = JSON.parse(e.postData.contents);
+    validateIncomingPayload(payload);
     var targetSheet = payload.sheet;
     greenNextDiag("OPEN SPREADSHEET START", diagStartedAt);
     var rawSs = SpreadsheetApp.openById(RAW_DATA_SPREADSHEET_ID);
     greenNextDiag("OPEN SPREADSHEET COMPLETE", diagStartedAt);
     var timestamp = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+    upsertSessionContext(rawSs, payload, timestamp);
 
     // ── Unified Lead Submission ──
     // Lead payloads intentionally do not need a sheet name; they are routed by formType.
@@ -66,17 +93,13 @@ function doPost(e) {
       return leadResponse;
     }
 
-    if (!targetSheet) {
-      return jsonResponse(false, "Missing sheet parameter.");
-    }
-
     // ── Form Submission: Quick Inquiry ──
     if (targetSheet === "Quick_Inquiries" || payload.formType === "quick_inquiry") {
       var qSheet = getOrCreateSheet(rawSs, "Quick_Inquiries", [
-        "Timestamp", "Event", "Name", "Email", "Phone", "Interest", "Message", "Page", "Session ID"
+        "Timestamp", "Event", "Name", "Email", "Phone", "Interest", "Message", "Page", "Session ID", "Session Kind", "Request ID"
       ]);
 
-      qSheet.appendRow([
+      var quickWasDuplicate = appendInquiryOnce(qSheet, [
         timestamp,
         payload.event || "quick_inquiry_submit",
         payload.name || "",
@@ -85,8 +108,11 @@ function doPost(e) {
         payload.interest || "General",
         payload.message || "",
         payload.page || "",
-        payload.sessionId || ""
-      ]);
+        payload.sessionId || "",
+        payload.sessionKind || "",
+        payload.requestId || ""
+      ], payload.requestId, 11);
+      if (quickWasDuplicate) return jsonResponse(true, "Quick inquiry already recorded.");
 
       // Dual recording: Also log high-intent CTA event (no PII in CTA tab)
       var ctaSheet = getOrCreateSheet(rawSs, "CTA Interactions", [
@@ -108,10 +134,10 @@ function doPost(e) {
     // ── Form Submission: Long-Form Technical Inquiry ──
     if (targetSheet === "Contact_Submissions" || payload.formType === "long_form_inquiry") {
       var cSubSheet = getOrCreateSheet(rawSs, "Contact_Submissions", [
-        "Timestamp", "Event", "Name", "Email", "Phone", "Organization", "Category", "Region", "Message", "Page", "Session ID"
+        "Timestamp", "Event", "Name", "Email", "Phone", "Organization", "Category", "Region", "Message", "Page", "Session ID", "Session Kind", "Request ID"
       ]);
 
-      cSubSheet.appendRow([
+      var longWasDuplicate = appendInquiryOnce(cSubSheet, [
         timestamp,
         payload.event || "long_form_inquiry_submit",
         payload.name || "",
@@ -122,8 +148,11 @@ function doPost(e) {
         payload.region || "South India",
         payload.message || "",
         payload.page || "",
-        payload.sessionId || ""
-      ]);
+        payload.sessionId || "",
+        payload.sessionKind || "",
+        payload.requestId || ""
+      ], payload.requestId, 12);
+      if (longWasDuplicate) return jsonResponse(true, "Technical inquiry already recorded.");
 
       // Dual recording: Also log high-intent CTA event (no PII in CTA tab)
       var ctaSheet = getOrCreateSheet(rawSs, "CTA Interactions", [
@@ -143,22 +172,302 @@ function doPost(e) {
     }
 
     // ── Behavioral Telemetry: 10 Fixed Tabs ──
-    var sheet = rawSs.getSheetByName(targetSheet);
-    if (!sheet) {
-      // Create if missing with correct schema
-      sheet = setupBehavioralSheetIfMissing(rawSs, targetSheet);
-    }
+    var sheet = setupBehavioralSheetIfMissing(rawSs, targetSheet);
 
     var row = buildBehavioralRow(targetSheet, payload, timestamp);
     if (!row) {
       return jsonResponse(false, "Invalid sheet: " + targetSheet);
     }
 
-    sheet.appendRow(row);
+    if (appendBehavioralEventOnce(sheet, row, payload)) return jsonResponse(true, "Event already recorded.");
     return jsonResponse(true, "Event recorded.");
   } catch (err) {
     return jsonResponse(false, "Error: " + err.toString());
   }
+}
+
+function appendBehavioralEventOnce(sheet, row, payload) {
+  var eventId = String(payload && payload.eventId || "");
+  if (!eventId) {
+    sheet.appendRow(row);
+    return false;
+  }
+  var cacheKey = "gn_event_" + eventId;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(5000);
+  try {
+    var cache = CacheService.getScriptCache();
+    if (cache.get(cacheKey)) return true;
+    sheet.appendRow(row);
+    cache.put(cacheKey, "1", 21600);
+    return false;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function validateIncomingPayload(payload) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Payload must be a JSON object.");
+  }
+
+  Object.keys(payload).forEach(function(key) {
+    if (typeof payload[key] === "string" && MAX_TEXT_LENGTHS[key] && payload[key].length > MAX_TEXT_LENGTHS[key]) {
+      throw new Error("Field exceeds the allowed length: " + key);
+    }
+  });
+
+  if (!payload.sheet || typeof payload.sheet !== "string") {
+    throw new Error("Missing sheet parameter.");
+  }
+
+  var isBehavioralSheet = ALLOWED_BEHAVIORAL_SHEETS.indexOf(payload.sheet) !== -1;
+  var isFormSheet = ALLOWED_FORM_SHEETS.indexOf(payload.sheet) !== -1;
+  if (!isBehavioralSheet && !isFormSheet) {
+    throw new Error("Unexpected sheet.");
+  }
+
+  if (payload.formType && ALLOWED_FORM_TYPES.indexOf(payload.formType) === -1) {
+    throw new Error("Unexpected form type.");
+  }
+  if (payload.formType && (!payload.requestId || typeof payload.requestId !== "string")) {
+    throw new Error("Missing request ID.");
+  }
+  if (payload.formType !== "lead_inquiry" &&
+      (!payload.event || typeof payload.event !== "string" || !/^[a-z][a-z0-9_]{1,99}$/.test(payload.event))) {
+    throw new Error("Invalid event.");
+  }
+  if (!payload.sessionId || typeof payload.sessionId !== "string") {
+    throw new Error("Missing session ID.");
+  }
+  if (payload.eventId !== undefined &&
+      (typeof payload.eventId !== "string" || !/^[-A-Za-z0-9_]{8,128}$/.test(payload.eventId))) {
+    throw new Error("Invalid event ID.");
+  }
+
+  if (payload.formType === "lead_inquiry") {
+    ["name", "email", "message", "leadType"].forEach(function(field) {
+      if (!payload[field] || typeof payload[field] !== "string") throw new Error("Missing lead field: " + field);
+    });
+    if (!/^\S+@\S+\.\S+$/.test(payload.email)) throw new Error("Invalid email.");
+    validateLeadDocument(payload.document);
+  } else if (payload.formType === "quick_inquiry" || payload.formType === "long_form_inquiry") {
+    ["name", "email", "message"].forEach(function(field) {
+      if (!payload[field] || typeof payload[field] !== "string") throw new Error("Missing inquiry field: " + field);
+    });
+    if (!/^\S+@\S+\.\S+$/.test(payload.email)) throw new Error("Invalid email.");
+    if (payload.formType === "long_form_inquiry") validateLeadDocument(payload.document);
+  } else if (!isBehavioralSheet) {
+    throw new Error("Form type is required for inquiry sheets.");
+  }
+}
+
+function validateLeadDocument(document) {
+  if (!document) return;
+  if (typeof document !== "object" || Array.isArray(document) ||
+      typeof document.fileName !== "string" || typeof document.mimeType !== "string" ||
+      typeof document.data !== "string") {
+    throw new Error("Invalid document payload.");
+  }
+  if (document.fileName.length < 1 || document.fileName.length > 255 ||
+      ALLOWED_DOCUMENT_MIME_TYPES.indexOf(document.mimeType) === -1) {
+    throw new Error("Unsupported document.");
+  }
+  var estimatedBytes = Math.floor(document.data.length * 3 / 4);
+  if (estimatedBytes > MAX_DOCUMENT_BYTES) throw new Error("Document exceeds the 10 MB limit.");
+  if (!/^[A-Za-z0-9+/=\r\n]+$/.test(document.data)) throw new Error("Invalid document encoding.");
+}
+
+function upsertSessionContext(rawSs, payload, timestamp) {
+  if (!payload || !payload.sessionId) return;
+  var headers = [
+    "Session ID", "Session Kind", "First Seen", "Traffic Source", "Referrer URL", "Landing Page",
+    "UTM Source", "UTM Medium", "UTM Campaign", "UTM Term", "UTM Content", "Timezone", "UTC Offset",
+    "Activity Local Hour", "Activity Day", "Geo Country", "Geo Region", "Geo City", "IP Available",
+    "Network Type", "ISP", "Organization", "ASN", "Context Source", "Geo Confidence", "Geo Source",
+    "Network Confidence", "Network Source"
+  ];
+  var sheet = getOrCreateSheet(rawSs, "Session_Context", headers);
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    var existing = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (var i = 0; i < existing.length; i++) {
+      if (String(existing[i][0] || "") === String(payload.sessionId)) return;
+    }
+  }
+
+  var context = normalizeTrafficContext(payload);
+  if (verifyEnrichmentSignature(payload)) {
+    context = applyProviderEnrichment(context, {
+      country: payload.geoCountry, region: payload.geoRegion, city: payload.geoCity,
+      confidence: payload.geoConfidence, source: payload.geoSource
+    }, {
+      network_type: payload.networkType, isp: payload.isp, organization: payload.organization,
+      asn: payload.asn, confidence: payload.networkConfidence, source: payload.networkSource
+    });
+  }
+  var providerContext = getProviderContextStatus();
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return;
+  try {
+    // Re-check after acquiring the lock to prevent two first events creating duplicates.
+    lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      var lockedExisting = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+      for (var j = 0; j < lockedExisting.length; j++) {
+        if (String(lockedExisting[j][0] || "") === String(payload.sessionId)) return;
+      }
+    }
+    sheet.appendRow([
+      payload.sessionId || "", payload.sessionKind || "", timestamp, context.traffic_source,
+      context.referrer_url, context.landing_page, context.utm_source, context.utm_medium,
+      context.utm_campaign, context.utm_term, context.utm_content, context.timezone,
+      context.utc_offset, context.activity_local_hour, context.activity_day, "", "", "",
+      "unavailable", "unavailable", "", "", "", "client_context_plus_apps_script",
+      "", providerContext.geo_source, "", providerContext.network_source
+    ]);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * Provider configuration is intentionally server-side. Apps Script web apps do
+ * not expose the caller's IP, so configured providers remain dormant until a
+ * trusted reverse proxy supplies a server-only lookup input. Client payloads
+ * are never accepted as location or network authority.
+ */
+function getProviderContextStatus() {
+  var config = getIntelligenceProviderConfig();
+  return {
+    geo_source: config.geo.url && config.geo.api_key_configured ? "configured_pending_trusted_lookup" : "not_configured",
+    network_source: config.network.url && config.network.api_key_configured ? "configured_pending_trusted_lookup" : "not_configured"
+  };
+}
+
+function getIntelligenceProviderConfig() {
+  var properties = PropertiesService.getScriptProperties().getProperties() || {};
+  return {
+    geo: {
+      url: safeProviderUrl(properties[INTELLIGENCE_PROVIDER_PROPERTY_NAMES.geoUrl]),
+      api_key_configured: !!String(properties[INTELLIGENCE_PROVIDER_PROPERTY_NAMES.geoApiKey] || "").trim()
+    },
+    network: {
+      url: safeProviderUrl(properties[INTELLIGENCE_PROVIDER_PROPERTY_NAMES.networkUrl]),
+      api_key_configured: !!String(properties[INTELLIGENCE_PROVIDER_PROPERTY_NAMES.networkApiKey] || "").trim()
+    }
+  };
+}
+
+function safeProviderUrl(value) {
+  var url = String(value || "").trim();
+  return /^https:\/\/[^\s]{1,500}$/i.test(url) ? url : "";
+}
+
+function normalizeProviderResponse(response, kind) {
+  var value = response && typeof response === "object" ? response : {};
+  var result = {
+    country: safeContextValue(value.country || value.country_code, 100),
+    region: safeContextValue(value.region || value.region_name, 150),
+    city: safeContextValue(value.city, 150),
+    network_type: safeContextValue(value.network_type || value.networkType, 100),
+    isp: safeContextValue(value.isp, 200),
+    organization: safeContextValue(value.organization || value.org, 200),
+    asn: safeContextValue(value.asn, 100),
+    confidence: safeContextValue(value.confidence, 20),
+    source: safeContextValue(value.source || value.provider, 100)
+  };
+  if (kind === "geo") return { country: result.country, region: result.region, city: result.city, confidence: result.confidence, source: result.source };
+  return { network_type: result.network_type, isp: result.isp, organization: result.organization, asn: result.asn, confidence: result.confidence, source: result.source };
+}
+
+// Adapter boundary for a future trusted reverse proxy. This function accepts
+// provider responses only after server-side lookup and never accepts client
+// location/network fields as authority.
+function applyProviderEnrichment(context, geoResponse, networkResponse) {
+  var enriched = context || {};
+  var geo = normalizeProviderResponse(geoResponse, "geo");
+  var network = normalizeProviderResponse(networkResponse, "network");
+  if (geo.country || geo.region || geo.city) {
+    enriched.geo_country = geo.country;
+    enriched.geo_region = geo.region;
+    enriched.geo_city = geo.city;
+    enriched.geo_confidence = geo.confidence;
+    enriched.geo_source = geo.source || "trusted_provider";
+  }
+  if (network.network_type || network.isp || network.organization || network.asn) {
+    enriched.network_type = network.network_type;
+    enriched.isp = network.isp;
+    enriched.organization = network.organization;
+    enriched.asn = network.asn;
+    enriched.network_confidence = network.confidence;
+    enriched.network_source = network.source || "trusted_provider";
+    enriched.ip_available = "derived_provider_only";
+  }
+  return enriched;
+}
+
+function verifyEnrichmentSignature(payload) {
+  var secret = String(PropertiesService.getScriptProperties().getProperty(INTELLIGENCE_PROVIDER_PROPERTY_NAMES.enrichmentSecret) || "");
+  var supplied = String(payload && payload.enrichmentSignature || "");
+  if (!secret || !supplied) return false;
+  var message = [
+    payload.eventId || "", payload.sessionId || "", payload.timestamp || "",
+    payload.geoCountry || "", payload.geoRegion || "", payload.geoCity || "",
+    payload.geoConfidence || "", payload.geoSource || "", payload.networkType || "",
+    payload.isp || "", payload.organization || "", payload.asn || "",
+    payload.networkConfidence || "", payload.networkSource || ""
+  ].join("|");
+  var expected = Utilities.base64Encode(Utilities.computeHmacSha256Signature(message, secret));
+  return expected === supplied;
+}
+
+function normalizeTrafficContext(payload) {
+  var referrer = String(payload.referrerUrl || "").trim();
+  var source = String(payload.utmSource || "").trim();
+  var medium = String(payload.utmMedium || "").trim();
+  var campaign = String(payload.utmCampaign || "").trim();
+  var sourceLower = source.toLowerCase();
+  var mediumLower = medium.toLowerCase();
+  var referrerHost = extractHost(referrer);
+  var trafficSource = "unknown";
+  if (["cpc", "ppc", "paid", "paid_social", "display", "programmatic"].indexOf(mediumLower) !== -1) trafficSource = "paid";
+  else if (mediumLower === "social" || isSocialHost(sourceLower) || isSocialHost(referrerHost)) trafficSource = "social";
+  else if (mediumLower === "organic" || isOrganicHost(sourceLower) || isOrganicHost(referrerHost)) trafficSource = "organic";
+  else if (source || medium || campaign) trafficSource = "campaign";
+  else if (!referrer || (referrerHost && String(payload.siteHost || "").toLowerCase().replace(/^www\./, "") === referrerHost)) trafficSource = "direct";
+  else if (referrerHost) trafficSource = "referral";
+  return {
+    traffic_source: trafficSource,
+    referrer_url: safeContextValue(referrer, 2000),
+    landing_page: safeContextValue(payload.landingPage || payload.page || "/", 500),
+    utm_source: safeContextValue(source, 200),
+    utm_medium: safeContextValue(medium, 200),
+    utm_campaign: safeContextValue(campaign, 300),
+    utm_term: safeContextValue(payload.utmTerm || "", 300),
+    utm_content: safeContextValue(payload.utmContent || "", 300),
+    timezone: safeContextValue(payload.timezone || "", 100),
+    utc_offset: safeContextValue(payload.utcOffset || "", 20),
+    activity_local_hour: safeContextValue(payload.activityLocalHour || "", 5),
+    activity_day: safeContextValue(payload.activityDay || "", 20)
+  };
+}
+
+function safeContextValue(value, maxLength) {
+  return String(value || "").substring(0, maxLength);
+}
+
+function extractHost(value) {
+  var match = String(value || "").match(/^https?:\/\/([^/]+)/i);
+  return match ? match[1].toLowerCase().replace(/^www\./, "").split(":")[0] : "";
+}
+
+function isSocialHost(host) {
+  return ["facebook.com", "instagram.com", "linkedin.com", "twitter.com", "x.com", "youtube.com", "tiktok.com"].indexOf(host) !== -1;
+}
+
+function isOrganicHost(host) {
+  return ["google.com", "bing.com", "yahoo.com", "duckduckgo.com", "baidu.com"].indexOf(host) !== -1;
 }
 
 /**
@@ -188,7 +497,7 @@ function processLeadSubmission(payload, rawSs, timestamp, diagStartedAt) {
     var leadSheet = getOrCreateSheet(rawSs, "Lead_Submissions", [
       "Timestamp", "Lead Type", "Name", "Email", "Phone", "Organization",
       "Region", "Topic / Category", "Message", "Page", "Session ID",
-      "Session Kind", "Document Attached", "Document Name", "Document MIME Type", "Status"
+      "Session Kind", "Document Attached", "Document Name", "Document MIME Type", "Status", "Request ID"
     ]);
     greenNextDiag("GET/CREATE SHEET COMPLETE", diagStartedAt);
 
@@ -224,7 +533,8 @@ function processLeadSubmission(payload, rawSs, timestamp, diagStartedAt) {
       document ? "Yes" : "No",
       document ? document.fileName : "",
       document ? document.mimeType : "",
-      ""
+      "",
+      payload.requestId || ""
     ]);
     greenNextDiag("APPEND COMPLETE row=" + rowNumber, diagStartedAt);
 
@@ -302,16 +612,20 @@ function findRecentLeadDuplicate(sheet, payload, leadTimestamp, document) {
   if (lastRow <= 1) return 0;
 
   var startRow = Math.max(2, lastRow - 49);
-  var values = sheet.getRange(startRow, 1, lastRow - startRow + 1, 16).getValues();
+  var values = sheet.getRange(startRow, 1, lastRow - startRow + 1, Math.max(16, sheet.getLastColumn())).getValues();
   var documentName = document ? document.fileName : "";
   for (var i = 0; i < values.length; i++) {
     var row = values[i];
+    if (payload.requestId && String(row[16] || "") === String(payload.requestId)) {
+      return startRow + i;
+    }
     if (sameLeadTimestamp(row[0], leadTimestamp) &&
         String(row[1]) === String(payload.leadType) &&
         String(row[2]) === String(payload.name || "") &&
         String(row[3]) === String(payload.email || "") &&
         String(row[10]) === String(payload.sessionId || "") &&
-        String(row[13]) === documentName) {
+      String(row[13]) === documentName &&
+      (!payload.requestId || String(row[16] || "") === String(payload.requestId))) {
       return startRow + i;
     }
   }
@@ -384,7 +698,7 @@ function safeErrorMessage(error) {
 }
 
 /**
- * Helper to build the row array matching each tab's exact 5-column schema.
+ * Helper to build the row array matching each tab's schema.
  */
 function buildBehavioralRow(sheetName, p, ts) {
   var event = p.event || "";
@@ -393,35 +707,35 @@ function buildBehavioralRow(sheetName, p, ts) {
 
   switch (sheetName) {
     case "Navigation":
-      // Timestamp | Event | Page | Destination | Session ID
-      return [ts, event, page, p.destination || p.value || "", sid];
+      // Timestamp | Event | Page | Destination | Session ID | Session Kind
+      return [ts, event, page, p.destination || p.value || "", sid, p.sessionKind || ""];
     case "Regions":
       // Timestamp | Event | Region | Page | Session ID
-      return [ts, event, p.region || p.value || "", page, sid];
+      return [ts, event, p.region || p.value || "", page, sid, p.sessionKind || ""];
     case "Infrastructure":
       // Timestamp | Event | Capability | Page | Session ID
-      return [ts, event, p.capability || p.value || "", page, sid];
+      return [ts, event, p.capability || p.value || "", page, sid, p.sessionKind || ""];
     case "Energy":
       // Timestamp | Event | Topic | Page | Session ID
-      return [ts, event, p.topic || p.value || "", page, sid];
+      return [ts, event, p.topic || p.value || "", page, sid, p.sessionKind || ""];
     case "Automation":
       // Timestamp | Event | Feature | Page | Session ID
-      return [ts, event, p.feature || p.value || "", page, sid];
+      return [ts, event, p.feature || p.value || "", page, sid, p.sessionKind || ""];
     case "Solutions":
       // Timestamp | Event | Solution | Page | Session ID
-      return [ts, event, p.solution || p.value || "", page, sid];
+      return [ts, event, p.solution || p.value || "", page, sid, p.sessionKind || ""];
     case "Industries":
       // Timestamp | Event | Industry | Page | Session ID
-      return [ts, event, p.industry || p.value || "", page, sid];
+      return [ts, event, p.industry || p.value || "", page, sid, p.sessionKind || ""];
     case "Locations":
       // Timestamp | Event | Location | Page | Session ID
-      return [ts, event, p.location || p.value || "", page, sid];
+      return [ts, event, p.location || p.value || "", page, sid, p.sessionKind || ""];
     case "AI Assistant":
       // Timestamp | Event | Input / Selection | Page | Session ID
-      return [ts, event, p.inputSelection || p.value || "", page, sid];
+      return [ts, event, p.inputSelection || p.value || "", page, sid, p.sessionKind || ""];
     case "CTA Interactions":
       // Timestamp | Event | CTA | Page | Session ID
-      return [ts, event, p.cta || p.value || "", page, sid];
+      return [ts, event, p.cta || p.value || "", page, sid, p.sessionKind || ""];
     default:
       return null;
   }
@@ -466,6 +780,7 @@ function updateAnalyticsSpreadsheet() {
   var quickLeads = getSheetRows(rawSs, "Quick_Inquiries");
   var longLeads = getSheetRows(rawSs, "Contact_Submissions");
   var dedicatedLeads = getSheetRows(rawSs, "Lead_Submissions");
+  var sessionContext = buildSessionContextMap(getSheetRows(rawSs, "Session_Context"));
 
   var advancedSource = {
     Navigation: navData,
@@ -483,12 +798,19 @@ function updateAnalyticsSpreadsheet() {
     Lead_Submissions: dedicatedLeads
   };
   var advancedModel = buildAdvancedWebsiteIntelligenceModel(advancedSource, getReportingTimezone(rawSs));
+  var sessionRecords = buildSessionIntelligenceRecords(advancedModel, sessionContext);
+  renderSessionIntelligence(anaSs, sessionRecords);
+  renderTrafficIntelligence(anaSs, sessionRecords);
+  renderGeoIntelligence(anaSs, sessionRecords);
+  renderTimezoneIntelligence(anaSs, sessionRecords);
+  renderIpIntelligence(anaSs, sessionRecords);
+  renderUnifiedIntelligence(anaSs, buildUnifiedIntelligenceModel(sessionRecords));
 
   // Distinct Sessions across all tabs
   var allSessions = {};
-  [navData, regData, infData, eneData, autData, solData, indData, locData, aiData, ctaData, quickLeads, longLeads].forEach(function(dataset) {
+  [navData, regData, infData, eneData, autData, solData, indData, locData, aiData, ctaData, quickLeads, longLeads, dedicatedLeads].forEach(function(dataset) {
     dataset.forEach(function(row) {
-      var sid = row[row.length - 1]; // Session ID is always the last column
+      var sid = rawSessionId(row);
       if (sid && sid !== "Session ID" && sid !== "session_fallback") {
         allSessions[sid] = true;
       }
@@ -512,6 +834,7 @@ function updateAnalyticsSpreadsheet() {
   var quickOpens = 0;
   var quickSubmits = quickLeads.length;
   var longSubmits = longLeads.length;
+  var dedicatedSubmits = dedicatedLeads.length;
   ctaData.forEach(function(r) {
     if (r[1] === "quick_inquiry_open") quickOpens++;
   });
@@ -526,9 +849,9 @@ function updateAnalyticsSpreadsheet() {
     refreshTime: refreshTime,
     pageViewsCount: pageViewsCount,
     uniqueSessionsCount: uniqueSessionsCount,
-    totalInquiries: quickSubmits + longSubmits,
+    totalInquiries: quickSubmits + longSubmits + dedicatedSubmits,
     quickSubmits: quickSubmits,
-    longSubmits: longSubmits,
+    longSubmits: longSubmits + dedicatedSubmits,
     quickOpens: quickOpens,
     whatsAppTriggers: whatsAppTriggers,
     totalEvents: totalEvents,
@@ -538,10 +861,10 @@ function updateAnalyticsSpreadsheet() {
   });
 
   // 2. Regional Analytics Sheet
-  renderRegionalAnalytics(anaSs, regData, locData, quickLeads, longLeads);
+  renderRegionalAnalytics(anaSs, regData, locData, quickLeads, longLeads, dedicatedLeads);
 
   // 3. CTA and Conversion Funnel Sheet
-  renderCtaAndFunnel(anaSs, ctaData, uniqueSessionsCount, quickOpens, quickSubmits, longSubmits);
+  renderCtaAndFunnel(anaSs, ctaData, uniqueSessionsCount, quickOpens, quickSubmits, longSubmits + dedicatedSubmits);
 
   // 4. Infrastructure & Energy Telemetry Sheet
   renderInfraEnergyAnalytics(anaSs, infData, eneData, autData);
@@ -581,7 +904,7 @@ function renderExecutiveSummary(anaSs, stats) {
     ["Total Unique Sessions", stats.uniqueSessionsCount, "Anonymous browser session tokens"],
     ["Total Inquiries Received", stats.totalInquiries, "Verified inquiry submissions across all forms"],
     ["- Quick Inquiry Leads", stats.quickSubmits, "Dedicated modal submissions"],
-    ["- Long-Form Technical Inquiries", stats.longSubmits, "Contact page infrastructure inquiries"],
+    ["- Long-Form / Lead Submissions", stats.longSubmits, "Contact page and dedicated lead submissions"],
     ["Quick Inquiry Modals Opened", stats.quickOpens, "User initiated the modal"],
     ["WhatsApp Action Triggers", stats.whatsAppTriggers, "Header / footer / modal WhatsApp buttons"],
     ["Total Behavioral Interaction Events", stats.totalEvents, "Across 10 behavioral dimensions"],
@@ -641,7 +964,7 @@ function renderExecutiveSummary(anaSs, stats) {
 /**
  * 2. Regional Analytics Sheet
  */
-function renderRegionalAnalytics(anaSs, regData, locData, quickLeads, longLeads) {
+function renderRegionalAnalytics(anaSs, regData, locData, quickLeads, longLeads, dedicatedLeads) {
   anaSs = resolveSpreadsheet(anaSs, ANALYTICS_SPREADSHEET_ID, "analytics");
   var sheet = getOrCreateSheet(anaSs, "Regional_Analytics");
   sheet.clear();
@@ -672,6 +995,13 @@ function renderRegionalAnalytics(anaSs, regData, locData, quickLeads, longLeads)
 
   longLeads.forEach(function(r) {
     var val = (r[7] || "").toLowerCase();
+    if (val.indexOf("madurai") !== -1) regions["Madurai"].inquiries++;
+    if (val.indexOf("coimbatore") !== -1) regions["Coimbatore"].inquiries++;
+    if (val.indexOf("trichy") !== -1) regions["Trichy"].inquiries++;
+    if (val.indexOf("mangalore") !== -1) regions["Mangalore"].inquiries++;
+  });
+  (dedicatedLeads || []).forEach(function(r) {
+    var val = (r[6] || "").toLowerCase();
     if (val.indexOf("madurai") !== -1) regions["Madurai"].inquiries++;
     if (val.indexOf("coimbatore") !== -1) regions["Coimbatore"].inquiries++;
     if (val.indexOf("trichy") !== -1) regions["Trichy"].inquiries++;
@@ -730,7 +1060,7 @@ function renderCtaAndFunnel(anaSs, ctaData, uniqueSessions, quickOpens, quickSub
     ["1. Unique Visitors (Sessions)", uniqueSessions, "100.0%", "Baseline total traffic"],
     ["2. Quick Inquiry Opened", quickOpens, uniqueSessions > 0 ? ((quickOpens / uniqueSessions) * 100).toFixed(1) + "%" : "0%", "Users who clicked an inquiry CTA button"],
     ["3. Quick Inquiry Form Submitted", quickSubmits, quickOpens > 0 ? ((quickSubmits / quickOpens) * 100).toFixed(1) + "%" : "0%", "High-intent quick lead completions"],
-    ["4. Long-Form Requirements Submitted", longSubmits, uniqueSessions > 0 ? ((longSubmits / uniqueSessions) * 100).toFixed(1) + "%" : "0%", "Detailed consultative technical inquiries"],
+    ["4. Long-Form / Lead Submissions", longSubmits, uniqueSessions > 0 ? ((longSubmits / uniqueSessions) * 100).toFixed(1) + "%" : "0%", "Detailed consultative and dedicated lead submissions"],
     [""],
     ["TOP CTA BUTTON / INTERACTION CLICKS"],
     ["CTA Identifier / Value", "Total Click Count"]
@@ -915,8 +1245,36 @@ function getOrCreateSheet(ss, name, headers) {
       s.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
       s.setFrozenRows(1);
     }
+  } else if (headers && headers.length > s.getLastColumn()) {
+    s.getRange(1, s.getLastColumn() + 1, 1, headers.length - s.getLastColumn()).setValues([
+      headers.slice(s.getLastColumn())
+    ]);
+    s.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
+    s.setFrozenRows(1);
   }
   return s;
+}
+
+function appendInquiryOnce(sheet, row, requestId, requestColumnIndex) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    if (findInquiryRequest(sheet, requestId, requestColumnIndex) > 0) return true;
+    sheet.appendRow(row);
+    return false;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function findInquiryRequest(sheet, requestId, requestColumnIndex) {
+  if (!requestId || !sheet || sheet.getLastRow() <= 1) return 0;
+  var lastRow = sheet.getLastRow();
+  var values = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+  for (var i = 0; i < values.length; i++) {
+    if (String(values[i][requestColumnIndex] || "") === String(requestId)) return i + 2;
+  }
+  return 0;
 }
 
 /**
@@ -1013,18 +1371,18 @@ function padRows(arr, len) {
 
 function setupBehavioralSheetIfMissing(rawSs, targetSheet) {
   var schemaMap = {
-    "Navigation": ["Timestamp", "Event", "Page", "Destination", "Session ID"],
-    "Regions": ["Timestamp", "Event", "Region", "Page", "Session ID"],
-    "Infrastructure": ["Timestamp", "Event", "Capability", "Page", "Session ID"],
-    "Energy": ["Timestamp", "Event", "Topic", "Page", "Session ID"],
-    "Automation": ["Timestamp", "Event", "Feature", "Page", "Session ID"],
-    "Solutions": ["Timestamp", "Event", "Solution", "Page", "Session ID"],
-    "Industries": ["Timestamp", "Event", "Industry", "Page", "Session ID"],
-    "Locations": ["Timestamp", "Event", "Location", "Page", "Session ID"],
-    "AI Assistant": ["Timestamp", "Event", "Input / Selection", "Page", "Session ID"],
-    "CTA Interactions": ["Timestamp", "Event", "CTA", "Page", "Session ID"]
+    "Navigation": ["Timestamp", "Event", "Page", "Destination", "Session ID", "Session Kind"],
+    "Regions": ["Timestamp", "Event", "Region", "Page", "Session ID", "Session Kind"],
+    "Infrastructure": ["Timestamp", "Event", "Capability", "Page", "Session ID", "Session Kind"],
+    "Energy": ["Timestamp", "Event", "Topic", "Page", "Session ID", "Session Kind"],
+    "Automation": ["Timestamp", "Event", "Feature", "Page", "Session ID", "Session Kind"],
+    "Solutions": ["Timestamp", "Event", "Solution", "Page", "Session ID", "Session Kind"],
+    "Industries": ["Timestamp", "Event", "Industry", "Page", "Session ID", "Session Kind"],
+    "Locations": ["Timestamp", "Event", "Location", "Page", "Session ID", "Session Kind"],
+    "AI Assistant": ["Timestamp", "Event", "Input / Selection", "Page", "Session ID", "Session Kind"],
+    "CTA Interactions": ["Timestamp", "Event", "CTA", "Page", "Session ID", "Session Kind"]
   };
-  var headers = schemaMap[targetSheet] || ["Timestamp", "Event", "Value", "Page", "Session ID"];
+  var headers = schemaMap[targetSheet] || ["Timestamp", "Event", "Value", "Page", "Session ID", "Session Kind"];
   return getOrCreateSheet(rawSs, targetSheet, headers);
 }
 
@@ -1117,6 +1475,7 @@ function buildAdvancedWebsiteIntelligenceModel(source, timezone) {
         timestamp: advancedRecordTime(row[0]),
         sourceIndex: index,
         sessionId: advancedSessionId(row),
+        sessionKind: String(row.length >= 6 ? row[5] || "" : ""),
         row: row
       });
     });
@@ -1280,8 +1639,458 @@ function updateAdvancedWebsiteIntelligence(anaSs, model) {
 }
 
 function advancedSessionId(row) {
+  return rawSessionId(row);
+}
+
+function buildSessionIntelligenceRecords(model, contextMap) {
+  var records = [];
+  Object.keys(model.sessions || {}).forEach(function(sessionId) {
+    var session = model.sessions[sessionId];
+    var events = (session.events || []).slice().sort(advancedCompareRecords);
+    if (!events.length && (session.leads || []).length) {
+      events = session.leads.map(function(lead) {
+        return {
+          source: "Lead_Submissions",
+          event: "lead_conversion",
+          value: lead.type || "",
+          page: "",
+          timestamp: lead.timestamp || 0,
+          sourceIndex: lead.sourceIndex || 0,
+          sessionId: sessionId,
+          sessionKind: lead.sessionKind || ""
+        };
+      });
+    }
+    if (!events.length) return;
+
+    var pageViews = [];
+    var pages = [];
+    var lastPage = "";
+    var lastPageTime = 0;
+    var dwell = {};
+    var ctaInteractions = 0;
+    var formInteractions = 0;
+    var leadConversion = false;
+    var engaged = false;
+    var sessionEndObserved = false;
+
+    if ((session.leads || []).length) {
+      leadConversion = true;
+      engaged = true;
+      formInteractions += session.leads.length;
+    }
+
+    events.forEach(function(record) {
+      var eventName = record.event;
+      var page = record.page || record.destination || "";
+      if (eventName === "page_view" || eventName === "nav_page_view") {
+        page = page || record.value || "/";
+        if (!dwell[page]) dwell[page] = { page_start: record.timestamp, page_end: record.timestamp, active_time: 0 };
+        dwell[page].page_end = record.timestamp;
+        if (page !== lastPage || !lastPageTime || record.timestamp - lastPageTime > 2000) {
+          pages.push(page);
+          pageViews.push(record);
+          lastPage = page;
+          lastPageTime = record.timestamp;
+        }
+      }
+      if (eventName === "time_on_page") {
+        var activeMs = Number(record.value);
+        page = page || "/";
+        if (isFinite(activeMs) && activeMs >= 0) {
+          if (!dwell[page]) dwell[page] = { page_start: record.timestamp, page_end: record.timestamp, active_time: 0 };
+          dwell[page].active_time += activeMs;
+          dwell[page].page_end = record.timestamp;
+        }
+      }
+      if (eventName === "session_end") sessionEndObserved = true;
+      if (record.source === "CTA Interactions" && !isSessionHousekeepingEvent(eventName)) {
+        ctaInteractions++;
+        engaged = true;
+      }
+      if (/^(form_|lead_conversion)/.test(eventName)) {
+        formInteractions++;
+        engaged = true;
+      }
+      if (eventName === "lead_conversion" || eventName === "form_submit") leadConversion = true;
+      if (/^engagement_/.test(eventName) || /^(scroll_50|scroll_75|scroll_90|scroll_100)$/.test(eventName)) engaged = true;
+    });
+
+    var first = events[0];
+    var last = events[events.length - 1];
+    var start = first.timestamp || 0;
+    var end = last.timestamp || 0;
+    var bounce = pages.length === 1 && !engaged && !leadConversion;
+    var context = (contextMap && contextMap[sessionId]) || {};
+    var suspicious = detectSuspiciousSession(events, pages.length);
+    records.push({
+      session_id: sessionId,
+      session_type: sessionKindForSession(session, events),
+      session_start_time: start ? new Date(start).toISOString() : "",
+      session_end_time: end ? new Date(end).toISOString() : "",
+      entry_page: pages[0] || first.page || "",
+      pages_visited: pages,
+      pages_count: pages.length,
+      navigation_flow: pages.join(" → "),
+      exit_page: pages.length ? pages[pages.length - 1] : (last.page || ""),
+      total_session_duration: start && end && end >= start ? end - start : "",
+      page_dwell_times: dwell,
+      bounce: pages.length ? bounce : "",
+      engaged: engaged,
+      total_events: events.length,
+      cta_interactions: ctaInteractions,
+      form_interactions: formInteractions,
+      lead_conversion: leadConversion,
+      session_end_observed: sessionEndObserved,
+      traffic_source: context.traffic_source || "unknown",
+      referrer_url: context.referrer_url || "",
+      landing_page: context.landing_page || "",
+      utm_source: context.utm_source || "",
+      utm_medium: context.utm_medium || "",
+      utm_campaign: context.utm_campaign || "",
+      utm_term: context.utm_term || "",
+      utm_content: context.utm_content || "",
+      geo_country: context.geo_country || "",
+      geo_region: context.geo_region || "",
+      geo_city: context.geo_city || "",
+      timezone: context.timezone || "",
+      utc_offset: context.utc_offset || "",
+      activity_local_hour: context.activity_local_hour || "",
+      activity_day: context.activity_day || "",
+      network_type: context.network_type || "unavailable",
+      isp: context.isp || "",
+      organization: context.organization || "",
+      asn: context.asn || "",
+      geo_confidence: context.geo_confidence || "",
+      geo_source: context.geo_source || "not_configured",
+      network_confidence: context.network_confidence || "",
+      network_source: context.network_source || "not_configured",
+      ip_available: context.ip_available || "unavailable",
+      suspicious_traffic: suspicious.suspicious,
+      suspicious_reason: suspicious.reason
+    });
+  });
+  return records;
+}
+
+function buildSessionContextMap(rows) {
+  var map = {};
+  (rows || []).forEach(function(row) {
+    var sessionId = String(row[0] || "");
+    if (!sessionId) return;
+    map[sessionId] = {
+      session_kind: String(row[1] || ""), traffic_source: String(row[3] || "unknown"),
+      referrer_url: String(row[4] || ""), landing_page: String(row[5] || ""),
+      utm_source: String(row[6] || ""), utm_medium: String(row[7] || ""),
+      utm_campaign: String(row[8] || ""), utm_term: String(row[9] || ""),
+      utm_content: String(row[10] || ""), timezone: String(row[11] || ""),
+      utc_offset: String(row[12] || ""), activity_local_hour: String(row[13] || ""),
+      activity_day: String(row[14] || ""), geo_country: String(row[15] || ""),
+      geo_region: String(row[16] || ""), geo_city: String(row[17] || ""),
+      ip_available: String(row[18] || "unavailable"), network_type: String(row[19] || "unavailable"),
+      isp: String(row[20] || ""), organization: String(row[21] || ""), asn: String(row[22] || ""),
+      context_source: String(row[23] || ""), geo_confidence: String(row[24] || ""),
+      geo_source: String(row[25] || "not_configured"), network_confidence: String(row[26] || ""),
+      network_source: String(row[27] || "not_configured")
+    };
+  });
+  return map;
+}
+
+function detectSuspiciousSession(events, pageCount) {
+  var timestamps = (events || []).map(function(event) { return event.timestamp; }).filter(function(value) { return isFinite(value); }).sort(function(a, b) { return a - b; });
+  for (var i = 0; i + 20 < timestamps.length; i++) {
+    if (timestamps[i + 20] - timestamps[i] <= 10000) return { suspicious: true, reason: "large_event_burst" };
+  }
+  if (events.length > 120) return { suspicious: true, reason: "high_event_volume" };
+  if (pageCount > 30) return { suspicious: true, reason: "high_page_view_volume" };
+  if (events.length >= 40 && timestamps.length > 1 && timestamps[timestamps.length - 1] - timestamps[0] <= 60000) {
+    return { suspicious: true, reason: "abnormal_activity_density" };
+  }
+  return { suspicious: false, reason: "" };
+}
+
+function sessionKindForSession(session, events) {
+  var kinds = session.kinds || {};
+  if (kinds.new_session) return "new_session";
+  if (kinds.returning_session) return "returning_session";
+  for (var i = 0; i < events.length; i++) {
+    if (events[i].sessionKind) return events[i].sessionKind;
+  }
+  return "unknown";
+}
+
+function isSessionHousekeepingEvent(eventName) {
+  return eventName === "page_view" || eventName === "nav_page_view" ||
+    eventName === "time_on_page" || eventName === "session_end" ||
+    /^scroll_/.test(eventName) || /^engagement_/.test(eventName);
+}
+
+function renderSessionIntelligence(anaSs, records) {
+  var sheet = getOrCreateSheet(anaSs, "Session_Intelligence");
+  sheet.clear();
+  var rows = [
+    ["GREENNEXT SESSION INTELLIGENCE"],
+    ["Derived from canonical behavioral and inquiry event streams. Dwell values are active foreground milliseconds."],
+    [""],
+    ["Metric", "Value"],
+    ["Total Sessions", records.length],
+    ["New Sessions", records.filter(function(r) { return r.session_type === "new_session"; }).length],
+    ["Returning Sessions", records.filter(function(r) { return r.session_type === "returning_session"; }).length],
+    ["Average Session Duration (ms)", averageSessionMetric(records, "total_session_duration")],
+    ["Average Pages / Session", averageSessionMetric(records, "pages_count")],
+    ["Bounce Rate", records.length ? (records.filter(function(r) { return r.bounce === true; }).length / records.length * 100).toFixed(1) + "%" : "N/A"],
+    ["Engagement Rate", records.length ? (records.filter(function(r) { return r.engaged === true; }).length / records.length * 100).toFixed(1) + "%" : "N/A"],
+    [""],
+    ["session_id", "session_type", "session_start_time", "session_end_time", "entry_page", "pages_visited", "pages_count", "navigation_flow", "exit_page", "total_session_duration", "page_dwell_times", "bounce", "engaged", "total_events", "cta_interactions", "form_interactions", "lead_conversion", "session_end_observed", "traffic_source", "referrer_url", "landing_page", "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "geo_country", "geo_region", "geo_city", "timezone", "utc_offset", "activity_local_hour", "activity_day", "network_type", "isp", "organization", "asn", "ip_available", "suspicious_traffic", "suspicious_reason", "geo_confidence", "geo_source", "network_confidence", "network_source"]
+  ];
+  records.forEach(function(record) {
+    rows.push([
+      record.session_id, record.session_type, record.session_start_time, record.session_end_time,
+      record.entry_page, record.pages_visited.join(" | "), record.pages_count, record.navigation_flow,
+      record.exit_page, record.total_session_duration, JSON.stringify(record.page_dwell_times),
+      record.bounce, record.engaged, record.total_events, record.cta_interactions,
+      record.form_interactions, record.lead_conversion, record.session_end_observed,
+      record.traffic_source, record.referrer_url, record.landing_page, record.utm_source,
+      record.utm_medium, record.utm_campaign, record.utm_term, record.utm_content,
+      record.geo_country, record.geo_region, record.geo_city, record.timezone, record.utc_offset,
+      record.activity_local_hour, record.activity_day, record.network_type, record.isp, record.organization, record.asn,
+      record.ip_available, record.suspicious_traffic, record.suspicious_reason, record.geo_confidence,
+      record.geo_source, record.network_confidence, record.network_source
+    ]);
+  });
+  writeRows(sheet, rows, 44);
+  sheet.getRange("A1:AR1").setFontWeight("bold").setBackground("#0F172A").setFontColor("#10B981");
+  sheet.getRange("A4:B4").setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
+  sheet.getRange("A13:AR13").setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
+  sheet.autoResizeColumns(1, 44);
+}
+
+function averageSessionMetric(records, key) {
+  var values = records.map(function(record) {
+    return record[key] === "" || record[key] === null || record[key] === undefined ? null : Number(record[key]);
+  }).filter(function(value) { return value !== null && isFinite(value); });
+  return values.length ? (values.reduce(function(total, value) { return total + value; }, 0) / values.length).toFixed(2) : "N/A";
+}
+
+function aggregateSessionRecords(records, keyFunction) {
+  var groups = {};
+  (records || []).forEach(function(record) {
+    var key = keyFunction(record) || "Unavailable";
+    if (!groups[key]) groups[key] = { sessions: 0, engaged: 0, conversions: 0, suspicious: 0 };
+    groups[key].sessions++;
+    if (record.engaged) groups[key].engaged++;
+    if (record.lead_conversion) groups[key].conversions++;
+    if (record.suspicious_traffic) groups[key].suspicious++;
+  });
+  return groups;
+}
+
+function aggregateRows(groups, firstColumn) {
+  return Object.keys(groups).sort(function(a, b) { return groups[b].sessions - groups[a].sessions; }).map(function(key) {
+    var group = groups[key];
+    return [key, group.sessions, group.engaged, group.conversions, group.suspicious];
+  });
+}
+
+function renderTrafficIntelligence(anaSs, records) {
+  var sheet = getOrCreateSheet(anaSs, "Traffic_Intelligence");
+  sheet.clear();
+  var rows = [
+    ["GREENNEXT TRAFFIC INTELLIGENCE"],
+    ["Derived from first-touch session context and Layer 1 session records."],
+    [""],
+    ["Traffic Source", "Sessions", "Engaged Sessions", "Conversions", "Suspicious Sessions"]
+  ].concat(aggregateRows(aggregateSessionRecords(records, function(r) { return r.traffic_source; })), [[""], ["Campaign", "Sessions", "Engaged Sessions", "Conversions", "Suspicious Sessions"]], aggregateRows(aggregateSessionRecords(records, function(r) { return r.utm_campaign || "No Campaign"; })), [[""], ["Landing Page", "Sessions", "Engaged Sessions", "Conversions", "Suspicious Sessions"]], aggregateRows(aggregateSessionRecords(records, function(r) { return r.landing_page || r.entry_page || "Unavailable"; })), [[""], ["Referral URL", "Sessions", "Engaged Sessions", "Conversions", "Suspicious Sessions"]], aggregateRows(aggregateSessionRecords(records, function(r) { return r.referrer_url || "Direct / None"; })));
+  writeRows(sheet, rows, 5);
+  styleIntelligenceSheet(sheet, "A1:E1");
+}
+
+function renderGeoIntelligence(anaSs, records) {
+  var sheet = getOrCreateSheet(anaSs, "Geo_Intelligence");
+  sheet.clear();
+  var rows = [
+    ["GREENNEXT GEO INTELLIGENCE"],
+    ["Only trusted server-side enrichment is shown; unavailable fields remain unavailable."],
+    [""],
+    ["Country / Region / City", "Sessions", "Engaged Sessions", "Conversions", "Suspicious Sessions"]
+  ].concat(aggregateRows(aggregateSessionRecords(records, function(r) { return [r.geo_country, r.geo_region, r.geo_city].filter(Boolean).join(" / ") || "Unavailable"; })));
+  writeRows(sheet, rows, 5);
+  styleIntelligenceSheet(sheet, "A1:E1");
+}
+
+function renderTimezoneIntelligence(anaSs, records) {
+  var sheet = getOrCreateSheet(anaSs, "Timezone_Intelligence");
+  sheet.clear();
+  var rows = [
+    ["GREENNEXT TIMEZONE INTELLIGENCE"],
+    ["Timezone and local activity hour are client-derived unless a trusted server source is later added."],
+    [""],
+    ["Timezone / Activity Day / Local Hour", "Sessions", "Engaged Sessions", "Conversions", "Suspicious Sessions"]
+  ].concat(aggregateRows(aggregateSessionRecords(records, function(r) { return (r.timezone || "Timezone unavailable") + " / day " + (r.activity_day || "unknown") + " / hour " + (r.activity_local_hour || "unknown"); })));
+  writeRows(sheet, rows, 5);
+  styleIntelligenceSheet(sheet, "A1:E1");
+}
+
+function renderIpIntelligence(anaSs, records) {
+  var sheet = getOrCreateSheet(anaSs, "IP_Intelligence");
+  sheet.clear();
+  var rows = [
+    ["GREENNEXT IP / NETWORK INTELLIGENCE"],
+    ["Raw IP is not stored. Network fields remain unavailable until a trusted server-side provider is configured."],
+    [""],
+    ["Network / Organization / ASN", "Sessions", "Engaged Sessions", "Conversions", "Suspicious Sessions"],
+  ].concat(aggregateRows(aggregateSessionRecords(records, function(r) { return [r.network_type, r.organization, r.asn].filter(Boolean).join(" / ") || "Unavailable"; })), [[""], ["Suspicious Reason", "Sessions", "Engaged Sessions", "Conversions", "Suspicious Sessions"]], aggregateRows(aggregateSessionRecords(records, function(r) { return r.suspicious_reason || "None"; })));
+  writeRows(sheet, rows, 5);
+  styleIntelligenceSheet(sheet, "A1:E1");
+}
+
+function buildUnifiedIntelligenceModel(records) {
+  var unified = (records || []).filter(function(record) { return record && record.session_id; }).map(function(record) {
+    var enriched = {};
+    Object.keys(record).forEach(function(key) { enriched[key] = record[key]; });
+    enriched.engagement_segment = unifiedEngagementSegment(record);
+    enriched.behavior_patterns = unifiedBehaviorPatterns(record);
+    enriched.unified_profile = [
+      record.session_type || "unknown",
+      record.traffic_source || "unknown",
+      record.utm_campaign || "no_campaign",
+      enriched.engagement_segment,
+      record.lead_conversion ? "converted" : "not_converted",
+      record.geo_country || "geo_unavailable",
+      record.timezone || "timezone_unavailable",
+      record.network_type || "network_unavailable"
+    ].join(" | ");
+    return enriched;
+  });
+  return {
+    records: unified,
+    traffic: aggregateUnifiedDimension(unified, function(r) { return r.traffic_source; }),
+    campaigns: aggregateUnifiedDimension(unified, function(r) { return r.utm_campaign || "No Campaign"; }),
+    entries: aggregateUnifiedDimension(unified, function(r) { return r.entry_page; }),
+    exits: aggregateUnifiedDimension(unified, function(r) { return r.exit_page; }),
+    navigation: aggregateUnifiedDimension(unified, function(r) { return r.navigation_flow; }),
+    geo: aggregateUnifiedDimension(unified, function(r) { return [r.geo_country, r.geo_region, r.geo_city].filter(Boolean).join(" / ") || "Unavailable"; }),
+    timezone: aggregateUnifiedDimension(unified, function(r) { return [r.timezone, r.activity_day, r.activity_local_hour].filter(Boolean).join(" / ") || "Unavailable"; }),
+    activityHours: aggregateUnifiedDimension(unified, function(r) { return r.activity_local_hour || "Unavailable"; }),
+    trafficGeo: aggregateUnifiedDimension(unified, function(r) { return [(r.traffic_source || "unknown"), r.geo_country || "Unavailable"].join(" / "); }),
+    trafficTimezone: aggregateUnifiedDimension(unified, function(r) { return [(r.traffic_source || "unknown"), r.timezone || "Unavailable", r.activity_local_hour || "unknown"].join(" / "); }),
+    networkTraffic: aggregateUnifiedDimension(unified, function(r) { return [(r.network_type || "unavailable"), (r.traffic_source || "unknown")].join(" / "); })
+  };
+}
+
+function unifiedActiveDwell(record) {
+  var dwell = record.page_dwell_times || {};
+  return Object.keys(dwell).reduce(function(total, page) { return total + (Number(dwell[page].active_time) || 0); }, 0);
+}
+
+function unifiedEngagementSegment(record) {
+  if (record.lead_conversion) return "converted";
+  if (unifiedActiveDwell(record) >= 120000 && Number(record.pages_count) >= 3 && (Number(record.cta_interactions) > 0 || Number(record.form_interactions) > 0)) return "high";
+  if (Number(record.pages_count) >= 2 || record.engaged || Number(record.total_events) >= 3) return "medium";
+  return "low";
+}
+
+function unifiedBehaviorPatterns(record) {
+  var patterns = [];
+  if (Number(record.pages_count) <= 1) patterns.push("single_page");
+  if (Number(record.pages_count) >= 3) patterns.push("deep_navigation");
+  if (unifiedEngagementSegment(record) === "high") patterns.push("high_engagement");
+  if (Number(record.cta_interactions) > 0) patterns.push("cta_driven");
+  if (Number(record.form_interactions) > 0) patterns.push("form_driven");
+  if (record.lead_conversion) patterns.push("converted");
+  if (record.session_type === "returning_session" && record.engaged) patterns.push("returning_engaged");
+  if (record.utm_campaign && record.engaged) patterns.push("campaign_engaged");
+  return patterns;
+}
+
+function aggregateUnifiedDimension(records, keyFunction) {
+  var groups = {};
+  (records || []).forEach(function(record) {
+    var key = keyFunction(record) || "Unavailable";
+    if (!groups[key]) groups[key] = { sessions: 0, engaged_sessions: 0, bounce_sessions: 0, conversions: 0, total_duration: 0, total_pages: 0 };
+    groups[key].sessions++;
+    if (record.engaged) groups[key].engaged_sessions++;
+    if (record.bounce === true) groups[key].bounce_sessions++;
+    if (record.lead_conversion) groups[key].conversions++;
+    groups[key].total_duration += Number(record.total_session_duration) || 0;
+    groups[key].total_pages += Number(record.pages_count) || 0;
+  });
+  return groups;
+}
+
+function unifiedGroupRows(groups, limit) {
+  return Object.keys(groups).sort(function(a, b) { return groups[b].sessions - groups[a].sessions; }).slice(0, limit || 25).map(function(key) {
+    var group = groups[key];
+    return [
+      key, group.sessions, group.engaged_sessions, group.bounce_sessions, group.conversions,
+      group.sessions ? (group.conversions / group.sessions * 100).toFixed(1) + "%" : "N/A",
+      group.sessions ? (group.total_duration / group.sessions).toFixed(2) : "N/A",
+      group.sessions ? (group.total_pages / group.sessions).toFixed(2) : "N/A"
+    ];
+  });
+}
+
+function unifiedTopKeys(groups, limit) {
+  return Object.keys(groups).sort(function(a, b) { return groups[b].sessions - groups[a].sessions; }).slice(0, limit || 5).join(" | ") || "N/A";
+}
+
+function renderUnifiedIntelligence(anaSs, model) {
+  var records = model.records || [];
+  var total = records.length;
+  var engaged = records.filter(function(r) { return r.engaged; }).length;
+  var returning = records.filter(function(r) { return r.session_type === "returning_session"; }).length;
+  var bounce = records.filter(function(r) { return r.bounce === true; }).length;
+  var cta = records.filter(function(r) { return Number(r.cta_interactions) > 0; }).length;
+  var form = records.filter(function(r) { return Number(r.form_interactions) > 0; }).length;
+  var converted = records.filter(function(r) { return r.lead_conversion; }).length;
+  var durationTotal = records.reduce(function(sum, r) { return sum + (Number(r.total_session_duration) || 0); }, 0);
+  var pagesTotal = records.reduce(function(sum, r) { return sum + (Number(r.pages_count) || 0); }, 0);
+  var sheet = getOrCreateSheet(anaSs, "Unified_Intelligence");
+  sheet.clear();
+  var rows = [
+    ["GREENNEXT UNIFIED INTELLIGENCE"],
+    ["Session-oriented deterministic analysis joining Layer 1 sessions with Layer 2 context. No PII or raw IP identity is used."],
+    [""],
+    ["Executive Metric", "Value"],
+    ["Total Sessions", total], ["Engaged Sessions", engaged], ["Returning Sessions", returning],
+    ["Bounce Rate", total ? (bounce / total * 100).toFixed(1) + "%" : "N/A"],
+    ["Average Session Duration (ms)", total ? (durationTotal / total).toFixed(2) : "N/A"],
+    ["Average Pages / Session", total ? (pagesTotal / total).toFixed(2) : "N/A"],
+    ["CTA Rate", total ? (cta / total * 100).toFixed(1) + "%" : "N/A"],
+    ["Form Rate", total ? (form / total * 100).toFixed(1) + "%" : "N/A"],
+    ["Conversion Rate", total ? (converted / total * 100).toFixed(1) + "%" : "N/A"],
+    ["Suspicious Sessions", records.filter(function(r) { return r.suspicious_traffic; }).length],
+    ["Top Traffic Sources", unifiedTopKeys(model.traffic)],
+    ["Top Campaigns", unifiedTopKeys(model.campaigns)],
+    ["Top Entry Pages", unifiedTopKeys(model.entries)],
+    ["Top Exit Pages", unifiedTopKeys(model.exits)],
+    ["Top Navigation Paths", unifiedTopKeys(model.navigation)],
+    ["Top Geographies", unifiedTopKeys(model.geo)],
+    ["Top Timezones", unifiedTopKeys(model.timezone)],
+    ["Peak Activity Hours", unifiedTopKeys(model.activityHours)],
+    [""],
+    ["Traffic / Session", "Sessions", "Engaged Sessions", "Bounce Sessions", "Conversions", "Conversion Rate", "Avg Duration (ms)", "Avg Pages"],
+    ["Traffic Source", "", "", "", "", "", "", ""],
+  ].concat(unifiedGroupRows(model.traffic), [[""], ["Campaign", "Sessions", "Engaged Sessions", "Bounce Sessions", "Conversions", "Conversion Rate", "Avg Duration (ms)", "Avg Pages"]], unifiedGroupRows(model.campaigns), [[""], ["Entry Page", "Sessions", "Engaged Sessions", "Bounce Sessions", "Conversions", "Conversion Rate", "Avg Duration (ms)", "Avg Pages"]], unifiedGroupRows(model.entries), [[""], ["Exit Page", "Sessions", "Engaged Sessions", "Bounce Sessions", "Conversions", "Conversion Rate", "Avg Duration (ms)", "Avg Pages"]], unifiedGroupRows(model.exits), [[""], ["Geo", "Sessions", "Engaged Sessions", "Bounce Sessions", "Conversions", "Conversion Rate", "Avg Duration (ms)", "Avg Pages"]], unifiedGroupRows(model.geo), [[""], ["Timezone / Day / Hour", "Sessions", "Engaged Sessions", "Bounce Sessions", "Conversions", "Conversion Rate", "Avg Duration (ms)", "Avg Pages"]], unifiedGroupRows(model.timezone), [[""], ["Traffic / Geo", "Sessions", "Engaged Sessions", "Bounce Sessions", "Conversions", "Conversion Rate", "Avg Duration (ms)", "Avg Pages"]], unifiedGroupRows(model.trafficGeo), [[""], ["Traffic / Timezone", "Sessions", "Engaged Sessions", "Bounce Sessions", "Conversions", "Conversion Rate", "Avg Duration (ms)", "Avg Pages"]], unifiedGroupRows(model.trafficTimezone), [[""], ["Network / Traffic", "Sessions", "Engaged Sessions", "Bounce Sessions", "Conversions", "Conversion Rate", "Avg Duration (ms)", "Avg Pages"]], unifiedGroupRows(model.networkTraffic), [[""], ["Funnel Stage", "Sessions", "Rate", "Definition"]], ["Traffic", total, "100%", "All unified sessions"], ["Landing Page", records.filter(function(r) { return !!r.landing_page || !!r.entry_page; }).length, total ? "100%" : "N/A", "Sessions with landing/entry context"], ["Page Engagement", engaged, total ? (engaged / total * 100).toFixed(1) + "%" : "N/A", "engaged = Layer 1 engagement"], ["CTA Interaction", cta, total ? (cta / total * 100).toFixed(1) + "%" : "N/A", "sessions with CTA interactions"], ["Form Interaction", form, total ? (form / total * 100).toFixed(1) + "%" : "N/A", "sessions with form interactions"], ["Lead Conversion", converted, total ? (converted / total * 100).toFixed(1) + "%" : "N/A", "sessions with lead conversion"], [[""], ["Navigation / Behavior", "Sessions", "Engaged Sessions", "Conversions", "Conversion Rate"]], unifiedGroupRows(model.navigation).map(function(row) { return [row[0], row[1], row[2], row[4], row[5]]; }), [[""], ["UNIFIED SESSION RECORDS"]], [["session_id", "session_type", "session_start_time", "session_end_time", "entry_page", "exit_page", "pages_count", "navigation_flow", "total_session_duration", "bounce", "engaged", "traffic_source", "referrer_url", "landing_page", "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "geo_country", "geo_region", "geo_city", "geo_confidence", "geo_source", "timezone", "activity_day", "activity_local_hour", "network_type", "isp", "organization", "asn", "network_confidence", "network_source", "suspicious_traffic", "suspicious_reason", "total_events", "cta_interactions", "form_interactions", "lead_conversion", "engagement_segment", "behavior_patterns", "unified_profile"]], records.map(function(r) { return [r.session_id, r.session_type, r.session_start_time, r.session_end_time, r.entry_page, r.exit_page, r.pages_count, r.navigation_flow, r.total_session_duration, r.bounce, r.engaged, r.traffic_source, r.referrer_url, r.landing_page, r.utm_source, r.utm_medium, r.utm_campaign, r.utm_term, r.utm_content, r.geo_country, r.geo_region, r.geo_city, r.geo_confidence, r.geo_source, r.timezone, r.activity_day, r.activity_local_hour, r.network_type, r.isp, r.organization, r.asn, r.network_confidence, r.network_source, r.suspicious_traffic, r.suspicious_reason, r.total_events, r.cta_interactions, r.form_interactions, r.lead_conversion, r.engagement_segment, r.behavior_patterns.join(" | "), r.unified_profile]; }));
+  writeRows(sheet, rows, 42);
+  sheet.getRange("A1:AP1").setFontWeight("bold").setBackground("#0F172A").setFontColor("#10B981");
+  sheet.getRange("A4:B4").setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
+  sheet.autoResizeColumns(1, 42);
+}
+
+function styleIntelligenceSheet(sheet, titleRange) {
+  sheet.getRange(titleRange).setFontWeight("bold").setBackground("#0F172A").setFontColor("#10B981");
+  sheet.getRange("A4:E4").setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
+  sheet.autoResizeColumns(1, 5);
+}
+
+function rawSessionId(row) {
   if (!row || !row.length) return "";
-  if (row.length === 16) return String(row[10] || "");
+  if (row.length >= 16) return String(row[10] || "");
+  if (row.length === 13) return String(row[10] || "");
+  if (row.length === 12) return String(row[8] || "");
+  if (row.length === 6) return String(row[4] || "");
   return String(row[row.length - 1] || "");
 }
 
@@ -1928,7 +2737,7 @@ function buildReportEmailSummary(reportTitle, values) {
   addReportMetric(summary.kpis, "Unique Sessions", uniqueSessions);
   addReportMetric(summary.kpis, "Total Inquiries / Leads", leadConversions);
   addReportMetric(summary.kpis, "Quick Inquiry Leads", quickLeads);
-  addReportMetric(summary.kpis, "Long-Form Technical Inquiries", longLeads);
+  addReportMetric(summary.kpis, "Long-Form / Lead Submissions", longLeads);
   addReportMetric(summary.kpis, "Other Lead Submissions", otherLeads);
   addReportMetric(summary.kpis, "CTA Interactions", ctaInteractions);
   addReportMetric(summary.kpis, "Forms Opened", formsOpened);
@@ -2349,7 +3158,7 @@ function calculateReportMetrics(source, timezone, period) {
   allPeriodRows = allPeriodRows.concat(quick, longForm, dedicatedLeads);
   var sessions = {};
   allPeriodRows.forEach(function(row) {
-    var sid = row.length === 16 ? row[10] : row[row.length - 1];
+    var sid = rawSessionId(row);
     if (sid && sid !== "session_fallback") sessions[String(sid)] = true;
   });
 

@@ -19,7 +19,7 @@ export const Route = createFileRoute("/automation/")({
 });
 
 function AutomationIndexPage() {
-  const content = PAGES_CONTENT["automation"];
+  const content = PAGES_CONTENT["automation"]!;
   return (
     <div className="w-full bg-[#070A0E] text-white">
       <PageTemplate data={content} showCta={false} />

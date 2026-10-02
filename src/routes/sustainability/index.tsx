@@ -17,6 +17,6 @@ export const Route = createFileRoute("/sustainability/")({
 });
 
 function SustainabilityIndexPage() {
-  const content = PAGES_CONTENT["sustainability"];
+  const content = PAGES_CONTENT["sustainability"]!;
   return <PageTemplate data={content} />;
 }

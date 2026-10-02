@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { InternalLink as Link } from "../common/InternalLink";
 import {
   DASHBOARD_METRICS,
   HOURLY_ACTIVITY_PATTERN,
@@ -22,7 +22,7 @@ import { trackEvent } from "../../lib/analytics";
 export function DashboardPreview() {
   const [selectedRegionKey, setSelectedRegionKey] = useState<string>("madurai");
   const activeMetric: DashboardRegionMetric =
-    DASHBOARD_METRICS[selectedRegionKey] || DASHBOARD_METRICS.madurai;
+    DASHBOARD_METRICS[selectedRegionKey] ?? DASHBOARD_METRICS["madurai"]!;
 
   const metricCards = [
     {

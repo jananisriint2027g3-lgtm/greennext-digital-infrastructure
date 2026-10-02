@@ -21,7 +21,7 @@ export const Route = createFileRoute("/regions/")({
 });
 
 function RegionsIndexPage() {
-  const content = PAGES_CONTENT["regions"];
+  const content = PAGES_CONTENT["regions"]!;
   return (
     <div className="w-full bg-[#070A0E] text-white">
       <PageTemplate data={content} showCta={false} />

@@ -350,6 +350,7 @@ export function QuickInquiryModal({
                       errors.name ? "border-red-500/70" : "border-[#1E293B]"
                     }`}
                     id="quick-inquiry-name"
+                    autoFocus={isOpen}
                     autoComplete="name"
                   />
                   {errors.name && <p className="text-red-400 text-[10px] mt-1">{errors.name}</p>}

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { PAGES_CONTENT } from "../../data/pagesContent";
 import { PageTemplate } from "../../components/templates/PageTemplate";
 
@@ -16,6 +16,9 @@ export const Route = createFileRoute("/about/$slug")({
       ],
     };
   },
+  loader: ({ params }) => {
+    if (!PAGES_CONTENT[`about/${params.slug}`]) throw notFound();
+  },
   component: AboutSubmenuPage,
 });
 
@@ -25,7 +28,8 @@ function AboutSubmenuPage() {
   const page = PAGES_CONTENT[key];
 
   if (!page) {
-    return (
+    throw notFound();
+    /* return (
       <div className="min-h-[60vh] flex items-center justify-center bg-[#070A0E] text-white p-6">
         <div className="text-center max-w-md">
           <h2 className="text-xl font-bold mb-2">Page Not Found</h2>
@@ -40,7 +44,7 @@ function AboutSubmenuPage() {
           </a>
         </div>
       </div>
-    );
+    ); */
   }
 
   return <PageTemplate data={page} />;

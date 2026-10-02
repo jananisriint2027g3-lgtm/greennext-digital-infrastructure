@@ -4,22 +4,17 @@
  * Sends user interaction telemetry directly to the designated Google Apps Script Web App endpoint.
  * Schema matches the 10 fixed Google Sheets tabs exactly:
  *
- * 1. Navigation:      Timestamp | Event | Page | Destination | Session ID
- * 2. Regions:         Timestamp | Event | Region | Page | Session ID
- * 3. Infrastructure:  Timestamp | Event | Capability | Page | Session ID
- * 4. Energy:          Timestamp | Event | Topic | Page | Session ID
- * 5. Automation:      Timestamp | Event | Feature | Page | Session ID
- * 6. Solutions:       Timestamp | Event | Solution | Page | Session ID
- * 7. Industries:      Timestamp | Event | Industry | Page | Session ID
- * 8. Locations:       Timestamp | Event | Location | Page | Session ID
- * 9. AI Assistant:    Timestamp | Event | Input / Selection | Page | Session ID
- * 10. CTA Interactions: Timestamp | Event | CTA | Page | Session ID
+ * Behavioral tabs use: Timestamp | Event | Value | Page | Session ID | Session Kind.
+ * Historical rows may still use the original five-column format.
  */
 
 import { submitAirtableBehaviorEvent } from "./airtable-analytics.server-fn";
+import { readClientContext } from "./layer2-intelligence";
+import { recordActionEvent } from "./action-layer";
 
 const DEFAULT_APPS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbzP-MhwkC997UhXNzrORh9u3KQFw9Sf66RW9n4Ut7ZhK0HiFeRtjdX1tBRbM7pUIGsY/exec";
+const ANALYTICS_ENRICHMENT_ENDPOINT = "/api/analytics";
 
 function isPublicAppsScriptEndpoint(value: string): boolean {
   try {
@@ -45,6 +40,32 @@ export const ANALYTICS_ENDPOINT: string =
   configuredAnalyticsEndpoint && isPublicAppsScriptEndpoint(configuredAnalyticsEndpoint)
     ? configuredAnalyticsEndpoint
     : DEFAULT_APPS_SCRIPT_URL;
+
+function createAnalyticsEventId(): string {
+  try {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  } catch {
+    // Fall through to a non-identifying time/random value.
+  }
+  return `gn_evt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+}
+
+function sendAnalyticsBody(body: string): void {
+  const fallback = () => {
+    fetch(ANALYTICS_ENDPOINT, { method: "POST", mode: "no-cors", body }).catch(() => {
+      // Analytics failure must never interrupt the visitor experience.
+    });
+  };
+
+  fetch(ANALYTICS_ENRICHMENT_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+    keepalive: true,
+  }).then((response) => {
+    if (!response.ok) fallback();
+  }).catch(fallback);
+}
 
 export type AnalyticsTab =
   | "Navigation"
@@ -163,15 +184,31 @@ export function trackEvent({ tab, event, value, page }: AnalyticsPayload): void 
 
   const pagePath = page || getCurrentPage();
   const sessionId = getSessionId();
+  const sessionKind = getSessionKind();
+  const context = readClientContext(pagePath);
 
   // Keep the payload flat so it can be handled directly by the Apps Script web app.
   const payload: Record<string, string> = {
+    eventId: createAnalyticsEventId(),
     sheet: tab,
     event,
     page: pagePath,
     sessionId,
-    sessionKind: getSessionKind(),
+    sessionKind,
     timestamp: new Date().toISOString(),
+    siteHost: context.siteHost,
+    trafficSource: context.trafficSource,
+    referrerUrl: context.referrerUrl,
+    landingPage: context.landingPage,
+    utmSource: context.utmSource,
+    utmMedium: context.utmMedium,
+    utmCampaign: context.utmCampaign,
+    utmTerm: context.utmTerm,
+    utmContent: context.utmContent,
+    timezone: context.timezone,
+    utcOffset: context.utcOffset,
+    activityLocalHour: context.activityLocalHour,
+    activityDay: context.activityDay,
   };
 
   switch (tab) {
@@ -207,33 +244,21 @@ export function trackEvent({ tab, event, value, page }: AnalyticsPayload): void 
       break;
   }
 
+  // The action layer maintains only a local, anonymous first-party profile.
+  // It reuses this canonical event stream and never adds visitor identity to it.
+  recordActionEvent({
+    event,
+    page: pagePath,
+    value,
+    sourceTab: tab,
+    sessionId,
+    sessionKind,
+  });
+
   try {
     const body = JSON.stringify(payload);
 
-    // Prefer navigator.sendBeacon for fast, non-blocking telemetry
-    if (typeof navigator !== "undefined" && navigator.sendBeacon) {
-      const blob = new Blob([body], { type: "text/plain;charset=UTF-8" });
-      const sent = navigator.sendBeacon(ANALYTICS_ENDPOINT, blob);
-      if (!sent) {
-        // Use a simple request to avoid a CORS preflight on the Apps Script endpoint.
-        fetch(ANALYTICS_ENDPOINT, {
-          method: "POST",
-          mode: "no-cors",
-          body,
-        }).catch(() => {
-          // Graceful silence: analytics should never break user interactions
-        });
-      }
-    } else {
-      // Use a simple request to avoid a CORS preflight on the Apps Script endpoint.
-      fetch(ANALYTICS_ENDPOINT, {
-        method: "POST",
-        mode: "no-cors",
-        body,
-      }).catch(() => {
-        // Graceful silence: analytics should never break user interactions
-      });
-    }
+    sendAnalyticsBody(body);
   } catch {
     // Graceful error suppression
   }
@@ -267,6 +292,18 @@ export function trackScrollDepth(depth: 25 | 50 | 75 | 90 | 100, page = getCurre
 
 export function trackEngagement(seconds: 30 | 60 | 120, page = getCurrentPage()): void {
   trackEvent({ tab: "CTA Interactions", event: `engagement_${seconds}s`, value: `${seconds}s`, page });
+}
+
+/** Records active foreground time for the current page without treating hidden time as engagement. */
+export function trackPageDwell(activeMs: number, page = getCurrentPage()): void {
+  const safeActiveMs = Math.max(0, Math.round(activeMs));
+  if (safeActiveMs <= 0) return;
+  trackEvent({ tab: "CTA Interactions", event: "time_on_page", value: String(safeActiveMs), page });
+}
+
+/** Best-effort lifecycle signal used only when the browser is actually leaving the document. */
+export function trackSessionEnd(page = getCurrentPage()): void {
+  trackEvent({ tab: "CTA Interactions", event: "session_end", value: "observed", page });
 }
 
 export function trackFormOpen(formType: string, page = getCurrentPage()): void {

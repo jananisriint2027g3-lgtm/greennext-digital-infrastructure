@@ -5,7 +5,7 @@ import { trackEvent, getCurrentPage } from "../../lib/analytics";
 interface ChatMessageProps {
   role: "user" | "assistant";
   text: string;
-  links?: AssistantLink[];
+  links?: AssistantLink[] | undefined;
 }
 
 export function ChatMessage({ role, text, links }: ChatMessageProps) {

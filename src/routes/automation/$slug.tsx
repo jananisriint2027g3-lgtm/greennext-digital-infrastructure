@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { PAGES_CONTENT } from "../../data/pagesContent";
 import { PageTemplate } from "../../components/templates/PageTemplate";
 import { AutomationWorkflow } from "../../components/home/AutomationWorkflow";
@@ -14,6 +14,9 @@ export const Route = createFileRoute("/automation/$slug")({
       ],
     };
   },
+  loader: ({ params }) => {
+    if (!PAGES_CONTENT[`automation/${params.slug}`]) throw notFound();
+  },
   component: AutomationSubmenuPage,
 });
 
@@ -23,7 +26,8 @@ function AutomationSubmenuPage() {
   const page = PAGES_CONTENT[key];
 
   if (!page) {
-    return (
+    throw notFound();
+    /* return (
       <div className="min-h-[60vh] flex items-center justify-center bg-[#070A0E] text-white p-6">
         <div className="text-center max-w-md">
           <h2 className="text-xl font-bold mb-2">Page Not Found</h2>
@@ -38,7 +42,7 @@ function AutomationSubmenuPage() {
           </a>
         </div>
       </div>
-    );
+    ); */
   }
 
   return (

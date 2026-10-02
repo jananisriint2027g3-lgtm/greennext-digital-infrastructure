@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { SOLUTIONS_DATA } from "../../data/solutions";
 import { SolutionPageTemplate } from "../../components/templates/SolutionPageTemplate";
 
@@ -12,6 +12,9 @@ export const Route = createFileRoute("/solutions/$slug")({
       ],
     };
   },
+  loader: ({ params }) => {
+    if (!SOLUTIONS_DATA[params.slug]) throw notFound();
+  },
   component: SolutionSubmenuPage,
 });
 
@@ -20,7 +23,8 @@ function SolutionSubmenuPage() {
   const solution = SOLUTIONS_DATA[slug];
 
   if (!solution) {
-    return (
+    throw notFound();
+    /* return (
       <div className="min-h-[60vh] flex items-center justify-center bg-[#070A0E] text-white p-6">
         <div className="text-center max-w-md">
           <h2 className="text-xl font-bold mb-2">Solution Not Found</h2>
@@ -35,7 +39,7 @@ function SolutionSubmenuPage() {
           </a>
         </div>
       </div>
-    );
+    ); */
   }
 
   return <SolutionPageTemplate solution={solution} />;

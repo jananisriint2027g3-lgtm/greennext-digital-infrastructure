@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Link } from "@tanstack/react-router";
+import { InternalLink as Link } from "../common/InternalLink";
 import { REGIONS_DATA, REGIONAL_NETWORK_DISCLAIMER, RegionInfo } from "../../data/regions";
 import { SOUTH_INDIA_STATES, GEO_BOUNDS } from "../../data/southIndiaGeo";
 import { Globe2, ArrowRight, ShieldCheck, CheckCircle2, Radio } from "../icons";
@@ -120,7 +120,7 @@ function conceptualArcPath(from: [number, number], to: [number, number], index: 
 
 export function RegionalExplorer() {
   const [selectedRegionId, setSelectedRegionId] = useState<string>("madurai");
-  const activeRegion: RegionInfo = REGIONS_DATA[selectedRegionId] || REGIONS_DATA.madurai;
+  const activeRegion: RegionInfo = REGIONS_DATA[selectedRegionId] ?? REGIONS_DATA["madurai"]!;
 
   const statePaths = useMemo(
     () =>
@@ -142,7 +142,7 @@ export function RegionalExplorer() {
   );
   const conceptualArcs = useMemo(
     () => CONCEPTUAL_RELATIONSHIPS.map(([from, to], index) => ({
-      d: conceptualArcPath(projectedLocations[from], projectedLocations[to], index),
+      d: conceptualArcPath(projectedLocations[from]!, projectedLocations[to]!, index),
       index,
     })),
     [projectedLocations]
@@ -365,7 +365,7 @@ export function RegionalExplorer() {
               {/* ── GreenNext location markers ── */}
               {Object.entries(MAP_LOCATIONS).map(([id, loc]) => {
                 const isActive = selectedRegionId === id;
-                const [mx, my] = projectedLocations[id];
+                const [mx, my] = projectedLocations[id] ?? projectedLocations["madurai"]!;
                 const labelOffset = LOCATION_LABEL_OFFSETS[id] ?? { dx: 12, dy: -4, anchor: "start" as const };
                 const lx = mx + labelOffset.dx;
                 const labelY = my + labelOffset.dy;
@@ -568,7 +568,7 @@ export function RegionalExplorer() {
               <div className="aspect-[16/8] w-full overflow-hidden bg-[#070A0E]">
                 <img
                   key={activeRegion.id}
-                  src={REGION_IMAGES[activeRegion.id]?.src ?? REGION_IMAGES.madurai.src}
+                  src={REGION_IMAGES[activeRegion.id]?.src ?? REGION_IMAGES["madurai"]!.src}
                   alt={REGION_IMAGES[activeRegion.id]?.alt ?? "Regional infrastructure context in South India"}
                   loading="lazy"
                   decoding="async"

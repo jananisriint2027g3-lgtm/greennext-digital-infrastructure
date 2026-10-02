@@ -118,6 +118,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { trackEvent } from "../lib/analytics";
 import { trackPageView } from "../lib/analytics";
 import { usePageBehaviorTracking } from "../hooks/usePageBehaviorTracking";
+import { PersonalizationBanner } from "../components/personalization/PersonalizationBanner";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
@@ -140,6 +141,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen flex flex-col bg-[#070A0E] text-white selection:bg-[#10B981] selection:text-[#070A0E]">
         <SiteHeader />
+        <PersonalizationBanner />
         <div className="flex-1">
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />

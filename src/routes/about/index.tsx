@@ -17,6 +17,6 @@ export const Route = createFileRoute("/about/")({
 });
 
 function AboutIndexPage() {
-  const content = PAGES_CONTENT["about"];
+  const content = PAGES_CONTENT["about"]!;
   return <PageTemplate data={content} />;
 }

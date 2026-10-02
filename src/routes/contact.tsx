@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { InternalLink as Link } from "../components/common/InternalLink";
 import { useState } from "react";
 import { PageHero } from "../components/common/PageHero";
 import { LongFormInquiry } from "../components/common/LongFormInquiry";

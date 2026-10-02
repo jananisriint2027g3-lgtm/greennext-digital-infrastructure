@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link } from "@tanstack/react-router";
+import { InternalLink as Link } from "../common/InternalLink";
 import { REGIONS_DATA, REGIONAL_NETWORK_DISCLAIMER, RegionInfo } from "../../data/regions";
 import { PageHero } from "../common/PageHero";
 import { LongFormCta } from "../common/CtaBlock";
@@ -47,7 +47,7 @@ export function RegionalPageTemplate({ region }: { region: RegionInfo }) {
   }, [region.id, region.name, region.code, region.category]);
 
   const otherRegions = Object.values(REGIONS_DATA).filter((r) => r.id !== region.id);
-  const regionImg = REGION_IMAGES[region.id] ?? REGION_IMAGES.madurai;
+  const regionImg = REGION_IMAGES[region.id] ?? REGION_IMAGES["madurai"]!;
 
   const breadcrumbs = [
     { label: "Regions", path: "/regions/overview" },

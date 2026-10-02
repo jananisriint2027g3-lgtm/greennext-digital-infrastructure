@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "@tanstack/react-router";
+import { InternalLink as Link } from "../common/InternalLink";
 import {
   ArrowRight,
   ChevronLeft,
@@ -31,7 +31,7 @@ export function HeroSlider() {
   const intervalStep = 50;
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const currentSlide = HERO_SLIDES[currentSlideIndex];
+  const currentSlide = HERO_SLIDES[currentSlideIndex] ?? HERO_SLIDES[0]!;
 
   useEffect(() => {
     if (!isPlaying) {

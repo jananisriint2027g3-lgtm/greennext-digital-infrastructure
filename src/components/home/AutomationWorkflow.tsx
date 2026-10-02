@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { InternalLink as Link } from "../common/InternalLink";
 import {
   Activity,
   Scan,
@@ -82,7 +82,7 @@ const AUTOMATION_STEPS: AutoStep[] = [
 
 export function AutomationWorkflow() {
   const [activeStep, setActiveStep] = useState<string>("monitor");
-  const current = AUTOMATION_STEPS.find((s) => s.id === activeStep) || AUTOMATION_STEPS[0];
+  const current = AUTOMATION_STEPS.find((s) => s.id === activeStep) ?? AUTOMATION_STEPS[0]!;
 
   return (
     <div className="rounded-2xl border border-[#1E293B] bg-[#121824] p-6 sm:p-8 lg:p-10 shadow-2xl">
