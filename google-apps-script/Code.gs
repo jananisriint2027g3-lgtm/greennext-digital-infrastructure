@@ -884,6 +884,14 @@ function updateAnalyticsSpreadsheet() {
   } catch (advancedError) {
     Logger.log("Advanced intelligence refresh deferred: " + safeErrorMessage(advancedError));
   }
+
+  // Presentation-only enhancement. This reuses the existing session model and
+  // never changes raw schemas, intelligence definitions, or collection logic.
+  try {
+    enhanceExistingReportingPresentation(anaSs, sessionRecords);
+  } catch (presentationError) {
+    Logger.log("Presentation enhancement deferred: " + safeErrorMessage(presentationError));
+  }
 }
 
 /**
@@ -1407,6 +1415,8 @@ function setupAnalyticsSpreadsheet() {
 
 var REPORT_TIMEZONE_FALLBACK = "Asia/Kolkata";
 var ANALYTICS_SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1OTeDPp9JP36ztYa3ZNcE6Ev221wQIQ9Bi094zoxcF18/edit";
+var REPORT_EMAIL_RECIPIENTS = "jananisri.int2027g3@gmail.com,pooja.test2026@gmail.com";
+var PRESENTATION_HEATMAP_PROPERTY = "GREENNEXT_PRESENTATION_HEATMAP_RANGES";
 var REPORT_LEAD_TYPES = [
   "Technical Consultation / Session Booking",
   "Partner / Collaboration Inquiry",
@@ -1443,6 +1453,22 @@ function updateReportingLayer() {
     previousStart: previousMonthStart,
     previousEnd: monthStart
   });
+}
+
+/** Refreshes the presentation layer for standalone daily/weekly/monthly runs. */
+function refreshPresentationLayerFromReportingSource(rawSs, source, timezone) {
+  rawSs = rawSs || SpreadsheetApp.openById(RAW_DATA_SPREADSHEET_ID);
+  source = source || loadReportingSource(rawSs);
+  timezone = timezone || getReportingTimezone(rawSs);
+  var model = buildAdvancedWebsiteIntelligenceModel(source, timezone);
+  var records = buildSessionIntelligenceRecords(
+    model,
+    buildSessionContextMap(getSheetRows(rawSs, "Session_Context"))
+  );
+  enhanceExistingReportingPresentation(
+    SpreadsheetApp.openById(ANALYTICS_SPREADSHEET_ID),
+    records
+  );
 }
 
 /**
@@ -2079,6 +2105,307 @@ function renderUnifiedIntelligence(anaSs, model) {
   sheet.autoResizeColumns(1, 42);
 }
 
+/**
+ * Presentation layer for the existing report and intelligence sheets.
+ *
+ * These tables deliberately stay inside the existing sheets so the team keeps
+ * one shared report. They are derived only from Session_Intelligence records,
+ * which makes every displayed value traceable to the current pipeline.
+ */
+function enhanceExistingReportingPresentation(anaSs, records) {
+  resetPresentationHeatmaps(anaSs);
+  var sessions = Array.isArray(records) ? records.filter(function(record) {
+    return record && record.session_id;
+  }) : [];
+  var pathRows = aggregatePresentationGroups(sessions, function(record) {
+    return record.navigation_flow || record.entry_page || "Unavailable";
+  });
+  var regionRows = aggregatePresentationGroups(sessions, function(record) {
+    return [record.geo_country, record.geo_region, record.geo_city].filter(Boolean).join(" / ") || "Unavailable";
+  });
+  var timeRows = aggregatePresentationGroups(sessions, function(record) {
+    return (record.activity_day || "Day unavailable") + " / hour " +
+      (record.activity_local_hour === "" || record.activity_local_hour === undefined ? "unavailable" : record.activity_local_hour);
+  });
+  var networkRows = aggregatePresentationGroups(sessions, function(record) {
+    return [record.network_type, record.isp, record.asn].filter(Boolean).join(" / ") || "Unavailable";
+  });
+  var segmentRows = aggregatePresentationGroups(sessions, function(record) {
+    return record.engagement_segment || unifiedEngagementSegment(record);
+  });
+  var trafficSegmentRows = aggregatePresentationGroups(sessions, function(record) {
+    return (record.traffic_source || "Unavailable") + " / " +
+      (record.engagement_segment || unifiedEngagementSegment(record));
+  });
+
+  appendPresentationSection(anaSs.getSheetByName("Session_Intelligence"), "SESSION PATH / DWELL INSPECTION", [
+    ["Navigation Path or Entry", "Sessions", "Engaged", "Conversions", "Bounce", "Avg Pages", "Avg Duration (ms)"]
+  ].concat(pathRows.slice(0, 25).map(function(row) {
+    return [row.key, row.sessions, row.engaged, row.conversions, row.bounce, row.avgPages, row.avgDuration];
+  })), 7, "#0F172A", "#38BDF8");
+
+  appendPresentationSection(anaSs.getSheetByName("Session_Intelligence"), "SESSION DEPTH / DWELL DISTRIBUTION", [
+    ["Observed Band", "Sessions", "Engaged", "Conversions", "Bounce"]
+  ].concat(buildPresentationDistributionRows(sessions)), 5, "#0F172A", "#38BDF8");
+
+  appendPresentationSection(anaSs.getSheetByName("Traffic_Intelligence"), "TRAFFIC × ENGAGEMENT × CONVERSION", [
+    ["Traffic Source / Engagement Segment", "Sessions", "Engaged", "CTA Sessions", "Form Sessions", "Conversions", "Conversion Rate"]
+  ].concat(trafficSegmentRows.slice(0, 30).map(function(row) {
+    return [row.key, row.sessions, row.engaged, row.cta, row.form, row.conversions,
+      row.sessions ? (row.conversions / row.sessions * 100).toFixed(1) + "%" : "N/A"];
+  })), 7, "#0F172A", "#38BDF8");
+
+  appendPresentationSection(anaSs.getSheetByName("Regional_Analytics"), "REGIONAL DEMAND / ENGAGEMENT MATRIX", [
+    ["Country / Region / City", "Sessions", "Engaged", "CTA Sessions", "Conversions", "Conversion Rate"]
+  ].concat(regionRows.slice(0, 30).map(function(row) {
+    return [row.key, row.sessions, row.engaged, row.cta, row.conversions,
+      row.sessions ? (row.conversions / row.sessions * 100).toFixed(1) + "%" : "N/A"];
+  })), 6, "#0F172A", "#38BDF8");
+
+  appendPresentationSection(anaSs.getSheetByName("Timezone_Intelligence"), "ACTIVITY DAY × LOCAL HOUR HEATMAP", [
+    ["Activity Day / Local Hour", "Sessions", "Engaged", "Conversions", "CTA Sessions", "Form Sessions"]
+  ].concat(timeRows.slice(0, 60).map(function(row) {
+    return [row.key, row.sessions, row.engaged, row.conversions, row.cta, row.form];
+  })), 6, "#0F172A", "#38BDF8");
+
+  appendPresentationSection(anaSs.getSheetByName("IP_Intelligence"), "NETWORK × SUSPICIOUS ACTIVITY", [
+    ["Network / ISP / ASN", "Sessions", "Engaged", "Conversions", "Suspicious", "Suspicious Rate"]
+  ].concat(networkRows.slice(0, 30).map(function(row) {
+    return [row.key, row.sessions, row.engaged, row.conversions, row.suspicious,
+      row.sessions ? (row.suspicious / row.sessions * 100).toFixed(1) + "%" : "N/A"];
+  })), 6, "#0F172A", "#38BDF8");
+
+  appendPresentationSection(anaSs.getSheetByName("Unified_Intelligence"), "BEHAVIOR SEGMENT × CONVERSION", [
+    ["Engagement Segment", "Sessions", "Engaged", "CTA Sessions", "Form Sessions", "Conversions", "Conversion Rate"]
+  ].concat(segmentRows.map(function(row) {
+    return [row.key, row.sessions, row.engaged, row.cta, row.form, row.conversions,
+      row.sessions ? (row.conversions / row.sessions * 100).toFixed(1) + "%" : "N/A"];
+  })), 7, "#0F172A", "#38BDF8");
+
+  var funnelSheet = anaSs.getSheetByName("CTA_and_Funnel");
+  if (funnelSheet) {
+    appendPresentationSection(funnelSheet, "FUNNEL INSPECTION / OBSERVED SESSION COUNTS", [
+      ["Stage", "Sessions", "Rate", "Definition"]
+    ].concat(buildPresentationFunnelRows(sessions)), 4, "#0F172A", "#38BDF8");
+  }
+
+  applyPresentationFormatting(anaSs, sessions.length);
+}
+
+function aggregatePresentationGroups(records, keyFunction) {
+  var groups = {};
+  (records || []).forEach(function(record) {
+    var key = String(keyFunction(record) || "Unavailable");
+    if (!groups[key]) groups[key] = {
+      key: key, sessions: 0, engaged: 0, cta: 0, form: 0,
+      conversions: 0, bounce: 0, suspicious: 0, pages: 0, duration: 0
+    };
+    var group = groups[key];
+    group.sessions++;
+    if (record.engaged) group.engaged++;
+    if (Number(record.cta_interactions) > 0) group.cta++;
+    if (Number(record.form_interactions) > 0) group.form++;
+    if (record.lead_conversion) group.conversions++;
+    if (record.bounce === true) group.bounce++;
+    if (record.suspicious_traffic) group.suspicious++;
+    group.pages += Number(record.pages_count) || 0;
+    group.duration += Number(record.total_session_duration) || 0;
+  });
+  return Object.keys(groups).map(function(key) {
+    var group = groups[key];
+    group.avgPages = group.sessions ? (group.pages / group.sessions).toFixed(2) : "N/A";
+    group.avgDuration = group.sessions ? (group.duration / group.sessions).toFixed(2) : "N/A";
+    return group;
+  }).sort(function(left, right) {
+    return right.sessions - left.sessions || left.key.localeCompare(right.key);
+  });
+}
+
+function buildPresentationFunnelRows(records) {
+  var total = records.length;
+  var engaged = records.filter(function(record) { return record.engaged; }).length;
+  var cta = records.filter(function(record) { return Number(record.cta_interactions) > 0; }).length;
+  var form = records.filter(function(record) { return Number(record.form_interactions) > 0; }).length;
+  var conversions = records.filter(function(record) { return record.lead_conversion; }).length;
+  return [
+    ["Visit", total, total ? "100.0%" : "N/A", "All valid reconstructed sessions"],
+    ["Engaged", engaged, total ? (engaged / total * 100).toFixed(1) + "%" : "N/A", "Existing Layer 1 engagement definition"],
+    ["CTA interaction", cta, total ? (cta / total * 100).toFixed(1) + "%" : "N/A", "Sessions with observed CTA interaction"],
+    ["Form interaction", form, total ? (form / total * 100).toFixed(1) + "%" : "N/A", "Sessions with observed form interaction"],
+    ["Inquiry / lead", conversions, total ? (conversions / total * 100).toFixed(1) + "%" : "N/A", "Actual linked inquiry or lead session"]
+  ];
+}
+
+function buildPresentationDistributionRows(records) {
+  var bands = [
+    ["1 page", function(record) { return presentationPageCount(record) === 1; }],
+    ["2–3 pages", function(record) { var count = presentationPageCount(record); return count !== null && count >= 2 && count <= 3; }],
+    ["4–6 pages", function(record) { var count = presentationPageCount(record); return count !== null && count >= 4 && count <= 6; }],
+    ["7+ pages", function(record) { var count = presentationPageCount(record); return count !== null && count >= 7; }],
+    ["Unavailable", function(record) { return presentationPageCount(record) === null; }]
+  ];
+  return bands.map(function(band) {
+    var matching = records.filter(band[1]);
+    return [band[0], matching.length,
+      matching.filter(function(record) { return record.engaged; }).length,
+      matching.filter(function(record) { return record.lead_conversion; }).length,
+      matching.filter(function(record) { return record.bounce === true; }).length];
+  }).filter(function(row) { return row[1] > 0; });
+}
+
+function presentationPageCount(record) {
+  var raw = record && record.pages_count;
+  if (raw === null || raw === undefined || (typeof raw === "string" && raw.trim() === "")) return null;
+  var count = Number(raw);
+  return isFinite(count) && count >= 0 && Math.floor(count) === count ? count : null;
+}
+
+function appendPresentationSection(sheet, title, rows, width, titleColor, headerColor) {
+  if (!sheet || !rows || rows.length < 2) return;
+  var startRow = sheet.getLastRow() + 2;
+  var normalized = rows.map(function(row) { return padRows([row], width)[0]; });
+  sheet.getRange(startRow, 1, normalized.length, width).setValues(normalized);
+  sheet.getRange(startRow, 1, 1, width).clearContent();
+  sheet.getRange(startRow, 1).setValue(title);
+  sheet.getRange(startRow, 1, 1, width).mergeAcross()
+    .setFontWeight("bold").setFontColor("#10B981").setBackground(titleColor);
+  sheet.getRange(startRow + 1, 1, 1, width)
+    .setFontWeight("bold").setFontColor("#F8FAFC").setBackground(headerColor);
+  sheet.getRange(startRow, 1, normalized.length, width).setWrap(true);
+  sheet.autoResizeColumns(1, width);
+  applyPresentationHeatmap(sheet.getRange(startRow + 2, 2, Math.max(normalized.length - 2, 1), Math.max(width - 1, 1)));
+}
+
+function applyPresentationHeatmap(range) {
+  try {
+    var sheet = range.getSheet();
+    var signature = presentationHeatmapSignature(range);
+    var properties = PropertiesService.getScriptProperties();
+    var ownedRanges = readPresentationHeatmapRanges(properties);
+    var rules = (sheet.getConditionalFormatRules() || []).filter(function(rule) {
+      return !(isPresentationHeatmapRule(rule) && ownedRanges.indexOf(signature) !== -1 &&
+        presentationRuleHasSignature(rule, signature));
+    });
+    rules.push(SpreadsheetApp.newConditionalFormatRule()
+      .setGradientMinpoint("#F8FAFC")
+      .setGradientMidpoint("#A7F3D0")
+      .setGradientMaxpoint("#10B981")
+      .setRanges([range])
+      .build());
+    sheet.setConditionalFormatRules(rules);
+    if (ownedRanges.indexOf(signature) === -1) ownedRanges.push(signature);
+    properties.setProperty(PRESENTATION_HEATMAP_PROPERTY, JSON.stringify(ownedRanges));
+  } catch (err) {
+    Logger.log("Presentation heatmap skipped: " + safeErrorMessage(err));
+  }
+}
+
+function resetPresentationHeatmaps(anaSs) {
+  var properties = PropertiesService.getScriptProperties();
+  var ownedRanges = readPresentationHeatmapRanges(properties);
+  if (!ownedRanges.length) return;
+
+  ["Executive_Summary", "Regional_Analytics", "CTA_and_Funnel", "Session_Intelligence",
+    "Traffic_Intelligence", "Timezone_Intelligence", "IP_Intelligence", "Unified_Intelligence"].forEach(function(name) {
+    var sheet = anaSs.getSheetByName(name);
+    if (!sheet) return;
+    var rules = sheet.getConditionalFormatRules() || [];
+    var retained = rules.filter(function(rule) {
+      return !(isPresentationHeatmapRule(rule) && rule.getRanges().some(function(ruleRange) {
+        return ownedRanges.indexOf(presentationHeatmapSignature(ruleRange)) !== -1;
+      }));
+    });
+    if (retained.length !== rules.length) sheet.setConditionalFormatRules(retained);
+  });
+  properties.deleteProperty(PRESENTATION_HEATMAP_PROPERTY);
+}
+
+function readPresentationHeatmapRanges(properties) {
+  try {
+    var value = properties.getProperty(PRESENTATION_HEATMAP_PROPERTY);
+    var ranges = value ? JSON.parse(value) : [];
+    return Array.isArray(ranges) ? ranges : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function presentationHeatmapSignature(range) {
+  return range.getSheet().getName() + "!" + range.getA1Notation();
+}
+
+function presentationRuleHasSignature(rule, signature) {
+  return rule.getRanges().some(function(range) {
+    return presentationHeatmapSignature(range) === signature;
+  });
+}
+
+function isPresentationHeatmapRule(rule) {
+  try {
+    var gradient = rule.getGradientCondition();
+    if (!gradient) return false;
+    return String(gradient.getMinColor() || "").toUpperCase() === "#F8FAFC" &&
+      String(gradient.getMidColor() || "").toUpperCase() === "#A7F3D0" &&
+      String(gradient.getMaxColor() || "").toUpperCase() === "#10B981";
+  } catch (err) {
+    return false;
+  }
+}
+
+function applyPresentationFormatting(anaSs, sessionCount) {
+  ["Executive_Summary", "Regional_Analytics", "CTA_and_Funnel", "Infrastructure_and_Energy",
+    "AI_Assistant_Telemetry", "Daily_Report", "Weekly_Report", "Monthly_Report"].forEach(function(name) {
+    var sheet = anaSs.getSheetByName(name);
+    if (!sheet) return;
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, Math.max(sheet.getLastRow(), 1), Math.max(sheet.getLastColumn(), 1))
+      .setFontFamily("Arial").setVerticalAlignment("middle");
+  });
+
+  ["Session_Intelligence", "Traffic_Intelligence", "Geo_Intelligence", "Timezone_Intelligence",
+    "IP_Intelligence", "Unified_Intelligence"].forEach(function(name) {
+    var sheet = anaSs.getSheetByName(name);
+    if (!sheet) return;
+    sheet.setFrozenRows(4);
+    sheet.getRange(1, 1, Math.max(sheet.getLastRow(), 1), Math.max(sheet.getLastColumn(), 1))
+      .setFontFamily("Arial").setVerticalAlignment("middle");
+    addPresentationFilter(sheet);
+  });
+
+  var executive = anaSs.getSheetByName("Executive_Summary");
+  if (executive) {
+    executive.getRange("A5:B12").setFontWeight("bold");
+    applyPresentationHeatmap(executive.getRange("B5:B12"));
+    executive.getRange("A1:H1").setFontFamily("Arial").setFontSize(16);
+  }
+  if (sessionCount === 0) Logger.log("Presentation layer refreshed with no valid sessions; unavailable states preserved.");
+}
+
+function addPresentationFilter(sheet) {
+  try {
+    var filter = sheet.getFilter();
+    if (filter) filter.remove();
+    var lastRow = sheet.getLastRow();
+    var lastColumn = sheet.getLastColumn();
+    var headerRow = 4;
+    if (sheet.getName() === "Session_Intelligence") headerRow = 13;
+    if (sheet.getName() === "Unified_Intelligence") {
+      var values = sheet.getRange(1, 1, Math.max(lastRow, 1), 1).getDisplayValues();
+      for (var index = 0; index < values.length; index++) {
+        if (values[index][0] === "session_id") {
+          headerRow = index + 1;
+          break;
+        }
+      }
+    }
+    if (lastRow > headerRow && lastColumn > 1) {
+      sheet.getRange(headerRow, 1, lastRow - headerRow + 1, lastColumn).createFilter();
+    }
+  } catch (err) {
+    Logger.log("Presentation filter skipped for " + sheet.getName() + ": " + safeErrorMessage(err));
+  }
+}
+
 function styleIntelligenceSheet(sheet, titleRange) {
   sheet.getRange(titleRange).setFontWeight("bold").setBackground("#0F172A").setFontColor("#10B981");
   sheet.getRange("A4:E4").setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
@@ -2595,6 +2922,7 @@ function runDailyReport() {
   var source = loadReportingSource(rawSs);
   var today = formatReportDate(new Date(), timezone);
   buildDailyReport(source, timezone, { start: today, end: addReportDays(today, 1) });
+  refreshPresentationLayerFromReportingSource(rawSs, source, timezone);
 }
 
 function runWeeklyReport() {
@@ -2609,6 +2937,7 @@ function runWeeklyReport() {
     previousStart: addReportDays(weekStart, -7),
     previousEnd: weekStart
   });
+  refreshPresentationLayerFromReportingSource(rawSs, source, timezone);
 }
 
 function runMonthlyReport() {
@@ -2623,6 +2952,7 @@ function runMonthlyReport() {
     previousStart: addReportMonths(monthStart, -1),
     previousEnd: monthStart
   });
+  refreshPresentationLayerFromReportingSource(rawSs, source, timezone);
 }
 
 function runDailyReportAndEmail() {
@@ -2677,7 +3007,7 @@ function sendReportEmail(sheetName, reportTitle, subject, reportRunner) {
     var plainBody = reportValuesToPlainText(reportTitle, values);
 
     MailApp.sendEmail({
-      to: "jananisri.int2027g3@gmail.com",
+      to: REPORT_EMAIL_RECIPIENTS,
       subject: subject,
       body: plainBody,
       htmlBody: htmlBody

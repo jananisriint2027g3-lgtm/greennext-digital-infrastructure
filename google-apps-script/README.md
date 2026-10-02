@@ -41,8 +41,10 @@ Spreadsheet 2: GreenNext Analytics (`1OTeDPp9JP36ztYa3ZNcE6Ev221wQIQ9Bi094zoxcF1
 2. **Derived Intelligence Without Machine Over-Engineering**:
    - No arbitrary lead scores or fake AI intent claims.
    - Calculates real conversion rates from observed visitors, modal opens, and completed submissions.
-3. **No Email Automation**:
-   - Complies with trainer guidelines: independent of MailApp, internal email triggers, or user confirmation emails.
+3. **Controlled Report Email Automation**:
+   - Existing daily, weekly, and monthly report runners use `MailApp.sendEmail()` when their approved time-driven triggers are configured.
+   - The shared report recipient list includes the existing team recipient and `pooja.test2026@gmail.com`; no separate Pooja report is created.
+   - Website lead notification behavior remains separate from report delivery.
 4. **Resilient Backward & Forward Compatibility**:
    - Supports existing 5-column behavioral tabs without disrupting historical data.
    - Website includes automatic fallback handling so inquiries succeed even if the deployed Apps Script version has not yet been refreshed.
