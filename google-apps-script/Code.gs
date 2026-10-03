@@ -285,7 +285,7 @@ function upsertSessionContext(rawSs, payload, timestamp) {
     "UTM Source", "UTM Medium", "UTM Campaign", "UTM Term", "UTM Content", "Timezone", "UTC Offset",
     "Activity Local Hour", "Activity Day", "Geo Country", "Geo Region", "Geo City", "IP Available",
     "Network Type", "ISP", "Organization", "ASN", "Context Source", "Geo Confidence", "Geo Source",
-    "Network Confidence", "Network Source"
+    "Network Confidence", "Network Source", "Client IP"
   ];
   var sheet = getOrCreateSheet(rawSs, "Session_Context", headers);
   var enrichmentVerified = verifyEnrichmentSignature(payload);
@@ -298,6 +298,11 @@ function upsertSessionContext(rawSs, payload, timestamp) {
       network_type: payload.networkType, isp: payload.isp, organization: payload.organization,
       asn: payload.asn, confidence: payload.networkConfidence, source: payload.networkSource
     });
+    var clientIp = normalizeTrustedClientIp(payload.clientIp);
+    if (clientIp) {
+      context.client_ip = clientIp;
+      context.ip_available = "server_derived";
+    }
   }
   var providerContext = getProviderContextStatus();
   var geoSource = context.geo_source || (enrichmentVerified ? providerContext.geo_source : "unverified_ignored");
@@ -325,7 +330,7 @@ function upsertSessionContext(rawSs, payload, timestamp) {
       context.ip_available || "unavailable", context.network_type || "unavailable",
       context.isp || "", context.organization || "", context.asn || "",
       "client_context_plus_apps_script", context.geo_confidence || "", geoSource,
-      context.network_confidence || "", networkSource
+      context.network_confidence || "", networkSource, context.client_ip || ""
     ]);
   } finally {
     lock.releaseLock();
@@ -345,7 +350,7 @@ function updateContextCellIfMissing(row, column, incoming) {
 }
 
 function updateSessionContextEnrichment(sheet, rowNumber, context, geoSource, networkSource) {
-  var row = sheet.getRange(rowNumber, 1, 1, 28).getValues()[0];
+  var row = sheet.getRange(rowNumber, 1, 1, 29).getValues()[0];
   updateContextCellIfMissing(row, 16, context.geo_country);
   updateContextCellIfMissing(row, 17, context.geo_region);
   updateContextCellIfMissing(row, 18, context.geo_city);
@@ -358,7 +363,14 @@ function updateSessionContextEnrichment(sheet, rowNumber, context, geoSource, ne
   updateContextCellIfMissing(row, 26, geoSource);
   updateContextCellIfMissing(row, 27, context.network_confidence);
   updateContextCellIfMissing(row, 28, networkSource);
-  sheet.getRange(rowNumber, 1, 1, 28).setValues([row]);
+  updateContextCellIfMissing(row, 29, context.client_ip);
+  sheet.getRange(rowNumber, 1, 1, 29).setValues([row]);
+}
+
+function normalizeTrustedClientIp(value) {
+  var ip = String(value || "").trim();
+  if (!ip || ip.length > 45 || /[\s,]/.test(ip)) return "";
+  return /^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip) || /^[0-9a-f:]+$/i.test(ip) ? ip : "";
 }
 
 /**
@@ -447,7 +459,7 @@ function verifyEnrichmentSignature(payload) {
     payload.geoCountry || "", payload.geoRegion || "", payload.geoCity || "",
     payload.geoConfidence || "", payload.geoSource || "", payload.networkType || "",
     payload.isp || "", payload.organization || "", payload.asn || "",
-    payload.networkConfidence || "", payload.networkSource || ""
+    payload.networkConfidence || "", payload.networkSource || "", payload.clientIp || ""
   ].join("|");
   var expected = Utilities.base64Encode(Utilities.computeHmacSha256Signature(message, secret));
   return expected === supplied;
@@ -1894,6 +1906,7 @@ function buildSessionIntelligenceRecords(model, contextMap) {
       geo_source: context.geo_source || "not_configured",
       network_confidence: context.network_confidence || "",
       network_source: context.network_source || "not_configured",
+      client_ip: context.client_ip || "",
       ip_available: context.ip_available || "unavailable",
       suspicious_traffic: suspicious.suspicious,
       suspicious_reason: suspicious.reason
@@ -1920,7 +1933,7 @@ function buildSessionContextMap(rows) {
       isp: String(row[20] || ""), organization: String(row[21] || ""), asn: String(row[22] || ""),
       context_source: String(row[23] || ""), geo_confidence: String(row[24] || ""),
       geo_source: String(row[25] || "not_configured"), network_confidence: String(row[26] || ""),
-      network_source: String(row[27] || "not_configured")
+      network_source: String(row[27] || "not_configured"), client_ip: String(row[28] || "")
     };
   });
   return map;
@@ -1973,7 +1986,7 @@ function renderSessionIntelligence(anaSs, records) {
     [""],
   ];
   for (var dashboardSpacer = 0; dashboardSpacer < 12; dashboardSpacer++) rows.push([""]);
-  rows.push(["session_id", "session_type", "session_start_time", "session_end_time", "entry_page", "pages_visited", "pages_count", "navigation_flow", "exit_page", "total_session_duration", "page_dwell_times", "bounce", "engaged", "total_events", "cta_interactions", "form_interactions", "lead_conversion", "session_end_observed", "traffic_source", "referrer_url", "landing_page", "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "geo_country", "geo_region", "geo_city", "timezone", "utc_offset", "activity_local_hour", "activity_day", "network_type", "isp", "organization", "asn", "ip_available", "suspicious_traffic", "suspicious_reason", "geo_confidence", "geo_source", "network_confidence", "network_source"]);
+  rows.push(["session_id", "session_type", "session_start_time", "session_end_time", "entry_page", "pages_visited", "pages_count", "navigation_flow", "exit_page", "total_session_duration", "page_dwell_times", "bounce", "engaged", "total_events", "cta_interactions", "form_interactions", "lead_conversion", "session_end_observed", "traffic_source", "referrer_url", "landing_page", "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "geo_country", "geo_region", "geo_city", "timezone", "utc_offset", "activity_local_hour", "activity_day", "network_type", "isp", "organization", "asn", "client_ip", "ip_available", "suspicious_traffic", "suspicious_reason", "geo_confidence", "geo_source", "network_confidence", "network_source"]);
   records.forEach(function(record) {
     rows.push([
       record.session_id, record.session_type, record.session_start_time, record.session_end_time,
@@ -1985,15 +1998,15 @@ function renderSessionIntelligence(anaSs, records) {
       record.utm_medium, record.utm_campaign, record.utm_term, record.utm_content,
       record.geo_country, record.geo_region, record.geo_city, record.timezone, record.utc_offset,
       record.activity_local_hour, record.activity_day, record.network_type, record.isp, record.organization, record.asn,
-      record.ip_available, record.suspicious_traffic, record.suspicious_reason, record.geo_confidence,
+      record.client_ip, record.ip_available, record.suspicious_traffic, record.suspicious_reason, record.geo_confidence,
       record.geo_source, record.network_confidence, record.network_source
     ]);
   });
-  writeRows(sheet, rows, 44);
-  sheet.getRange("A1:AR1").setFontWeight("bold").setBackground("#0F172A").setFontColor("#10B981");
+  writeRows(sheet, rows, 45);
+  sheet.getRange("A1:AS1").setFontWeight("bold").setBackground("#0F172A").setFontColor("#10B981");
   sheet.getRange("A4:B4").setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
-  sheet.getRange("A25:AR25").setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
-  sheet.autoResizeColumns(1, 44);
+  sheet.getRange("A25:AS25").setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
+  sheet.autoResizeColumns(1, 45);
 }
 
 function averageSessionMetric(records, key) {
@@ -2044,7 +2057,12 @@ function renderGeoIntelligence(anaSs, records) {
     ["Only trusted server-side enrichment is shown; unavailable fields remain unavailable."],
     [""],
     ["Country / Region / City", "Sessions", "Engaged Sessions", "Conversions", "Suspicious Sessions"]
-  ].concat(aggregateRows(aggregateSessionRecords(records, function(r) { return [r.geo_country, r.geo_region, r.geo_city].filter(Boolean).join(" / ") || "Unavailable"; })));
+  ].concat(aggregateRows(aggregateSessionRecords(records, function(r) { return [r.geo_country, r.geo_region, r.geo_city].filter(Boolean).join(" / ") || "Unavailable"; })),
+    [[""], ["TRUSTED SESSION GEO DETAIL"], ["Session ID", "Client IP", "Country", "Region", "City"]],
+    (records || []).filter(function(record) { return record.client_ip; }).map(function(record) {
+      return [record.session_id, record.client_ip, record.geo_country || "Unavailable",
+        record.geo_region || "Unavailable", record.geo_city || "Unavailable"];
+    }));
   writeRows(sheet, rows, 5);
   styleIntelligenceSheet(sheet, "A1:E1");
 }
@@ -2067,7 +2085,7 @@ function renderIpIntelligence(anaSs, records) {
   sheet.clear();
   var rows = [
     ["GREENNEXT IP / NETWORK INTELLIGENCE"],
-    ["Raw IP is not stored. Network fields remain unavailable until a trusted server-side provider is configured."],
+    ["Server-derived IP is stored only after successful enrichment signature verification."],
     [""],
     ["Network / Organization / ASN", "Sessions", "Engaged Sessions", "Conversions", "Suspicious Sessions"],
   ].concat(aggregateRows(aggregateSessionRecords(records, function(r) { return [r.network_type, r.organization, r.asn].filter(Boolean).join(" / ") || "Unavailable"; })), [[""], ["Suspicious Reason", "Sessions", "Engaged Sessions", "Conversions", "Suspicious Sessions"]], aggregateRows(aggregateSessionRecords(records, function(r) { return r.suspicious_reason || "None"; })));

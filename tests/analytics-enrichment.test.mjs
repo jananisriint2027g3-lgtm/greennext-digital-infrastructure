@@ -46,7 +46,7 @@ test("valid and invalid provider responses normalize safely", () => {
   assert.equal(adapter.normalizeTrustedNetwork({ asn: 123 }).asn, "");
 });
 
-test("provider failure preserves the canonical payload and does not expose IP", async () => {
+test("provider failure preserves the canonical payload and keeps the server-derived IP", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => { throw new Error("provider timeout"); };
   try {
@@ -56,14 +56,13 @@ test("provider failure preserves the canonical payload and does not expose IP", 
       NETWORK_PROVIDER_URL: "https://network.example.test/lookup",
       NETWORK_PROVIDER_API_KEY: "secret-not-logged",
     });
-    assert.deepEqual(result, basePayload);
-    assert.equal(JSON.stringify(result).includes("203.0.113.10"), false);
+    assert.deepEqual(result, { ...basePayload, clientIp: "203.0.113.10" });
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
-test("valid enrichment forwards canonical fields without raw IP", async () => {
+test("valid enrichment forwards canonical fields with the server-derived IP", async () => {
   const originalFetch = globalThis.fetch;
   const calls = [];
   globalThis.fetch = async (url) => {
@@ -83,8 +82,9 @@ test("valid enrichment forwards canonical fields without raw IP", async () => {
     assert.equal(enriched["sessionId"], basePayload.sessionId);
     assert.equal(enriched["geoCountry"], "IN");
     assert.equal(enriched["networkType"], "corporate");
+    assert.equal(enriched["clientIp"], "203.0.113.10");
     assert.equal(typeof enriched["enrichmentSignature"], "string");
-    assert.equal(JSON.stringify(enriched).includes("203.0.113.10"), false);
+    assert.equal(JSON.stringify(enriched).includes("203.0.113.10"), true);
     assert.deepEqual(calls.sort(), ["https://geo.example.test/lookup", "https://network.example.test/lookup"]);
   } finally {
     globalThis.fetch = originalFetch;
@@ -128,7 +128,8 @@ test("IPLocation.net response supplies Geo and supported network fields with one
     assert.equal(enriched.isp, "Example ISP");
     assert.equal(enriched.asn, "AS64500");
     assert.equal(enriched.networkType, "corporate");
-    assert.equal(JSON.stringify(enriched).includes("203.0.113.17"), false);
+    assert.equal(enriched.clientIp, "203.0.113.17");
+    assert.equal(JSON.stringify(enriched).includes("203.0.113.17"), true);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -146,7 +147,7 @@ test("missing geo fields remain unavailable without fabricating location", async
     assert.equal(enriched.geoCountry, "IN");
     assert.equal(enriched.geoRegion, "");
     assert.equal(enriched.geoCity, "");
-    assert.equal(JSON.stringify(enriched).includes("203.0.113.14"), false);
+    assert.equal(enriched.clientIp, "203.0.113.14");
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -161,7 +162,7 @@ test("provider HTTP errors preserve analytics and invalid responses stay empty",
       new Request("https://example.com/api/analytics", { method: "POST", headers: { "X-Real-IP": "203.0.113.15" } }),
       { GEO_PROVIDER_URL: "https://geo.example.test/lookup", GEO_PROVIDER_API_KEY: "geo-key" },
     );
-    assert.deepEqual(failed, basePayload);
+    assert.deepEqual(failed, { ...basePayload, clientIp: "203.0.113.15" });
 
     globalThis.fetch = async () => new Response(JSON.stringify({ country: 123, region_name: {}, city: [] }), { status: 200 });
     const invalid = await adapter.enrichCanonicalAnalyticsPayload(
@@ -169,7 +170,7 @@ test("provider HTTP errors preserve analytics and invalid responses stay empty",
       new Request("https://example.com/api/analytics", { method: "POST", headers: { "X-Real-IP": "203.0.113.16" } }),
       { GEO_PROVIDER_URL: "https://geo.example.test/lookup", GEO_PROVIDER_API_KEY: "geo-key" },
     );
-    assert.deepEqual(invalid, basePayload);
+    assert.deepEqual(invalid, { ...basePayload, clientIp: "203.0.113.16" });
   } finally {
     globalThis.fetch = originalFetch;
   }

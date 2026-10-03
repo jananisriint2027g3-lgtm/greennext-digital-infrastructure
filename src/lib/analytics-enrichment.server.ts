@@ -151,6 +151,7 @@ function canonicalEnrichmentMessage(payload: Record<string, unknown>): string {
     payload["asn"] || "",
     payload["networkConfidence"] || "",
     payload["networkSource"] || "",
+    payload["clientIp"] || "",
   ].join("|");
 }
 
@@ -168,8 +169,9 @@ export async function enrichCanonicalAnalyticsPayload(payload: Record<string, un
   const ip = extractTrustedClientIp(request.headers);
   if (!ip) return payload;
 
-  // The raw IP is scoped to these transient provider calls only. It is never
-  // returned, logged, cached, signed, or forwarded to Apps Script.
+  // The raw IP is scoped to the trusted server-side enrichment flow. It is
+  // never supplied by the browser, logged, or used as a cache value. When the
+  // enrichment secret is configured, it is forwarded only as a signed field.
   const geoRaw = await callProvider("geo", config.geoUrl, config.geoApiKey, ip);
   // IPLocation.net returns both location and supported network fields. Reuse
   // that single response unless a separate network provider is configured.
@@ -179,6 +181,7 @@ export async function enrichCanonicalAnalyticsPayload(payload: Record<string, un
   const geo = normalizeTrustedGeo(geoRaw);
   const network = normalizeTrustedNetwork(networkRaw);
   const enriched = { ...payload };
+  if (ip) enriched["clientIp"] = ip;
   if (geo.country || geo.region || geo.city) {
     enriched["geoCountry"] = geo.country;
     enriched["geoRegion"] = geo.region;
@@ -194,7 +197,7 @@ export async function enrichCanonicalAnalyticsPayload(payload: Record<string, un
     enriched["networkConfidence"] = network.confidence;
     enriched["networkSource"] = network.source;
   }
-  if (config.enrichmentSecret && (geo.country || geo.region || geo.city || network.networkType || network.isp || network.organization || network.asn)) {
+  if (config.enrichmentSecret && (ip || geo.country || geo.region || geo.city || network.networkType || network.isp || network.organization || network.asn)) {
     enriched["enrichmentSignature"] = await signEnrichment(enriched, config.enrichmentSecret);
   }
   return enriched;
