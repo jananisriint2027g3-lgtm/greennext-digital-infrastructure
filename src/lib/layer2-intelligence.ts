@@ -125,7 +125,7 @@ function providerConfidence(value: unknown): string {
 export function normalizeGeoEnrichment(input: unknown): GeoEnrichment {
   const value = input && typeof input === "object" ? input as Record<string, unknown> : {};
   return {
-    country: providerString(value["country"] ?? value["country_name"] ?? value["country_code"], 100),
+    country: providerString(value["country"] ?? value["country_name"] ?? value["country_code2"] ?? value["country_code"], 100),
     region: providerString(value["region"] ?? value["region_name"], 150),
     city: providerString(value["city"] ?? value["city_name"], 150),
     confidence: providerConfidence(value["confidence"]),

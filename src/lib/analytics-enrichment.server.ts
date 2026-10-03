@@ -26,6 +26,12 @@ interface ProviderCacheEntry {
   value: Record<string, unknown>;
 }
 
+interface ProviderResult {
+  value: Record<string, unknown>;
+  status: number | null;
+  category: string;
+}
+
 const providerCache = new Map<string, ProviderCacheEntry>();
 const providerCalls = new Map<string, number[]>();
 
@@ -104,11 +110,49 @@ function underRateLimit(provider: string): boolean {
   return true;
 }
 
-async function callProvider(provider: "geo" | "network", url: string, apiKey: string, ip: string): Promise<Record<string, unknown>> {
-  if (!url || !apiKey || !ip || !underRateLimit(provider)) return {};
+function logProviderDiagnostic(
+  provider: "geo" | "network",
+  url: string,
+  apiKey: string,
+  status: number | null,
+  value: Record<string, unknown>,
+  errorCategory: string,
+): void {
+  const keys = Object.keys(value).slice(0, 32);
+  const geoFields = ["country", "country_name", "country_code2", "country_code", "region", "region_name", "city", "city_name"];
+  const networkFields = ["network_type", "networkType", "isp", "organization", "org", "as_name", "asn"];
+  console.warn("Analytics enrichment provider diagnostic", {
+    provider,
+    providerConfigured: Boolean(url && apiKey),
+    providerUrlConfigured: Boolean(url),
+    providerHttpStatus: status,
+    providerResponseIsObject: Object.keys(value).length > 0,
+    providerResponseKeys: keys,
+    geoFieldsFound: geoFields.filter((field) => Object.prototype.hasOwnProperty.call(value, field)),
+    networkFieldsFound: networkFields.filter((field) => Object.prototype.hasOwnProperty.call(value, field)),
+    errorCategory,
+  });
+}
+
+async function callProvider(provider: "geo" | "network", url: string, apiKey: string, ip: string): Promise<ProviderResult> {
+  if (!url || !apiKey) {
+    logProviderDiagnostic(provider, url, apiKey, null, {}, "provider_not_configured");
+    return { value: {}, status: null, category: "provider_not_configured" };
+  }
+  if (!ip) {
+    logProviderDiagnostic(provider, url, apiKey, null, {}, "no_trusted_ip");
+    return { value: {}, status: null, category: "no_trusted_ip" };
+  }
+  if (!underRateLimit(provider)) {
+    logProviderDiagnostic(provider, url, apiKey, 429, {}, "provider_rate_limited");
+    return { value: {}, status: 429, category: "provider_rate_limited" };
+  }
   const key = await cacheKey(provider, ip);
   const cached = providerCache.get(key);
-  if (cached && cached.expiresAt > Date.now()) return cached.value;
+  if (cached && cached.expiresAt > Date.now()) {
+    logProviderDiagnostic(provider, url, apiKey, 200, cached.value, "provider_cache_hit");
+    return { value: cached.value, status: 200, category: "provider_cache_hit" };
+  }
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), PROVIDER_TIMEOUT_MS);
@@ -122,14 +166,36 @@ async function callProvider(provider: "geo" | "network", url: string, apiKey: st
       body: JSON.stringify({ ip }),
       signal: controller.signal,
     });
-    if (!response.ok) return {};
-    const body: unknown = await response.json();
-    const value = body && typeof body === "object" ? body as Record<string, unknown> : {};
+    if (!response.ok) {
+      const category = response.status === 401 || response.status === 403 ? "provider_auth_failed" :
+        response.status === 429 ? "provider_rate_limited" :
+        response.status >= 500 ? "provider_server_error" : "provider_bad_request";
+      logProviderDiagnostic(provider, url, apiKey, response.status, {}, category);
+      return { value: {}, status: response.status, category };
+    }
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      logProviderDiagnostic(provider, url, apiKey, response.status, {}, "provider_invalid_response");
+      return { value: {}, status: response.status, category: "provider_invalid_response" };
+    }
+    const value = body && typeof body === "object" && !Array.isArray(body) ? body as Record<string, unknown> : {};
+    if (!Object.keys(value).length) {
+      logProviderDiagnostic(provider, url, apiKey, response.status, value, "provider_invalid_response");
+      return { value: {}, status: response.status, category: "provider_invalid_response" };
+    }
     if (providerCache.size >= PROVIDER_CACHE_MAX_ENTRIES) providerCache.delete(providerCache.keys().next().value as string);
     providerCache.set(key, { expiresAt: Date.now() + PROVIDER_CACHE_TTL_MS, value });
-    return value;
-  } catch {
-    return {};
+    logProviderDiagnostic(provider, url, apiKey, response.status, value, "provider_success");
+    return { value, status: response.status, category: "provider_success" };
+  } catch (error) {
+    const errorName = error && typeof error === "object" && "name" in error
+      ? String((error as { name?: unknown }).name || "")
+      : "";
+    const category = errorName === "AbortError" ? "provider_timeout" : "provider_network_error";
+    logProviderDiagnostic(provider, url, apiKey, null, {}, category);
+    return { value: {}, status: null, category };
   } finally {
     clearTimeout(timer);
   }
@@ -172,11 +238,11 @@ export async function enrichCanonicalAnalyticsPayload(payload: Record<string, un
   // The raw IP is scoped to the trusted server-side enrichment flow. It is
   // never supplied by the browser, logged, or used as a cache value. When the
   // enrichment secret is configured, it is forwarded only as a signed field.
-  const geoRaw = await callProvider("geo", config.geoUrl, config.geoApiKey, ip);
+  const geoRaw = (await callProvider("geo", config.geoUrl, config.geoApiKey, ip)).value;
   // IPLocation.net returns both location and supported network fields. Reuse
   // that single response unless a separate network provider is configured.
   const networkRaw = config.networkUrl && config.networkApiKey
-    ? await callProvider("network", config.networkUrl, config.networkApiKey, ip)
+    ? (await callProvider("network", config.networkUrl, config.networkApiKey, ip)).value
     : geoRaw;
   const geo = normalizeTrustedGeo(geoRaw);
   const network = normalizeTrustedNetwork(networkRaw);

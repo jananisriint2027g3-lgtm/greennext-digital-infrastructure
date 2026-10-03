@@ -8,6 +8,7 @@ source = source.replace(
   'import { normalizeGeoEnrichment, normalizeNetworkEnrichment } from "./layer2-intelligence";\n',
   `const normalizeGeoEnrichment = (input) => {\n    const value = input && typeof input === "object" ? input : {};\n    const text = (value) => typeof value === "string" ? value.trim() : "";\n    return { country: text(value.country ?? value.country_name ?? value.country_code), region: text(value.region ?? value.region_name), city: text(value.city ?? value.city_name), confidence: typeof value.confidence === "number" && value.confidence >= 0 && value.confidence <= 1 ? String(value.confidence) : "", source: text(value.source ?? value.provider) };\n  };\n  const normalizeNetworkEnrichment = (input) => {\n    const value = input && typeof input === "object" ? input : {};\n    const text = (value) => typeof value === "string" ? value.trim() : "";\n    return { networkType: text(value.networkType ?? value.network_type), isp: text(value.isp), organization: text(value.organization ?? value.org ?? value.as_name), asn: text(value.asn), confidence: typeof value.confidence === "number" && value.confidence >= 0 && value.confidence <= 1 ? String(value.confidence) : "", source: text(value.source ?? value.provider) };\n  };\n`,
 );
+source = source.replace("value.country ?? value.country_name ?? value.country_code", "value.country ?? value.country_name ?? value.country_code2 ?? value.country_code");
 const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText;
@@ -49,7 +50,7 @@ test("valid and invalid provider responses normalize safely", () => {
 test("IPLocation-style field names normalize into trusted Geo and network fields", () => {
   const providerResponse = {
     country_name: "India",
-    country_code: "IN",
+    country_code2: "IN",
     region_name: "Tamil Nadu",
     city_name: "Chennai",
     as_name: "Example ISP",
@@ -117,7 +118,7 @@ test("IPLocation.net response supplies Geo and supported network fields with one
     calls.push({ url: String(url), init });
     return new Response(JSON.stringify({
       country_name: "India",
-      country_code: "IN",
+      country_code2: "IN",
       region_name: "Tamil Nadu",
       city_name: "Chennai",
       as_name: "Example ISP",
@@ -190,6 +191,33 @@ test("provider HTTP errors preserve analytics and invalid responses stay empty",
       { GEO_PROVIDER_URL: "https://geo.example.test/lookup", GEO_PROVIDER_API_KEY: "geo-key" },
     );
     assert.deepEqual(invalid, { ...basePayload, clientIp: "203.0.113.16" });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("provider auth, rate-limit, server, and malformed responses remain non-fatal", async () => {
+  const originalFetch = globalThis.fetch;
+  const responses = new Map([
+    ["203.0.113.20", new Response("unauthorized", { status: 401 })],
+    ["203.0.113.21", new Response("forbidden", { status: 403 })],
+    ["203.0.113.22", new Response("rate limited", { status: 429 })],
+    ["203.0.113.23", new Response("server failure", { status: 500 })],
+    ["203.0.113.24", new Response("{malformed", { status: 200 })],
+  ]);
+  globalThis.fetch = async (_url, init) => {
+    const request = JSON.parse(init.body);
+    return responses.get(request.ip);
+  };
+  try {
+    for (const ip of responses.keys()) {
+      const result = await adapter.enrichCanonicalAnalyticsPayload(
+        basePayload,
+        new Request("https://example.com/api/analytics", { method: "POST", headers: { "X-Real-IP": ip } }),
+        { GEO_PROVIDER_URL: "https://geo.example.test/lookup", GEO_PROVIDER_API_KEY: "geo-key" },
+      );
+      assert.deepEqual(result, { ...basePayload, clientIp: ip });
+    }
   } finally {
     globalThis.fetch = originalFetch;
   }
