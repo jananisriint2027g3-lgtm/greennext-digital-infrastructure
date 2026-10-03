@@ -50,9 +50,17 @@ function createAnalyticsEventId(): string {
   return `gn_evt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
 }
 
-function sendAnalyticsBody(body: string): void {
-  const fallback = () => {
-    fetch(ANALYTICS_ENDPOINT, { method: "POST", mode: "no-cors", body }).catch(() => {
+export function sendAnalyticsBody(body: string): void {
+  let retried = false;
+  const retryAuthoritativePath = () => {
+    if (retried) return;
+    retried = true;
+    fetch(ANALYTICS_ENRICHMENT_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true,
+    }).catch(() => {
       // Analytics failure must never interrupt the visitor experience.
     });
   };
@@ -63,8 +71,8 @@ function sendAnalyticsBody(body: string): void {
     body,
     keepalive: true,
   }).then((response) => {
-    if (!response.ok) fallback();
-  }).catch(fallback);
+    if (!response.ok) retryAuthoritativePath();
+  }).catch(retryAuthoritativePath);
 }
 
 export type AnalyticsTab =
