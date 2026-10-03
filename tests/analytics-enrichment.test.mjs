@@ -155,6 +155,70 @@ test("IPLocation.net response supplies Geo and supported network fields with one
   }
 });
 
+test("IPLocation result response is unwrapped before normalization", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    result: {
+      country_name: "India",
+      country_code2: "IN",
+      region_name: "Tamil Nadu",
+      city_name: "Chennai",
+      isp: "Example ISP",
+      asn: "AS64500",
+      as_name: "Example ISP",
+      network_type: "corporate",
+    },
+    response_code: "200",
+    response_message: "Success",
+  }), { status: 200 });
+  try {
+    const enriched = await adapter.enrichCanonicalAnalyticsPayload(
+      basePayload,
+      new Request("https://example.com/api/analytics", { method: "POST", headers: { "X-Real-IP": "203.0.113.25" } }),
+      { GEO_PROVIDER_URL: "https://api.iplocation.net/v2/ip-location", GEO_PROVIDER_API_KEY: "geo-key" },
+    );
+    assert.equal(enriched.clientIp, "203.0.113.25");
+    assert.equal(enriched.geoCountry, "India");
+    assert.equal(enriched.geoRegion, "Tamil Nadu");
+    assert.equal(enriched.geoCity, "Chennai");
+    assert.equal(enriched.networkType, "corporate");
+    assert.equal(enriched.isp, "Example ISP");
+    assert.equal(enriched.organization, "Example ISP");
+    assert.equal(enriched.asn, "AS64500");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("invalid or missing provider result falls back safely", async () => {
+  const originalFetch = globalThis.fetch;
+  const responses = new Map([
+    ["203.0.113.26", { result: null, country: "India", region: "Tamil Nadu" }],
+    ["203.0.113.27", { response_code: "200", response_message: "No result" }],
+  ]);
+  globalThis.fetch = async (_url, init) => new Response(JSON.stringify(responses.get(JSON.parse(init.body).ip)), { status: 200 });
+  try {
+    const flatFallback = await adapter.enrichCanonicalAnalyticsPayload(
+      basePayload,
+      new Request("https://example.com/api/analytics", { method: "POST", headers: { "X-Real-IP": "203.0.113.26" } }),
+      { GEO_PROVIDER_URL: "https://geo.example.test/lookup", GEO_PROVIDER_API_KEY: "geo-key" },
+    );
+    assert.equal(flatFallback.geoCountry, "India");
+    assert.equal(flatFallback.geoRegion, "Tamil Nadu");
+
+    const missingResult = await adapter.enrichCanonicalAnalyticsPayload(
+      basePayload,
+      new Request("https://example.com/api/analytics", { method: "POST", headers: { "X-Real-IP": "203.0.113.27" } }),
+      { GEO_PROVIDER_URL: "https://geo.example.test/lookup", GEO_PROVIDER_API_KEY: "geo-key" },
+    );
+    assert.equal(missingResult.clientIp, "203.0.113.27");
+    assert.equal("geoCountry" in missingResult, false);
+    assert.equal("networkType" in missingResult, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("missing geo fields remain unavailable without fabricating location", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(JSON.stringify({ country: "IN" }), { status: 200 });

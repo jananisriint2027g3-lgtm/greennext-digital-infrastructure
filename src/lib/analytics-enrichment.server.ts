@@ -121,6 +121,12 @@ function logProviderDiagnostic(
   const keys = Object.keys(value).slice(0, 32);
   const geoFields = ["country", "country_name", "country_code2", "country_code", "region", "region_name", "city", "city_name"];
   const networkFields = ["network_type", "networkType", "isp", "organization", "org", "as_name", "asn"];
+  const hasResult = Object.prototype.hasOwnProperty.call(value, "result");
+  const resultValue = value["result"];
+  const resultObject = resultValue && typeof resultValue === "object" && !Array.isArray(resultValue)
+    ? resultValue as Record<string, unknown>
+    : {};
+  const resultType = resultValue === null ? "null" : Array.isArray(resultValue) ? "array" : typeof resultValue;
   console.warn("Analytics enrichment provider diagnostic", {
     provider,
     providerConfigured: Boolean(url && apiKey),
@@ -128,8 +134,13 @@ function logProviderDiagnostic(
     providerHttpStatus: status,
     providerResponseIsObject: Object.keys(value).length > 0,
     providerResponseKeys: keys,
+    providerHasResult: hasResult,
+    providerResultType: resultType,
+    providerResultKeys: Object.keys(resultObject).slice(0, 32),
     geoFieldsFound: geoFields.filter((field) => Object.prototype.hasOwnProperty.call(value, field)),
     networkFieldsFound: networkFields.filter((field) => Object.prototype.hasOwnProperty.call(value, field)),
+    resultGeoFieldsFound: geoFields.filter((field) => Object.prototype.hasOwnProperty.call(resultObject, field)),
+    resultNetworkFieldsFound: networkFields.filter((field) => Object.prototype.hasOwnProperty.call(resultObject, field)),
     errorCategory,
   });
 }
@@ -244,8 +255,14 @@ export async function enrichCanonicalAnalyticsPayload(payload: Record<string, un
   const networkRaw = config.networkUrl && config.networkApiKey
     ? (await callProvider("network", config.networkUrl, config.networkApiKey, ip)).value
     : geoRaw;
-  const geo = normalizeTrustedGeo(geoRaw);
-  const network = normalizeTrustedNetwork(networkRaw);
+  const geoProviderData = geoRaw["result"] && typeof geoRaw["result"] === "object" && !Array.isArray(geoRaw["result"])
+    ? geoRaw["result"] as Record<string, unknown>
+    : geoRaw;
+  const networkProviderData = networkRaw["result"] && typeof networkRaw["result"] === "object" && !Array.isArray(networkRaw["result"])
+    ? networkRaw["result"] as Record<string, unknown>
+    : networkRaw;
+  const geo = normalizeTrustedGeo(geoProviderData);
+  const network = normalizeTrustedNetwork(networkProviderData);
   const enriched = { ...payload };
   if (ip) enriched["clientIp"] = ip;
   if (geo.country || geo.region || geo.city) {
