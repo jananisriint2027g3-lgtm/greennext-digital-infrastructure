@@ -1,7 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { createTechnicalInfrastructureInquiryWorkflow, isJiraEnabled } from "./jira.server";
+import {
+  createTechnicalInfrastructureInquiryWorkflow,
+  getJiraErrorLogDetails,
+  isJiraEnabled,
+  JiraRequestError,
+} from "./jira.server";
 
 const technicalInquirySchema = z.object({
   leadType: z.enum(["session", "partner", "technical", "career", "general"]),
@@ -53,8 +58,15 @@ export const submitTechnicalInfrastructureInquiryToJira = createServerFn({ metho
         subtaskKeys: result.subtasks.map(({ issue }) => issue.key),
       };
     } catch (error) {
-      if (error instanceof Error) {
-        console.error("Jira technical infrastructure workflow failed:", error.message);
+      if (error instanceof JiraRequestError) {
+        console.error("Jira technical infrastructure workflow failed", {
+          ...getJiraErrorLogDetails(error),
+        });
+      } else if (error instanceof Error) {
+        console.error("Jira technical infrastructure workflow failed", {
+          operation: "technical infrastructure inquiry workflow",
+          message: error.message,
+        });
       } else {
         console.error("Jira technical infrastructure workflow failed.");
       }

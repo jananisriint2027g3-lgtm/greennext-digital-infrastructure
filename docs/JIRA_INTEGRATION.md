@@ -7,11 +7,12 @@ This integration is a server-only Jira REST API v3 workflow. When explicitly ena
 The server reads Jira settings from the project-root `.env` file. The committed `.env.example` contains only empty placeholders:
 
 ```dotenv
-JIRA_BASE_URL=https://greennext.atlassian.net
+JIRA_BASE_URL=https://trustworkz.atlassian.net
 JIRA_EMAIL=
 JIRA_API_TOKEN=
-JIRA_PROJECT_KEY=KAN
+JIRA_PROJECT_KEY=DI
 JIRA_ENABLED=false
+JIRA_PARENT_ISSUE_TYPE=
 JIRA_JANANI_ACCOUNT_ID=
 JIRA_RUBA_ACCOUNT_ID=
 ```
@@ -28,12 +29,12 @@ From the project root, create exactly one parent Task with this explicit local-o
 node --env-file=.env --experimental-strip-types scripts/jira-test.ts parent
 ```
 
-The command prints the created Jira issue key and ID. Verify the issue in the GreenNext project at `https://greennext.atlassian.net/browse/<issue-key>`; it should be a Task with the `jira-api-test` label, Medium priority, and a `TEST –` summary.
+The command prints the created Jira issue key and ID. Verify the issue in the Trustworkz project at `https://trustworkz.atlassian.net/browse/<issue-key>`; it should use the project-supported parent issue type with the `jira-api-test` label, Medium priority, and a `TEST –` summary.
 
-After the parent test succeeds, create exactly one subtask by replacing `KAN-123` with the returned parent key:
+After the parent test succeeds, create exactly one subtask by replacing `DI-123` with the returned parent key:
 
 ```powershell
-$parentKey = 'KAN-123'
+$parentKey = 'DI-123'
 node --env-file=.env --experimental-strip-types scripts/jira-test.ts subtask $parentKey
 ```
 
@@ -71,4 +72,4 @@ If the token is exposed or needs to be replaced, revoke it in the Jira account's
 
 ## Jira setup still required
 
-The Jira account must have permission to browse the `KAN` project, create Tasks/Sub-tasks, and assign issues to both configured account IDs. The account's email and API token must belong to the same Atlassian account. The exact assignment configuration variables are `JIRA_JANANI_ACCOUNT_ID` and `JIRA_RUBA_ACCOUNT_ID`.
+The Jira account must have permission to browse the `DI` project, create the project-supported parent and subtask issue types, and assign issues to both configured account IDs. The account's email and API token must belong to the same Atlassian account. The exact assignment configuration variables are `JIRA_JANANI_ACCOUNT_ID` and `JIRA_RUBA_ACCOUNT_ID`.

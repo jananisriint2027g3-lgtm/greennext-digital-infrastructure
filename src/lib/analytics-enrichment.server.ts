@@ -14,6 +14,7 @@ type RuntimeEnv = Record<string, unknown>;
 
 export interface EnrichmentRuntimeConfig {
   appsScriptUrl: string;
+  appsScriptUrlSource: "environment" | "fallback";
   geoUrl: string;
   geoApiKey: string;
   networkUrl: string;
@@ -52,14 +53,25 @@ function httpsUrl(value: string, fallback = ""): string {
 }
 
 export function getEnrichmentRuntimeConfig(env?: unknown): EnrichmentRuntimeConfig {
+  const configuredAppsScriptUrl = runtimeValue(env, "ANALYTICS_APPS_SCRIPT_URL");
   return {
-    appsScriptUrl: httpsUrl(runtimeValue(env, "ANALYTICS_APPS_SCRIPT_URL"), DEFAULT_APPS_SCRIPT_FORWARD_URL),
+    appsScriptUrl: httpsUrl(configuredAppsScriptUrl, DEFAULT_APPS_SCRIPT_FORWARD_URL),
+    appsScriptUrlSource: configuredAppsScriptUrl ? "environment" : "fallback",
     geoUrl: httpsUrl(runtimeValue(env, "GEO_PROVIDER_URL")),
     geoApiKey: runtimeValue(env, "GEO_PROVIDER_API_KEY"),
     networkUrl: httpsUrl(runtimeValue(env, "NETWORK_PROVIDER_URL")),
     networkApiKey: runtimeValue(env, "NETWORK_PROVIDER_API_KEY"),
     enrichmentSecret: runtimeValue(env, "ANALYTICS_ENRICHMENT_SECRET"),
   };
+}
+
+function safeEndpointForLog(value: string): string {
+  try {
+    const url = new URL(value);
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return "invalid-endpoint";
+  }
 }
 
 /** Only platform-controlled headers are accepted. Browser JSON fields are ignored. */
@@ -310,12 +322,16 @@ export async function forwardCanonicalAnalyticsEvent(payload: Record<string, unk
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
+      const responseBody = (await response.text()).slice(0, 2000);
       const category = response.status >= 500 ? "upstream_server_error" :
         response.status >= 400 ? "upstream_client_error" : "upstream_non_success";
       console.warn("Analytics forwarding failed", {
         stage: "apps_script_forward",
         status: response.status,
         category,
+        endpoint: safeEndpointForLog(config.appsScriptUrl),
+        endpointSource: config.appsScriptUrlSource,
+        responseBody,
       });
       return new Response(null, { status: 502 });
     }

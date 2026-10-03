@@ -8,6 +8,7 @@ export interface JiraIssueRef {
 export interface JiraCurrentUser {
   accountId: string;
   displayName: string;
+  active?: boolean;
 }
 
 export interface JiraIssueFields {
@@ -73,6 +74,10 @@ export class JiraRequestError extends Error {
   readonly status: number;
   readonly responseBody: unknown;
   readonly requestPath: string;
+  readonly operation: string;
+  readonly method: string;
+  readonly projectKey: string;
+  readonly issueType?: string;
   requestPayload?: unknown;
 
   constructor(
@@ -80,14 +85,48 @@ export class JiraRequestError extends Error {
     requestPath: string,
     responseBody: unknown,
     requestPayload?: unknown,
+    context: { operation: string; method: string; projectKey: string; issueType?: string } = {
+      operation: "Jira API request",
+      method: "GET",
+      projectKey: "",
+    },
   ) {
     super(`Jira request failed with status ${status}.`);
     this.status = status;
     this.requestPath = requestPath;
     this.responseBody = responseBody;
     this.requestPayload = requestPayload;
+    this.operation = context.operation;
+    this.method = context.method;
+    this.projectKey = context.projectKey;
+    if (context.issueType) this.issueType = context.issueType;
     this.name = "JiraRequestError";
   }
+}
+
+export function getJiraErrorLogDetails(error: JiraRequestError): Record<string, unknown> {
+  const responseBody = error.responseBody;
+  const bodyRecord =
+    responseBody && typeof responseBody === "object" && !Array.isArray(responseBody)
+      ? (responseBody as Record<string, unknown>)
+      : undefined;
+
+  return {
+    operation: error.operation,
+    method: error.method,
+    requestPath: error.requestPath,
+    status: error.status,
+    project: error.projectKey,
+    ...(error.issueType ? { issueType: error.issueType } : {}),
+    jiraResponseBody: responseBody,
+    jiraErrorMessages: Array.isArray(bodyRecord?.["errorMessages"])
+      ? bodyRecord["errorMessages"]
+      : [],
+    jiraErrors:
+      bodyRecord?.["errors"] && typeof bodyRecord["errors"] === "object"
+        ? bodyRecord["errors"]
+        : {},
+  };
 }
 
 function getServerEnv(name: string): string | undefined {
@@ -103,7 +142,7 @@ function getRequiredConfig(): JiraConfig {
   const baseUrl = getServerEnv("JIRA_BASE_URL")?.trim();
   const email = getServerEnv("JIRA_EMAIL")?.trim();
   const apiToken = getServerEnv("JIRA_API_TOKEN")?.trim();
-  const projectKey = getServerEnv("JIRA_PROJECT_KEY")?.trim() || "KAN";
+  const projectKey = getServerEnv("JIRA_PROJECT_KEY")?.trim();
 
   if (!baseUrl || !email || !apiToken || !projectKey) {
     throw new Error("Jira integration is not configured on the server.");
@@ -112,17 +151,16 @@ function getRequiredConfig(): JiraConfig {
   return { baseUrl: baseUrl.replace(/\/$/, ""), email, apiToken, projectKey };
 }
 
-function getRequiredWorkflowAssignees(): { jananiAccountId: string; rubaAccountId: string } {
-  const jananiAccountId = getServerEnv("JIRA_JANANI_ACCOUNT_ID")?.trim();
-  const rubaAccountId = getServerEnv("JIRA_RUBA_ACCOUNT_ID")?.trim();
-
-  if (!jananiAccountId || !rubaAccountId) {
-    throw new Error(
-      "Technical infrastructure Jira workflow requires JIRA_JANANI_ACCOUNT_ID and JIRA_RUBA_ACCOUNT_ID.",
-    );
-  }
-
-  return { jananiAccountId, rubaAccountId };
+function getConfiguredWorkflowAssignees(): {
+  jananiAccountId?: string;
+  rubaAccountId?: string;
+} {
+  const jananiAccountId = getServerEnv("JIRA_JANANI_ACCOUNT_ID")?.trim() || undefined;
+  const rubaAccountId = getServerEnv("JIRA_RUBA_ACCOUNT_ID")?.trim() || undefined;
+  const assignees: { jananiAccountId?: string; rubaAccountId?: string } = {};
+  if (jananiAccountId) assignees.jananiAccountId = jananiAccountId;
+  if (rubaAccountId) assignees.rubaAccountId = rubaAccountId;
+  return assignees;
 }
 
 function encodeBasicAuth(email: string, apiToken: string): string {
@@ -131,8 +169,14 @@ function encodeBasicAuth(email: string, apiToken: string): string {
   return Buffer.from(credentials, "utf8").toString("base64");
 }
 
-async function jiraRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function jiraRequest<T>(
+  path: string,
+  init: RequestInit = {},
+  operation = "Jira API request",
+  issueType?: string,
+): Promise<T> {
   const config = getRequiredConfig();
+  const method = init.method || "GET";
   const response = await fetch(`${config.baseUrl}${path}`, {
     ...init,
     headers: {
@@ -161,7 +205,12 @@ async function jiraRequest<T>(path: string, init: RequestInit = {}): Promise<T> 
       }
     }
 
-    throw new JiraRequestError(response.status, path, responseBody, requestPayload);
+    throw new JiraRequestError(response.status, path, responseBody, requestPayload, {
+      operation,
+      method,
+      projectKey: config.projectKey,
+      ...(issueType ? { issueType } : {}),
+    });
   }
   if (response.status === 204) return {} as T;
   return (await response.json()) as T;
@@ -193,17 +242,49 @@ function issueFields(
   };
 }
 
-async function getProjectSubtaskIssueType(config: JiraConfig): Promise<JiraCreateIssueType> {
+async function getProjectIssueTypes(config: JiraConfig): Promise<JiraCreateIssueType[]> {
   const metadata = await jiraRequest<JiraCreateIssueTypesResponse>(
     `/rest/api/3/issue/createmeta/${encodeURIComponent(config.projectKey)}/issuetypes`,
+    {},
+    "discover issue types",
   );
-  const subtaskType = metadata.issueTypes.find((issueType) => issueType.subtask);
+  return metadata.issueTypes;
+}
+
+function getConfiguredParentIssueType(): string | undefined {
+  return getServerEnv("JIRA_PARENT_ISSUE_TYPE")?.trim() || undefined;
+}
+
+function selectParentIssueType(issueTypes: JiraCreateIssueType[], projectKey: string): JiraCreateIssueType {
+  const configuredName = getConfiguredParentIssueType();
+  const parentType = configuredName
+    ? issueTypes.find((issueType) => !issueType.subtask && (issueType.name === configuredName || issueType.id === configuredName))
+    : issueTypes.find((issueType) => !issueType.subtask && issueType.name === "Task") ||
+      issueTypes.find((issueType) => !issueType.subtask);
+
+  if (!parentType) {
+    throw new Error(`No valid parent issue type is available for Jira project ${projectKey}.`);
+  }
+
+  return parentType;
+}
+
+function selectSubtaskIssueType(issueTypes: JiraCreateIssueType[], projectKey: string): JiraCreateIssueType {
+  const subtaskType = issueTypes.find((issueType) => issueType.subtask);
 
   if (!subtaskType) {
-    throw new Error(`No subtask issue type is available for Jira project ${config.projectKey}.`);
+    throw new Error(`No subtask issue type is available for Jira project ${projectKey}.`);
   }
 
   return subtaskType;
+}
+
+async function getProjectSubtaskIssueType(config: JiraConfig, issueTypes?: JiraCreateIssueType[]): Promise<JiraCreateIssueType> {
+  return selectSubtaskIssueType(issueTypes || (await getProjectIssueTypes(config)), config.projectKey);
+}
+
+async function getProjectParentIssueType(config: JiraConfig, issueTypes?: JiraCreateIssueType[]): Promise<JiraCreateIssueType> {
+  return selectParentIssueType(issueTypes || (await getProjectIssueTypes(config)), config.projectKey);
 }
 
 async function createIdempotencyLabel(
@@ -235,10 +316,13 @@ async function createIdempotencyLabel(
 async function findIssueByLabel(
   config: JiraConfig,
   label: string,
+  parentIssueTypeName: string,
 ): Promise<JiraIssueRef | undefined> {
-  const jql = `project = ${config.projectKey} AND labels = ${label} AND issuetype = Task`;
+  const jql = `project = ${config.projectKey} AND labels = ${label} AND issuetype = "${parentIssueTypeName.replace(/"/g, '\\"')}"`;
   const result = await jiraRequest<JiraSearchResponse>(
     `/rest/api/3/search/jql?jql=${encodeURIComponent(jql)}&maxResults=1&fields=summary`,
+    {},
+    "find existing parent issue",
   );
   return result.issues[0];
 }
@@ -247,8 +331,38 @@ async function findSubtasks(config: JiraConfig, parentKey: string): Promise<Jira
   const jql = `project = ${config.projectKey} AND parent = ${parentKey}`;
   const result = await jiraRequest<JiraSearchResponse>(
     `/rest/api/3/search/jql?jql=${encodeURIComponent(jql)}&maxResults=50&fields=summary`,
+    {},
+    "find existing subtasks",
   );
   return result.issues;
+}
+
+async function resolveAssignableAccountId(
+  config: JiraConfig,
+  accountId: string | undefined,
+): Promise<string | undefined> {
+  if (!accountId) return undefined;
+
+  try {
+    const users = await jiraRequest<JiraCurrentUser[]>(
+      `/rest/api/3/user/assignable/search?project=${encodeURIComponent(config.projectKey)}&accountId=${encodeURIComponent(accountId)}&maxResults=1`,
+      {},
+      "validate Jira assignee",
+    );
+    return users.some((user) => user.accountId === accountId && user.active !== false)
+      ? accountId
+      : undefined;
+  } catch (error) {
+    if (error instanceof JiraRequestError) {
+      console.warn("Jira assignee validation failed", {
+        operation: error.operation,
+        status: error.status,
+        project: config.projectKey,
+        configured: true,
+      });
+    }
+    return undefined;
+  }
 }
 
 export async function getJiraProjectIssueTypes(): Promise<{
@@ -256,44 +370,48 @@ export async function getJiraProjectIssueTypes(): Promise<{
   issueTypes: JiraCreateIssueType[];
 }> {
   const config = getRequiredConfig();
-  const metadata = await jiraRequest<JiraCreateIssueTypesResponse>(
-    `/rest/api/3/issue/createmeta/${encodeURIComponent(config.projectKey)}/issuetypes`,
-  );
-  return { projectKey: config.projectKey, issueTypes: metadata.issueTypes };
+  return { projectKey: config.projectKey, issueTypes: await getProjectIssueTypes(config) };
 }
 
 export async function getJiraCurrentUser(): Promise<JiraCurrentUser> {
-  return jiraRequest<JiraCurrentUser>("/rest/api/3/myself");
+  return jiraRequest<JiraCurrentUser>("/rest/api/3/myself", {}, "get current Jira user");
 }
 
 export async function findJiraUsersByDisplayName(displayName: string): Promise<JiraCurrentUser[]> {
   const users = await jiraRequest<JiraCurrentUser[]>(
     `/rest/api/3/user/search?query=${encodeURIComponent(displayName)}`,
+    {},
+    "search Jira users",
   );
   return users.filter((user) => user.displayName === displayName);
 }
 
-export async function createJiraTask(input: JiraIssueFields): Promise<JiraIssueRef> {
+export async function createJiraTask(
+  input: JiraIssueFields,
+  parentIssueType?: JiraCreateIssueType,
+): Promise<JiraIssueRef> {
   const config = getRequiredConfig();
+  const issueType = parentIssueType || (await getProjectParentIssueType(config));
   return jiraRequest<JiraIssueRef>("/rest/api/3/issue", {
     method: "POST",
-    body: JSON.stringify({ fields: issueFields(config, input, "Task") }),
-  });
+    body: JSON.stringify({ fields: issueFields(config, input, { id: issueType.id }) }),
+  }, "create parent issue", issueType.name);
 }
 
 export async function createJiraSubtask(
   parentKey: string,
   input: JiraIssueFields,
+  subtaskType?: JiraCreateIssueType,
 ): Promise<JiraIssueRef> {
   const config = getRequiredConfig();
-  const subtaskType = await getProjectSubtaskIssueType(config);
-  const payload = { fields: issueFields(config, input, { id: subtaskType.id }, parentKey) };
+  const resolvedSubtaskType = subtaskType || (await getProjectSubtaskIssueType(config));
+  const payload = { fields: issueFields(config, input, { id: resolvedSubtaskType.id }, parentKey) };
 
   try {
     return await jiraRequest<JiraIssueRef>("/rest/api/3/issue", {
       method: "POST",
       body: JSON.stringify(payload),
-    });
+    }, "create subtask", resolvedSubtaskType.name);
   } catch (error) {
     if (error instanceof JiraRequestError) {
       error.requestPayload = payload;
@@ -306,7 +424,7 @@ export async function assignJiraIssue(issueKey: string, accountId: string): Prom
   await jiraRequest<void>(`/rest/api/3/issue/${encodeURIComponent(issueKey)}`, {
     method: "PUT",
     body: JSON.stringify({ fields: { assignee: { accountId } } }),
-  });
+  }, "assign Jira issue");
 }
 
 export async function updateJiraIssue(
@@ -443,7 +561,13 @@ export async function createTechnicalInfrastructureInquiryWorkflow(
 ): Promise<TechnicalInfrastructureInquiryWorkflowResult> {
   const workflow = leadWorkflowConfig[payload.leadType || "technical"];
   const config = getRequiredConfig();
-  const { jananiAccountId, rubaAccountId } = getRequiredWorkflowAssignees();
+  const { jananiAccountId: configuredJananiAccountId, rubaAccountId: configuredRubaAccountId } =
+    getConfiguredWorkflowAssignees();
+  const issueTypes = await getProjectIssueTypes(config);
+  const parentIssueType = selectParentIssueType(issueTypes, config.projectKey);
+  const subtaskIssueType = selectSubtaskIssueType(issueTypes, config.projectKey);
+  const jananiAccountId = await resolveAssignableAccountId(config, configuredJananiAccountId);
+  const rubaAccountId = await resolveAssignableAccountId(config, configuredRubaAccountId);
   const idempotencyLabel = await createIdempotencyLabel(payload);
   const contactLabel = payload.organization
     ? `${payload.name} / ${payload.organization}`
@@ -451,14 +575,14 @@ export async function createTechnicalInfrastructureInquiryWorkflow(
   const description = formatInfrastructureDescription(payload);
 
   const parent =
-    (await findIssueByLabel(config, idempotencyLabel)) ||
+    (await findIssueByLabel(config, idempotencyLabel, parentIssueType.name)) ||
     (await createJiraTask({
       summary: `${workflow.parentPrefix} – ${contactLabel}`,
       description,
       priority: "Medium",
       labels: [...workflow.labels, idempotencyLabel],
-      assigneeAccountId: jananiAccountId,
-    }));
+      ...(jananiAccountId ? { assigneeAccountId: jananiAccountId } : {}),
+    }, parentIssueType));
 
   const subtaskDefinitions = workflow.subtasks.map((summary, index) => ({
     summary,
@@ -478,8 +602,10 @@ export async function createTechnicalInfrastructureInquiryWorkflow(
         description: `Follow-up step for ${parent.key}: ${definition.summary}.`,
         priority: "Medium",
         labels: workflow.labels,
-        assigneeAccountId: definition.assigneeAccountId,
-      }));
+        ...(definition.assigneeAccountId
+          ? { assigneeAccountId: definition.assigneeAccountId }
+          : {}),
+      }, subtaskIssueType));
     subtasks.push({ summary: definition.summary, issue });
   }
 
