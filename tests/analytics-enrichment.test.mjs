@@ -190,6 +190,39 @@ test("IPLocation result response is unwrapped before normalization", async () =>
   }
 });
 
+test("serialized IPLocation result response is parsed before normalization", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    result: JSON.stringify({
+      country_name: "India",
+      country_code2: "IN",
+      region_name: "Tamil Nadu",
+      city_name: "Chennai",
+      isp: "Example ISP",
+      asn: "AS64500",
+      as_name: "Example ISP",
+      network_type: "corporate",
+    }),
+    response_code: "200",
+    response_message: "Success",
+  }), { status: 200 });
+  try {
+    const enriched = await adapter.enrichCanonicalAnalyticsPayload(
+      basePayload,
+      new Request("https://example.com/api/analytics", { method: "POST", headers: { "X-Real-IP": "203.0.113.28" } }),
+      { GEO_PROVIDER_URL: "https://api.iplocation.net/v2/ip-location", GEO_PROVIDER_API_KEY: "geo-key" },
+    );
+    assert.equal(enriched.geoCountry, "India");
+    assert.equal(enriched.geoRegion, "Tamil Nadu");
+    assert.equal(enriched.geoCity, "Chennai");
+    assert.equal(enriched.networkType, "corporate");
+    assert.equal(enriched.organization, "Example ISP");
+    assert.equal(enriched.asn, "AS64500");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("invalid or missing provider result falls back safely", async () => {
   const originalFetch = globalThis.fetch;
   const responses = new Map([

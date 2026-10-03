@@ -232,6 +232,24 @@ function canonicalEnrichmentMessage(payload: Record<string, unknown>): string {
   ].join("|");
 }
 
+function unwrapProviderResult(value: Record<string, unknown>): Record<string, unknown> {
+  const result = value["result"];
+  if (result && typeof result === "object" && !Array.isArray(result)) {
+    return result as Record<string, unknown>;
+  }
+  if (typeof result === "string") {
+    try {
+      const parsed: unknown = JSON.parse(result);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      // Preserve the root-level fallback for invalid serialized results.
+    }
+  }
+  return value;
+}
+
 async function signEnrichment(payload: Record<string, unknown>, secret: string): Promise<string> {
   if (!secret) return "";
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
@@ -255,12 +273,8 @@ export async function enrichCanonicalAnalyticsPayload(payload: Record<string, un
   const networkRaw = config.networkUrl && config.networkApiKey
     ? (await callProvider("network", config.networkUrl, config.networkApiKey, ip)).value
     : geoRaw;
-  const geoProviderData = geoRaw["result"] && typeof geoRaw["result"] === "object" && !Array.isArray(geoRaw["result"])
-    ? geoRaw["result"] as Record<string, unknown>
-    : geoRaw;
-  const networkProviderData = networkRaw["result"] && typeof networkRaw["result"] === "object" && !Array.isArray(networkRaw["result"])
-    ? networkRaw["result"] as Record<string, unknown>
-    : networkRaw;
+  const geoProviderData = unwrapProviderResult(geoRaw);
+  const networkProviderData = unwrapProviderResult(networkRaw);
   const geo = normalizeTrustedGeo(geoProviderData);
   const network = normalizeTrustedNetwork(networkProviderData);
   const enriched = { ...payload };
