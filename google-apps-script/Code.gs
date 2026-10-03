@@ -288,16 +288,9 @@ function upsertSessionContext(rawSs, payload, timestamp) {
     "Network Confidence", "Network Source"
   ];
   var sheet = getOrCreateSheet(rawSs, "Session_Context", headers);
-  var lastRow = sheet.getLastRow();
-  if (lastRow > 1) {
-    var existing = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
-    for (var i = 0; i < existing.length; i++) {
-      if (String(existing[i][0] || "") === String(payload.sessionId)) return;
-    }
-  }
-
+  var enrichmentVerified = verifyEnrichmentSignature(payload);
   var context = normalizeTrafficContext(payload);
-  if (verifyEnrichmentSignature(payload)) {
+  if (enrichmentVerified) {
     context = applyProviderEnrichment(context, {
       country: payload.geoCountry, region: payload.geoRegion, city: payload.geoCity,
       confidence: payload.geoConfidence, source: payload.geoSource
@@ -307,28 +300,65 @@ function upsertSessionContext(rawSs, payload, timestamp) {
     });
   }
   var providerContext = getProviderContextStatus();
+  var geoSource = context.geo_source || (enrichmentVerified ? providerContext.geo_source : "unverified_ignored");
+  var networkSource = context.network_source || (enrichmentVerified ? providerContext.network_source : "unverified_ignored");
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) return;
   try {
     // Re-check after acquiring the lock to prevent two first events creating duplicates.
-    lastRow = sheet.getLastRow();
+    var lastRow = sheet.getLastRow();
     if (lastRow > 1) {
       var lockedExisting = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
       for (var j = 0; j < lockedExisting.length; j++) {
-        if (String(lockedExisting[j][0] || "") === String(payload.sessionId)) return;
+        if (String(lockedExisting[j][0] || "") === String(payload.sessionId)) {
+          if (enrichmentVerified) updateSessionContextEnrichment(sheet, j + 2, context, geoSource, networkSource);
+          return;
+        }
       }
     }
     sheet.appendRow([
       payload.sessionId || "", payload.sessionKind || "", timestamp, context.traffic_source,
       context.referrer_url, context.landing_page, context.utm_source, context.utm_medium,
       context.utm_campaign, context.utm_term, context.utm_content, context.timezone,
-      context.utc_offset, context.activity_local_hour, context.activity_day, "", "", "",
-      "unavailable", "unavailable", "", "", "", "client_context_plus_apps_script",
-      "", providerContext.geo_source, "", providerContext.network_source
+      context.utc_offset, context.activity_local_hour, context.activity_day,
+      context.geo_country || "", context.geo_region || "", context.geo_city || "",
+      context.ip_available || "unavailable", context.network_type || "unavailable",
+      context.isp || "", context.organization || "", context.asn || "",
+      "client_context_plus_apps_script", context.geo_confidence || "", geoSource,
+      context.network_confidence || "", networkSource
     ]);
   } finally {
     lock.releaseLock();
   }
+}
+
+function isUnavailableContextValue(value) {
+  var normalized = String(value || "").trim().toLowerCase();
+  return !normalized || normalized === "unavailable" || normalized === "geo unavailable" ||
+    normalized === "not available" || normalized === "unknown";
+}
+
+function updateContextCellIfMissing(row, column, incoming) {
+  if (!isUnavailableContextValue(incoming) && isUnavailableContextValue(row[column - 1])) {
+    row[column - 1] = incoming;
+  }
+}
+
+function updateSessionContextEnrichment(sheet, rowNumber, context, geoSource, networkSource) {
+  var row = sheet.getRange(rowNumber, 1, 1, 28).getValues()[0];
+  updateContextCellIfMissing(row, 16, context.geo_country);
+  updateContextCellIfMissing(row, 17, context.geo_region);
+  updateContextCellIfMissing(row, 18, context.geo_city);
+  updateContextCellIfMissing(row, 19, context.ip_available);
+  updateContextCellIfMissing(row, 20, context.network_type);
+  updateContextCellIfMissing(row, 21, context.isp);
+  updateContextCellIfMissing(row, 22, context.organization);
+  updateContextCellIfMissing(row, 23, context.asn);
+  updateContextCellIfMissing(row, 25, context.geo_confidence);
+  updateContextCellIfMissing(row, 26, geoSource);
+  updateContextCellIfMissing(row, 27, context.network_confidence);
+  updateContextCellIfMissing(row, 28, networkSource);
+  sheet.getRange(rowNumber, 1, 1, 28).setValues([row]);
 }
 
 /**
@@ -392,6 +422,7 @@ function applyProviderEnrichment(context, geoResponse, networkResponse) {
     enriched.geo_country = geo.country;
     enriched.geo_region = geo.region;
     enriched.geo_city = geo.city;
+    enriched.ip_available = "derived_provider_only";
     enriched.geo_confidence = geo.confidence;
     enriched.geo_source = geo.source || "trusted_provider";
   }
@@ -888,9 +919,25 @@ function updateAnalyticsSpreadsheet() {
   // Presentation-only enhancement. This reuses the existing session model and
   // never changes raw schemas, intelligence definitions, or collection logic.
   try {
-    enhanceExistingReportingPresentation(anaSs, sessionRecords);
+    enhanceExistingReportingPresentation(anaSs, sessionRecords, { aiData: aiData });
   } catch (presentationError) {
     Logger.log("Presentation enhancement deferred: " + safeErrorMessage(presentationError));
+  }
+
+  try {
+    refreshNativeVisualizationLayer(anaSs, sessionRecords, {
+      aiData: aiData,
+      regData: regData,
+      locData: locData,
+      infData: infData,
+      eneData: eneData,
+      autData: autData,
+      quickLeads: quickLeads,
+      longLeads: longLeads,
+      dedicatedLeads: dedicatedLeads
+    });
+  } catch (visualizationError) {
+    Logger.log("Native visualization refresh deferred: " + safeErrorMessage(visualizationError));
   }
 }
 
@@ -960,13 +1007,8 @@ function renderExecutiveSummary(anaSs, stats) {
   sheet.getRange("A15:H15").setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
   sheet.autoResizeColumns(1, 8);
 
-  // Preserve the KPI table and place the visualization to its right.
-  var hasKpiData = stats.pageViewsCount > 0 || stats.uniqueSessionsCount > 0 ||
-    stats.totalInquiries > 0 || stats.totalEvents > 0 || stats.whatsAppTriggers > 0;
-  if (hasKpiData) {
-    insertChartSafely(sheet, Charts.ChartType.COLUMN, [sheet.getRange("A4:B12")], 1, 10,
-      "GreenNext KPI Overview", "bottom");
-  }
+  // The dashboard owns the KPI visualization. Executive_Summary retains the
+  // exact KPI and inquiry tables without adding a redundant chart.
 }
 
 /**
@@ -1292,7 +1334,7 @@ function findInquiryRequest(sheet, requestId, requestColumnIndex) {
 function clearCharts(sheet) {
   try {
     sheet.getCharts().forEach(function(chart) {
-      sheet.removeChart(chart);
+      if (isGreenNextOwnedChart(chart)) sheet.removeChart(chart);
     });
   } catch (err) {
     Logger.log("Chart cleanup skipped: " + err.toString());
@@ -1304,23 +1346,50 @@ function clearCharts(sheet) {
  * isolated from the analytics table refresh and never aborts the update.
  */
 function insertChartSafely(sheet, chartType, ranges, row, column, title, legendPosition) {
-  try {
-    if (!sheet || !ranges || ranges.length === 0) return;
+  var ownedTitle = String(title || "");
+  if (ownedTitle.indexOf(GREENNEXT_CHART_TITLE_PREFIX) !== 0) ownedTitle = GREENNEXT_CHART_TITLE_PREFIX + ownedTitle;
+  return insertOwnedChartSafely(sheet, chartType, ranges, row, column,
+    ownedTitle, legendPosition ? { legend: legendPosition } : {});
+}
 
-    var builder = sheet.newChart().setChartType(chartType);
-    ranges.forEach(function(range) {
+var GREENNEXT_CHART_TITLE_PREFIX = "GreenNext | ";
+
+function isGreenNextOwnedChart(chart) {
+  try {
+    var title = chart.getOptions().get("title");
+    return String(title || "").indexOf(GREENNEXT_CHART_TITLE_PREFIX) === 0;
+  } catch (err) {
+    return false;
+  }
+}
+
+function insertOwnedChartSafely(sheet, chartType, sourceRange, row, column, title, options) {
+  if (!sheet || !sourceRange || !title) return null;
+  try {
+    var legend = options && options.legend;
+    if (typeof legend === "string") legend = { position: legend };
+    if (!legend) legend = { position: "none" };
+    var builder = sheet.newChart()
+      .setChartType(chartType)
+      .setPosition(row, column, 0, 0)
+      .setOption("title", title)
+      .setOption("legend", legend);
+    (Array.isArray(sourceRange) ? sourceRange : [sourceRange]).forEach(function(range) {
       if (range) builder.addRange(range);
     });
-
-    builder.setPosition(row, column, 0, 0)
-      .setOption("title", title)
-      .setOption("legend", { position: legendPosition || "bottom" })
-      .setOption("width", 520)
-      .setOption("height", 300);
-
-    sheet.insertChart(builder.build());
+    if (options) {
+      Object.keys(options).forEach(function(key) {
+        if (key !== "legend" && options[key] !== undefined && options[key] !== null) {
+          builder.setOption(key, options[key]);
+        }
+      });
+    }
+    var chart = builder.build();
+    sheet.insertChart(chart);
+    return chart;
   } catch (err) {
-    Logger.log("Chart creation skipped for " + title + ": " + err.toString());
+    Logger.log("GreenNext chart skipped for " + sheet.getName() + ": " + safeErrorMessage(err));
+    return null;
   }
 }
 
@@ -1417,6 +1486,28 @@ var REPORT_TIMEZONE_FALLBACK = "Asia/Kolkata";
 var ANALYTICS_SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1OTeDPp9JP36ztYa3ZNcE6Ev221wQIQ9Bi094zoxcF18/edit";
 var REPORT_EMAIL_RECIPIENTS = "jananisri.int2027g3@gmail.com,pooja.test2026@gmail.com";
 var PRESENTATION_HEATMAP_PROPERTY = "GREENNEXT_PRESENTATION_HEATMAP_RANGES";
+var PRESENTATION_START_MARKER = "PRESENTATION_START";
+var PRESENTATION_END_MARKER = "PRESENTATION_END";
+var PRESENTATION_SHEETS = [
+  "Executive_Summary", "Session_Intelligence", "Traffic_Intelligence", "Geo_Intelligence",
+  "Regional_Analytics", "Timezone_Intelligence", "IP_Intelligence", "Unified_Intelligence", "CTA_and_Funnel",
+  "AI_Assistant_Telemetry"
+];
+var PRESENTATION_SECTION_TITLES = [
+  "SESSION PATH / DWELL INSPECTION",
+  "SESSION DEPTH / DWELL DISTRIBUTION",
+  "TRAFFIC × ENGAGEMENT × CONVERSION",
+  "REGIONAL DEMAND / ENGAGEMENT MATRIX",
+  "ACTIVITY DAY × LOCAL HOUR HEATMAP",
+  "NETWORK × SUSPICIOUS ACTIVITY",
+  "BEHAVIOR SEGMENT × CONVERSION",
+  "FUNNEL INSPECTION / OBSERVED SESSION COUNTS"
+];
+var CHART_CLEANUP_SHEETS = PRESENTATION_SHEETS.concat([
+  "Infrastructure_and_Energy", "AI_Assistant_Telemetry", "Daily_Report", "Weekly_Report", "Monthly_Report",
+  "Advanced_Journey_Analysis", "Advanced_Engagement_Analysis", "Advanced_Interest_Analysis",
+  "Advanced_Regional_Analysis", "Advanced_AI_Analysis", "Advanced_Lead_Analysis", "Advanced_Association_Analysis"
+]);
 var REPORT_LEAD_TYPES = [
   "Technical Consultation / Session Booking",
   "Partner / Collaboration Inquiry",
@@ -1467,8 +1558,20 @@ function refreshPresentationLayerFromReportingSource(rawSs, source, timezone) {
   );
   enhanceExistingReportingPresentation(
     SpreadsheetApp.openById(ANALYTICS_SPREADSHEET_ID),
-    records
+    records,
+    { aiData: source["AI Assistant"] || [] }
   );
+  refreshNativeVisualizationLayer(SpreadsheetApp.openById(ANALYTICS_SPREADSHEET_ID), records, {
+    aiData: source["AI Assistant"] || [],
+    regData: source.Regions || [],
+    locData: source.Locations || [],
+    infData: source.Infrastructure || [],
+    eneData: source.Energy || [],
+    autData: source.Automation || [],
+    quickLeads: source.Quick_Inquiries || [],
+    longLeads: source.Contact_Submissions || [],
+    dedicatedLeads: source.Lead_Submissions || []
+  });
 }
 
 /**
@@ -1868,8 +1971,9 @@ function renderSessionIntelligence(anaSs, records) {
     ["Bounce Rate", records.length ? (records.filter(function(r) { return r.bounce === true; }).length / records.length * 100).toFixed(1) + "%" : "N/A"],
     ["Engagement Rate", records.length ? (records.filter(function(r) { return r.engaged === true; }).length / records.length * 100).toFixed(1) + "%" : "N/A"],
     [""],
-    ["session_id", "session_type", "session_start_time", "session_end_time", "entry_page", "pages_visited", "pages_count", "navigation_flow", "exit_page", "total_session_duration", "page_dwell_times", "bounce", "engaged", "total_events", "cta_interactions", "form_interactions", "lead_conversion", "session_end_observed", "traffic_source", "referrer_url", "landing_page", "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "geo_country", "geo_region", "geo_city", "timezone", "utc_offset", "activity_local_hour", "activity_day", "network_type", "isp", "organization", "asn", "ip_available", "suspicious_traffic", "suspicious_reason", "geo_confidence", "geo_source", "network_confidence", "network_source"]
   ];
+  for (var dashboardSpacer = 0; dashboardSpacer < 12; dashboardSpacer++) rows.push([""]);
+  rows.push(["session_id", "session_type", "session_start_time", "session_end_time", "entry_page", "pages_visited", "pages_count", "navigation_flow", "exit_page", "total_session_duration", "page_dwell_times", "bounce", "engaged", "total_events", "cta_interactions", "form_interactions", "lead_conversion", "session_end_observed", "traffic_source", "referrer_url", "landing_page", "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "geo_country", "geo_region", "geo_city", "timezone", "utc_offset", "activity_local_hour", "activity_day", "network_type", "isp", "organization", "asn", "ip_available", "suspicious_traffic", "suspicious_reason", "geo_confidence", "geo_source", "network_confidence", "network_source"]);
   records.forEach(function(record) {
     rows.push([
       record.session_id, record.session_type, record.session_start_time, record.session_end_time,
@@ -1888,7 +1992,7 @@ function renderSessionIntelligence(anaSs, records) {
   writeRows(sheet, rows, 44);
   sheet.getRange("A1:AR1").setFontWeight("bold").setBackground("#0F172A").setFontColor("#10B981");
   sheet.getRange("A4:B4").setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
-  sheet.getRange("A13:AR13").setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
+  sheet.getRange("A25:AR25").setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
   sheet.autoResizeColumns(1, 44);
 }
 
@@ -2112,8 +2216,14 @@ function renderUnifiedIntelligence(anaSs, model) {
  * one shared report. They are derived only from Session_Intelligence records,
  * which makes every displayed value traceable to the current pipeline.
  */
-function enhanceExistingReportingPresentation(anaSs, records) {
+function enhanceExistingReportingPresentation(anaSs, records, auxiliary) {
+  auxiliary = auxiliary || {};
+  CHART_CLEANUP_SHEETS.forEach(function(name) {
+    var sheet = anaSs.getSheetByName(name);
+    if (sheet) clearCharts(sheet);
+  });
   resetPresentationHeatmaps(anaSs);
+  resetPresentationBlocks(anaSs);
   var sessions = Array.isArray(records) ? records.filter(function(record) {
     return record && record.session_id;
   }) : [];
@@ -2189,7 +2299,242 @@ function enhanceExistingReportingPresentation(anaSs, records) {
     ].concat(buildPresentationFunnelRows(sessions)), 4, "#0F172A", "#38BDF8");
   }
 
+  renderCellNativePresentation(anaSs, sessions, {
+    pathRows: pathRows,
+    regionRows: regionRows,
+    timeRows: timeRows,
+    networkRows: networkRows,
+    segmentRows: segmentRows,
+    trafficSegmentRows: trafficSegmentRows
+  }, auxiliary.aiData || []);
+  finalizePresentationBlocks(anaSs);
   applyPresentationFormatting(anaSs, sessions.length);
+}
+
+function renderCellNativePresentation(anaSs, records, groups, aiData) {
+  aiData = Array.isArray(aiData) ? aiData : [];
+  var kpis = buildPresentationKpis(records);
+  var signals = [
+    ["Highest-volume path", topPresentationGroup(groups.pathRows, "key")],
+    ["Leading traffic source", topPresentationGroup(aggregatePresentationGroups(records, function(record) { return record.traffic_source || "Unavailable"; }), "key")],
+    ["Highest-demand region", topPresentationGroup(groups.regionRows, "key")],
+    ["Busiest local-time window", topPresentationGroup(groups.timeRows, "key")],
+    ["Suspicious activity signal", kpis.suspicious > 0 ? kpis.suspicious + " session(s) flagged" : "No flagged sessions"],
+    ["Returning visitor signal", kpis.returning + " returning session(s)"]
+  ];
+
+  appendPresentationPanel(anaSs.getSheetByName("Executive_Summary"), "INTELLIGENCE COMMAND CENTER", [
+    ["Metric", "Value", "Metric", "Value", "Metric", "Value"],
+    ["Total Sessions", kpis.sessions, "Engaged Sessions", kpis.engaged, "Returning Visitors", kpis.returning],
+    ["Leads", kpis.leads, "CTA Interactions", kpis.ctaInteractions, "Conversion Rate", kpis.conversionRate],
+    ["Average Session Duration", kpis.avgDuration, "Suspicious Activity", kpis.suspicious, "Data State", records.length ? "LIVE" : "NO DATA"]
+  ], 6);
+  appendPresentationPanel(anaSs.getSheetByName("Executive_Summary"), "INTELLIGENCE SIGNALS", [
+    ["Signal", "Observed value"]
+  ].concat(signals), 2);
+  appendPresentationPanel(anaSs.getSheetByName("Executive_Summary"), "JOURNEY OVERVIEW", buildPresentationFunnelRows(records), 4);
+
+  appendPresentationPanel(anaSs.getSheetByName("Session_Intelligence"), "JOURNEY FLOW / OBSERVED SESSION COUNTS", [
+    ["ENTRY", "NAVIGATION", "ENGAGEMENT", "CTA", "LEAD"],
+    ["Sessions", kpis.sessions, kpis.engaged, kpis.cta, kpis.leads]
+  ], 5);
+  appendPresentationMatrix(anaSs.getSheetByName("Session_Intelligence"), "PATH FREQUENCY MATRIX", [
+    ["Path", "Sessions", "Engaged", "Conversions", "Intensity"]
+  ].concat(groups.pathRows.slice(0, 25).map(function(row) {
+    return [row.key, row.sessions, row.engaged, row.conversions, presentationIntensity(row.sessions, records.length)];
+  })), 5);
+  appendPresentationMatrix(anaSs.getSheetByName("Session_Intelligence"), "SESSION INSPECTOR", [
+    ["Session ID", "Entry Page", "Pages", "Journey", "Duration", "Engagement", "CTA", "Conversion", "Session Type", "Region", "Timezone"]
+  ].concat(records.slice(0, 200).map(function(record) {
+    return [record.session_id, record.entry_page || "Unavailable", record.pages_count,
+      record.navigation_flow || "Unavailable", record.total_session_duration || "N/A",
+      record.engaged ? "ENGAGED" : "LOW", Number(record.cta_interactions) > 0 ? "YES" : "NO",
+      record.lead_conversion ? "LEAD" : "NO", record.session_type || "Unavailable",
+      [record.geo_country, record.geo_region, record.geo_city].filter(Boolean).join(" / ") || "Unavailable",
+      record.timezone || "Unavailable"];
+  })), 11);
+
+  appendPresentationMatrix(anaSs.getSheetByName("Traffic_Intelligence"), "SOURCE × BEHAVIOR MATRIX", [
+    ["Traffic Source / Segment", "Visitors", "Engaged", "CTA", "Leads", "Conversion", "Intensity"]
+  ].concat(groups.trafficSegmentRows.slice(0, 30).map(function(row) {
+    return [row.key, row.sessions, row.engaged, row.cta, row.conversions,
+      row.sessions ? (row.conversions / row.sessions * 100).toFixed(1) + "%" : "N/A",
+      presentationIntensity(row.sessions, records.length)];
+  })), 7);
+  appendPresentationMatrix(anaSs.getSheetByName("Traffic_Intelligence"), "CAMPAIGN / REFERRAL INSPECTION", [
+    ["Traffic Source", "Landing / Entry", "Campaign", "Sessions", "Engaged", "Leads"]
+  ].concat(records.slice(0, 200).map(function(record) {
+    return [record.traffic_source || "Unavailable", record.landing_page || record.entry_page || "Unavailable",
+      record.utm_campaign || "No Campaign", 1, record.engaged ? 1 : 0, record.lead_conversion ? 1 : 0];
+  })), 6);
+
+  appendPresentationMatrix(anaSs.getSheetByName("Geo_Intelligence"), "GEOGRAPHIC INTELLIGENCE MATRIX", [
+    ["Country / Region / City", "Sessions", "Engaged", "CTA", "Leads", "Conversion", "Returning", "Demand"]
+  ].concat(groups.regionRows.slice(0, 30).map(function(row) {
+    return [row.key, row.sessions, row.engaged, row.cta, row.conversions,
+      row.sessions ? (row.conversions / row.sessions * 100).toFixed(1) + "%" : "N/A",
+      row.returning, row.sessions >= 10 ? "HIGH" : row.sessions > 0 ? "ACTIVE" : "UNAVAILABLE"];
+  })), 8);
+
+  appendPresentationMatrix(anaSs.getSheetByName("Timezone_Intelligence"), "DAY × LOCAL HOUR ACTIVITY HEATMAP", buildDayHourMatrix(records), 25);
+  appendPresentationMatrix(anaSs.getSheetByName("IP_Intelligence"), "NETWORK RELATIONSHIP MATRIX", [
+    ["Network / ISP / ASN", "Sessions", "Engaged", "Returning", "Suspicious", "High-frequency", "CTA", "Status"]
+  ].concat(groups.networkRows.slice(0, 30).map(function(row) {
+    return [row.key, row.sessions, row.engaged, row.returning, row.suspicious,
+      row.suspicious > 0 ? "FLAGGED" : "NORMAL", row.cta,
+      row.suspicious > 0 ? "REVIEW" : "NORMAL"];
+  })), 8);
+  appendPresentationMatrix(anaSs.getSheetByName("IP_Intelligence"), "ANOMALY GRID", [
+    ["Network", "Activity", "Frequency", "Time Window", "Suspicion Signal", "Reason", "Status"]
+  ].concat(records.filter(function(record) { return record.suspicious_traffic; }).slice(0, 100).map(function(record) {
+    return [[record.network_type, record.isp, record.asn].filter(Boolean).join(" / ") || "Unavailable",
+      record.total_events || 0, record.total_events > 40 ? "HIGH" : "MEDIUM",
+      record.activity_day || "Unavailable", "SUSPICIOUS", record.suspicious_reason || "Observed anomaly",
+      "REVIEW"];
+  })), 7);
+
+  appendPresentationMatrix(anaSs.getSheetByName("Unified_Intelligence"), "BEHAVIOR SEGMENTATION MATRIX", [
+    ["Behavior Segment", "Sessions", "Pages", "Engagement", "CTA", "Leads", "Conversion", "Geo", "Traffic Source", "Timezone"]
+  ].concat(groups.segmentRows.map(function(row) {
+    return [row.key, row.sessions, row.avgPages, row.engaged, row.cta, row.conversions,
+      row.sessions ? (row.conversions / row.sessions * 100).toFixed(1) + "%" : "N/A",
+      "Inspectable", "Inspectable", "Inspectable"];
+  })), 10);
+  appendPresentationPanel(anaSs.getSheetByName("Unified_Intelligence"), "BEHAVIOR → OUTCOME FLOW", [
+    ["Behavior Segment", "Content Interest", "Engagement", "CTA", "Lead"],
+    ["Inspectable session cohorts", "Existing interest fields", kpis.engaged, kpis.cta, kpis.leads]
+  ], 5);
+
+  appendPresentationPanel(anaSs.getSheetByName("CTA_and_Funnel"), "VISUAL FUNNEL / CELL BLOCKS", [
+    ["VISITORS", kpis.sessions],
+    ["↓", ""],
+    ["ENGAGED", kpis.engaged],
+    ["↓", ""],
+    ["CTA", kpis.cta],
+    ["↓", ""],
+    ["LEAD", kpis.leads]
+  ], 2);
+  appendPresentationMatrix(anaSs.getSheetByName("CTA_and_Funnel"), "FUNNEL INSPECTION DETAIL", [
+    ["Stage", "Sessions", "Rate", "Definition"]
+  ].concat(buildPresentationFunnelRows(records)), 4);
+
+  appendPresentationMatrix(anaSs.getSheetByName("AI_Assistant_Telemetry"),
+    "AI ASSISTANT TOPIC / INTERACTION HEATMAP", buildAssistantTelemetryMatrix(aiData), 7);
+}
+
+/** Builds a cell-native telemetry heatmap from the existing sanitized AI rows. */
+function buildAssistantTelemetryMatrix(aiData) {
+  var eventColumns = [
+    "chatbot_open",
+    "chatbot_query_send",
+    "chatbot_suggestion_select",
+    "chatbot_link_click"
+  ];
+  var groups = {};
+  (aiData || []).forEach(function(row) {
+    var topic = String(row[2] || "Unspecified");
+    var event = String(row[1] || "Other");
+    if (!groups[topic]) {
+      groups[topic] = { topic: topic, counts: {}, other: 0, total: 0 };
+    }
+    if (eventColumns.indexOf(event) >= 0) {
+      groups[topic].counts[event] = (groups[topic].counts[event] || 0) + 1;
+    } else {
+      groups[topic].other++;
+    }
+    groups[topic].total++;
+  });
+  var rows = Object.keys(groups).map(function(key) { return groups[key]; });
+  rows.sort(function(a, b) { return b.total - a.total || a.topic.localeCompare(b.topic); });
+  return [["Sanitized Topic / Interaction"].concat(eventColumns).concat(["Other", "Total"])].concat(
+    rows.slice(0, 50).map(function(group) {
+      return [group.topic].concat(eventColumns.map(function(event) {
+        return group.counts[event] || 0;
+      })).concat([group.other, group.total]);
+    })
+  );
+}
+
+function buildPresentationKpis(records) {
+  var sessions = records.length;
+  var engaged = records.filter(function(record) { return record.engaged; }).length;
+  var returning = records.filter(function(record) { return record.session_type === "returning_session"; }).length;
+  var leads = records.filter(function(record) { return record.lead_conversion; }).length;
+  var cta = records.filter(function(record) { return Number(record.cta_interactions) > 0; }).length;
+  var ctaInteractions = records.reduce(function(total, record) {
+    return total + (Number(record.cta_interactions) || 0);
+  }, 0);
+  var durations = records.map(function(record) { return Number(record.total_session_duration); })
+    .filter(function(value) { return isFinite(value); });
+  return {
+    sessions: sessions,
+    engaged: engaged,
+    returning: returning,
+    leads: leads,
+    cta: cta,
+    ctaInteractions: ctaInteractions,
+    suspicious: records.filter(function(record) { return record.suspicious_traffic; }).length,
+    conversionRate: sessions ? (leads / sessions * 100).toFixed(1) + "%" : "N/A",
+    avgDuration: durations.length ? (durations.reduce(function(sum, value) { return sum + value; }, 0) / durations.length).toFixed(0) + " ms" : "N/A"
+  };
+}
+
+function topPresentationGroup(rows, key) {
+  return rows && rows.length ? rows[0][key] + " (" + rows[0].sessions + ")" : "Unavailable";
+}
+
+function presentationIntensity(value, total) {
+  if (!total || !value) return "·";
+  var ratio = value / total;
+  return ratio >= 0.5 ? "████" : ratio >= 0.25 ? "███" : ratio >= 0.1 ? "██" : "█";
+}
+
+function buildDayHourMatrix(records) {
+  var header = ["Day / Hour"];
+  for (var hour = 0; hour < 24; hour++) header.push(String(hour).padStart(2, "0"));
+  var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "Unavailable"];
+  var rows = [header];
+  days.forEach(function(day) {
+    var row = [day];
+    for (var hour = 0; hour < 24; hour++) {
+      var count = records.filter(function(record) {
+        var recordHour = Number(record.activity_local_hour);
+        return (record.activity_day || "Unavailable") === day && isFinite(recordHour) && recordHour === hour;
+      }).length;
+      row.push(count);
+    }
+    rows.push(row);
+  });
+  return rows;
+}
+
+function appendPresentationPanel(sheet, title, rows, width) {
+  if (!sheet || !rows || !rows.length) return;
+  ensurePresentationStartMarker(sheet);
+  var startRow = sheet.getLastRow() + 2;
+  var normalized = rows.map(function(row) { return padRows([row], width)[0]; });
+  sheet.getRange(startRow, 1, normalized.length, width).setValues(normalized);
+  sheet.getRange(startRow, 1, 1, width).clearContent();
+  sheet.getRange(startRow, 1).setValue(title);
+  sheet.getRange(startRow, 1, 1, width).mergeAcross()
+    .setBackground("#0F172A").setFontColor("#10B981").setFontWeight("bold").setFontSize(12);
+  if (normalized.length > 1) {
+    sheet.getRange(startRow + 1, 1, normalized.length - 1, width)
+      .setBorder(true, true, true, true, true, true, "#CBD5E1", SpreadsheetApp.BorderStyle.SOLID)
+      .setVerticalAlignment("middle");
+  }
+  if (normalized.length > 2) {
+    sheet.getRange(startRow + 1, 1, 1, width).setBackground("#1E293B").setFontColor("#F8FAFC").setFontWeight("bold");
+  }
+  sheet.autoResizeColumns(1, width);
+}
+
+function appendPresentationMatrix(sheet, title, rows, width) {
+  if (!sheet || !rows || rows.length < 2) return;
+  appendPresentationPanel(sheet, title, rows, width);
+  var endRow = sheet.getLastRow();
+  var startRow = endRow - rows.length + 1;
+  if (rows.length > 2) applyPresentationHeatmap(sheet.getRange(startRow + 2, 2, rows.length - 2, Math.max(width - 1, 1)));
 }
 
 function aggregatePresentationGroups(records, keyFunction) {
@@ -2198,7 +2543,7 @@ function aggregatePresentationGroups(records, keyFunction) {
     var key = String(keyFunction(record) || "Unavailable");
     if (!groups[key]) groups[key] = {
       key: key, sessions: 0, engaged: 0, cta: 0, form: 0,
-      conversions: 0, bounce: 0, suspicious: 0, pages: 0, duration: 0
+      conversions: 0, returning: 0, bounce: 0, suspicious: 0, pages: 0, duration: 0
     };
     var group = groups[key];
     group.sessions++;
@@ -2206,6 +2551,7 @@ function aggregatePresentationGroups(records, keyFunction) {
     if (Number(record.cta_interactions) > 0) group.cta++;
     if (Number(record.form_interactions) > 0) group.form++;
     if (record.lead_conversion) group.conversions++;
+    if (record.session_type === "returning_session") group.returning++;
     if (record.bounce === true) group.bounce++;
     if (record.suspicious_traffic) group.suspicious++;
     group.pages += Number(record.pages_count) || 0;
@@ -2262,6 +2608,7 @@ function presentationPageCount(record) {
 
 function appendPresentationSection(sheet, title, rows, width, titleColor, headerColor) {
   if (!sheet || !rows || rows.length < 2) return;
+  ensurePresentationStartMarker(sheet);
   var startRow = sheet.getLastRow() + 2;
   var normalized = rows.map(function(row) { return padRows([row], width)[0]; });
   sheet.getRange(startRow, 1, normalized.length, width).setValues(normalized);
@@ -2273,11 +2620,20 @@ function appendPresentationSection(sheet, title, rows, width, titleColor, header
     .setFontWeight("bold").setFontColor("#F8FAFC").setBackground(headerColor);
   sheet.getRange(startRow, 1, normalized.length, width).setWrap(true);
   sheet.autoResizeColumns(1, width);
-  applyPresentationHeatmap(sheet.getRange(startRow + 2, 2, Math.max(normalized.length - 2, 1), Math.max(width - 1, 1)));
+  if (normalized.length > 2) {
+    applyPresentationHeatmap(sheet.getRange(startRow + 2, 2, normalized.length - 2, Math.max(width - 1, 1)));
+  }
 }
 
 function applyPresentationHeatmap(range) {
   try {
+    if (!range || range.getNumRows() < 1 || range.getNumColumns() < 1) return;
+    var values = range.getValues();
+    var hasNumericValue = values.some(function(row) {
+      return row.some(function(value) { return typeof value === "number" && isFinite(value); });
+    });
+    if (!hasNumericValue) return;
+
     var sheet = range.getSheet();
     var signature = presentationHeatmapSignature(range);
     var properties = PropertiesService.getScriptProperties();
@@ -2288,7 +2644,6 @@ function applyPresentationHeatmap(range) {
     });
     rules.push(SpreadsheetApp.newConditionalFormatRule()
       .setGradientMinpoint("#F8FAFC")
-      .setGradientMidpoint("#A7F3D0")
       .setGradientMaxpoint("#10B981")
       .setRanges([range])
       .build());
@@ -2298,6 +2653,74 @@ function applyPresentationHeatmap(range) {
   } catch (err) {
     Logger.log("Presentation heatmap skipped: " + safeErrorMessage(err));
   }
+}
+
+function resetPresentationBlocks(anaSs) {
+  PRESENTATION_SHEETS.forEach(function(name) {
+    var sheet = anaSs.getSheetByName(name);
+    if (!sheet) return;
+
+    var startRow = findPresentationStartRow(sheet);
+    if (startRow < 1) return;
+
+    var endRow = findPresentationEndRow(sheet, startRow);
+    var lastRow = endRow > 0 ? endRow : sheet.getLastRow();
+    var rowCount = lastRow - startRow + 1;
+    if (rowCount < 1) return;
+
+    var blockRange = sheet.getRange(startRow, 1, rowCount, Math.max(sheet.getLastColumn(), 1));
+    try { blockRange.breakApart(); } catch (err) { /* No merged cells in block. */ }
+    blockRange.clear({ contentsOnly: true });
+    blockRange.clearFormat();
+  });
+}
+
+function finalizePresentationBlocks(anaSs) {
+  PRESENTATION_SHEETS.forEach(function(name) {
+    var sheet = anaSs.getSheetByName(name);
+    if (!sheet) return;
+    var startRow = findPresentationStartRow(sheet);
+    if (startRow < 1) return;
+
+    var endRow = sheet.getLastRow() + 2;
+    sheet.getRange(endRow, 1).setValue(PRESENTATION_END_MARKER)
+      .setFontColor("#64748B").setFontStyle("italic");
+  });
+}
+
+function ensurePresentationStartMarker(sheet) {
+  if (findPresentationStartRow(sheet) > 0) return;
+  var markerRow = sheet.getLastRow() + 2;
+  sheet.getRange(markerRow, 1).setValue(PRESENTATION_START_MARKER)
+    .setFontWeight("bold").setFontColor("#10B981").setBackground("#0F172A");
+}
+
+function findPresentationStartRow(sheet) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 1) return -1;
+  var values = sheet.getRange(1, 1, lastRow, 1).getDisplayValues();
+  for (var index = 0; index < values.length; index++) {
+    if (String(values[index][0] || "").trim() === PRESENTATION_START_MARKER) return index + 1;
+  }
+
+  // Migrate the earlier unmarked presentation block, if present, without
+  // touching the intelligence/report rows that precede its first title.
+  for (var titleIndex = 0; titleIndex < PRESENTATION_SECTION_TITLES.length; titleIndex++) {
+    for (var rowIndex = 0; rowIndex < values.length; rowIndex++) {
+      if (String(values[rowIndex][0] || "").trim() === PRESENTATION_SECTION_TITLES[titleIndex]) return rowIndex + 1;
+    }
+  }
+  return -1;
+}
+
+function findPresentationEndRow(sheet, startRow) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < startRow) return -1;
+  var values = sheet.getRange(startRow, 1, lastRow - startRow + 1, 1).getDisplayValues();
+  for (var index = 0; index < values.length; index++) {
+    if (String(values[index][0] || "").trim() === PRESENTATION_END_MARKER) return startRow + index;
+  }
+  return -1;
 }
 
 function resetPresentationHeatmaps(anaSs) {
@@ -2345,7 +2768,6 @@ function isPresentationHeatmapRule(rule) {
     var gradient = rule.getGradientCondition();
     if (!gradient) return false;
     return String(gradient.getMinColor() || "").toUpperCase() === "#F8FAFC" &&
-      String(gradient.getMidColor() || "").toUpperCase() === "#A7F3D0" &&
       String(gradient.getMaxColor() || "").toUpperCase() === "#10B981";
   } catch (err) {
     return false;
@@ -2385,10 +2807,11 @@ function addPresentationFilter(sheet) {
   try {
     var filter = sheet.getFilter();
     if (filter) filter.remove();
-    var lastRow = sheet.getLastRow();
+    var presentationStart = findPresentationStartRow(sheet);
+    var lastRow = presentationStart > 0 ? presentationStart - 2 : sheet.getLastRow();
     var lastColumn = sheet.getLastColumn();
     var headerRow = 4;
-    if (sheet.getName() === "Session_Intelligence") headerRow = 13;
+    if (sheet.getName() === "Session_Intelligence") headerRow = 25;
     if (sheet.getName() === "Unified_Intelligence") {
       var values = sheet.getRange(1, 1, Math.max(lastRow, 1), 1).getDisplayValues();
       for (var index = 0; index < values.length; index++) {
@@ -3806,32 +4229,499 @@ function addMonthlyCharts(sheet, metrics, previous) {
 }
 
 function insertReportChartSafely(sheet, chartType, ranges, row, column, title, options) {
-  try {
-    if (!sheet || !ranges || ranges.length === 0) return;
+  return insertOwnedChartSafely(sheet, chartType, ranges && ranges[0], row, column,
+    GREENNEXT_CHART_TITLE_PREFIX + title, options || {});
+}
 
-    var builder = sheet.newChart().setChartType(chartType);
-    ranges.forEach(function(range) {
-      if (range) builder.addRange(range);
+/**
+ * Creates the native visualization layer from the same reconstructed session
+ * records used by the intelligence tables. Chart_Data is intentionally
+ * traceable and contains only aggregated/chart-ready values.
+ */
+function refreshNativeVisualizationLayer(anaSs, records, auxiliary) {
+  auxiliary = auxiliary || {};
+  var chartData = getOrCreateSheet(anaSs, "Chart_Data");
+  clearCharts(chartData);
+  var lastRow = chartData.getLastRow();
+  var lastColumn = chartData.getLastColumn();
+  if (lastRow > 0 && lastColumn > 0) chartData.getRange(1, 1, lastRow, lastColumn).clearContent().clearFormat();
+  var state = { nextRow: 1 };
+  var sessions = Array.isArray(records) ? records.filter(function(record) {
+    return record && record.session_id;
+  }) : [];
+
+  ["📊 GreenNext Dashboard", "Executive_Summary", "Traffic_Intelligence", "Geo_Intelligence", "Session_Intelligence",
+    "CTA_and_Funnel", "Unified_Intelligence", "Regional_Analytics", "IP_Intelligence",
+    "AI_Assistant_Telemetry", "Infrastructure_and_Energy"].forEach(function(name) {
+      var sheet = anaSs.getSheetByName(name);
+      if (sheet) clearCharts(sheet);
     });
 
-    var chartOptions = options || {};
-    builder
-      .setPosition(row, column, 0, 0)
-      .setOption("title", title)
-      .setOption("legend", { position: chartOptions.legend || "bottom" })
-      .setOption("colors", chartOptions.colors || ["#10B981"])
-      .setOption("width", chartOptions.width || 560)
-      .setOption("height", chartOptions.height || 300);
+  addExecutiveNativeCharts(anaSs, state, sessions);
+  addTrafficNativeCharts(anaSs, chartData, state, sessions);
+  addGeoNativeChart(anaSs, state, sessions);
+  addSessionNativeCharts(anaSs, state, sessions);
+  addCtaNativeChart(anaSs, state, sessions);
+  addUnifiedNativeChart(anaSs, state, sessions);
+  addRegionalNativeChart(anaSs, state, sessions, auxiliary);
+  addIpNativeChart(anaSs, state, sessions);
+  addAiNativeChart(anaSs, state, auxiliary.aiData || []);
+  addInfrastructureNativeChart(anaSs, state, auxiliary);
+  buildGreenNextDashboard(anaSs, chartData, state, sessions, auxiliary);
+  chartData.setFrozenRows(1);
+  chartData.getRange(1, 1, Math.max(chartData.getLastRow(), 1), Math.max(chartData.getLastColumn(), 1))
+    .setFontFamily("Arial").setWrap(true);
+  logNativeChartCounts(anaSs);
+}
 
-    Object.keys(chartOptions).forEach(function(optionName) {
-      if (["colors", "legend", "width", "height"].indexOf(optionName) !== -1) return;
-      builder.setOption(optionName, chartOptions[optionName]);
+function logNativeChartCounts(anaSs) {
+  ["📊 GreenNext Dashboard", "Executive_Summary", "Traffic_Intelligence", "Geo_Intelligence", "Session_Intelligence",
+    "CTA_and_Funnel", "Unified_Intelligence", "Regional_Analytics", "IP_Intelligence",
+    "AI_Assistant_Telemetry", "Infrastructure_and_Energy"].forEach(function(name) {
+      var sheet = anaSs.getSheetByName(name);
+      if (!sheet) return;
+      var count = sheet.getCharts().filter(isGreenNextOwnedChart).length;
+      Logger.log("GreenNext native chart count | " + name + " | " + count);
     });
+}
 
-    sheet.insertChart(builder.build());
-  } catch (err) {
-    Logger.log("Report chart creation skipped for " + title + ": " + safeErrorMessage(err));
+function nativeNumber(value) {
+  var number = Number(value);
+  return isFinite(number) ? number : 0;
+}
+
+function nativeGroup(records, keyFunction) {
+  var groups = {};
+  (records || []).forEach(function(record) {
+    var key = String(keyFunction(record) || "Unavailable");
+    if (!groups[key]) groups[key] = {
+      key: key, sessions: 0, engaged: 0, conversions: 0, cta: 0, form: 0,
+      suspicious: 0, pages: 0, duration: 0
+    };
+    var group = groups[key];
+    group.sessions++;
+    if (record.engaged) group.engaged++;
+    if (record.lead_conversion) group.conversions++;
+    if (nativeNumber(record.cta_interactions) > 0) group.cta++;
+    if (nativeNumber(record.form_interactions) > 0) group.form++;
+    if (record.suspicious_traffic) group.suspicious++;
+    group.pages += nativeNumber(record.pages_count);
+    group.duration += nativeNumber(record.total_session_duration);
+  });
+  return Object.keys(groups).map(function(key) {
+    var group = groups[key];
+    group.avgPages = group.sessions ? group.pages / group.sessions : 0;
+    group.avgDuration = group.sessions ? group.duration / group.sessions : 0;
+    return group;
+  }).sort(function(left, right) {
+    return right.sessions - left.sessions || left.key.localeCompare(right.key);
+  });
+}
+
+function writeNativeChartData(sheet, state, blockName, rows) {
+  if (!rows || rows.length < 2) return null;
+  var width = rows.reduce(function(maximum, row) { return Math.max(maximum, row.length); }, 1);
+  var normalized = padRows(rows, width);
+  var titleRow = state.nextRow;
+  sheet.getRange(titleRow, 1).setValue(blockName);
+  sheet.getRange(titleRow, 1, 1, width).setFontWeight("bold").setBackground("#D1FAE5");
+  var dataRow = titleRow + 1;
+  sheet.getRange(dataRow, 1, normalized.length, width).setValues(normalized);
+  state.nextRow = dataRow + normalized.length + 2;
+  return sheet.getRange(dataRow, 1, normalized.length, width);
+}
+
+function buildGreenNextDashboard(anaSs, chartData, state, records, auxiliary) {
+  var dashboard = getOrCreateSheet(anaSs, "📊 GreenNext Dashboard");
+  clearCharts(dashboard);
+  var dashboardLastRow = dashboard.getLastRow();
+  var dashboardLastColumn = dashboard.getLastColumn();
+  if (dashboardLastRow > 0 && dashboardLastColumn > 0) {
+    dashboard.getRange(1, 1, Math.max(dashboardLastRow, 120), Math.max(dashboardLastColumn, 26))
+      .clearContent().clearFormat();
   }
+
+  var kpis = buildPresentationKpis(records);
+  dashboard.getRange("A1:P1").mergeAcross().setValue("GREENNEXT").setFontSize(18)
+    .setFontWeight("bold").setFontColor("#10B981").setBackground("#0F172A");
+  dashboard.getRange("A2:P2").mergeAcross().setValue("DIGITAL PRESENCE INTELLIGENCE")
+    .setFontSize(14).setFontWeight("bold").setFontColor("#F8FAFC").setBackground("#0F172A");
+  dashboard.getRange("A3:P3").mergeAcross().setValue(
+    "Reporting period: current collected telemetry  |  Last updated: " + reportRefreshTimestamp(REPORT_TIMEZONE_FALLBACK) + " IST"
+  ).setFontColor("#CBD5E1").setBackground("#1E293B");
+
+  var cards = [
+    ["TOTAL SESSIONS", kpis.sessions], ["ENGAGED SESSIONS", kpis.engaged],
+    ["LEADS / CONVERSIONS", kpis.leads], ["CONVERSION RATE", kpis.conversionRate],
+    ["RETURNING VISITORS", kpis.returning], ["AVG SESSION DURATION", kpis.avgDuration],
+    ["CTA INTERACTIONS", kpis.ctaInteractions], ["SUSPICIOUS ACTIVITY", kpis.suspicious]
+  ];
+  cards.forEach(function(card, index) {
+    var column = 1 + index * 2;
+    dashboard.getRange(5, column, 1, 2).mergeAcross().setValue(card[0])
+      .setFontWeight("bold").setFontColor("#CBD5E1").setBackground("#1E293B");
+    dashboard.getRange(6, column, 2, 2).mergeAcross().setValue(card[1])
+      .setFontSize(16).setFontWeight("bold").setFontColor("#10B981")
+      .setBackground("#F8FAFC").setHorizontalAlignment("center").setVerticalAlignment("middle");
+  });
+
+  var traffic = nativeGroup(records, function(record) { return record.traffic_source; });
+  var trafficRows = [["Traffic Source", "Sessions", "Engaged Sessions", "Conversions", "Conversion Rate"]];
+  traffic.forEach(function(group) {
+    trafficRows.push([group.key, group.sessions, group.engaged, group.conversions,
+      group.sessions ? group.conversions / group.sessions : 0]);
+  });
+  var trafficRange = writeNativeChartData(chartData, state, "Dashboard_Traffic_Data", trafficRows);
+  if (trafficRows.length >= 3) insertOwnedChartSafely(dashboard, Charts.ChartType.TREEMAP, trafficRange, 12, 1,
+    GREENNEXT_CHART_TITLE_PREFIX + "Dashboard | Traffic Composition", { width: 600, height: 250 });
+  writeDashboardTable(dashboard, 27, 1, "01 — TRAFFIC INTELLIGENCE", trafficRows, 5, "0.0%");
+
+  var journeyRows = [["Session Depth", "Sessions"]];
+  buildPresentationDistributionRows(records).forEach(function(row) { journeyRows.push([row[0], row[1]]); });
+  var journeyChartRows = [["Pages per Session"]];
+  records.forEach(function(record) {
+    var pageCount = nativeNumber(record.pages_count);
+    if (pageCount >= 0) journeyChartRows.push([pageCount]);
+  });
+  var journeyRange = writeNativeChartData(chartData, state, "Dashboard_Journey_Data", journeyChartRows);
+  if (journeyChartRows.length >= 3) insertOwnedChartSafely(dashboard, Charts.ChartType.HISTOGRAM, journeyRange, 12, 9,
+    GREENNEXT_CHART_TITLE_PREFIX + "Dashboard | Visitor Journey Depth", { width: 600, height: 250 });
+  writeDashboardTable(dashboard, 27, 9, "02 — VISITOR JOURNEY", journeyRows, 2);
+
+  var regionalRows = buildDashboardRegionalRows(records, auxiliary);
+  var regionalRange = writeNativeChartData(chartData, state, "Dashboard_Regional_Data", regionalRows);
+  var populatedRegionalRows = regionalRows.slice(1).filter(function(row) {
+    return row.slice(1).some(function(value) { return nativeNumber(value) > 0; });
+  });
+  if (populatedRegionalRows.length >= 2) insertOwnedChartSafely(dashboard, Charts.ChartType.RADAR, regionalRange, 40, 1,
+    GREENNEXT_CHART_TITLE_PREFIX + "Dashboard | Regional Demand Signals", { width: 600, height: 250 });
+  writeDashboardTable(dashboard, 55, 1, "03 — REGIONAL INTELLIGENCE", regionalRows, 4);
+  if (populatedRegionalRows.length < 2) {
+    dashboard.getRange("A61:F61").mergeAcross()
+      .setValue("Regional visualization unavailable — insufficient trusted regional activity data")
+      .setFontColor("#64748B").setFontStyle("italic");
+  } else if (!hasTrustedCountryData(records)) {
+    dashboard.getRange("A61:F61").mergeAcross()
+      .setValue("Geo visualization unavailable — insufficient trusted country data")
+      .setFontColor("#64748B").setFontStyle("italic");
+  }
+
+  var behaviorGroups = nativeGroup(records, function(record) {
+    return record.engagement_segment || unifiedEngagementSegment(record);
+  });
+  var behaviorRows = [["Behavior Segment", "Avg Duration (seconds)", "Avg Pages", "Sessions"]];
+  behaviorGroups.forEach(function(group) {
+    behaviorRows.push([group.key, group.avgDuration / 1000, group.avgPages, group.sessions]);
+  });
+  var behaviorRange = writeNativeChartData(chartData, state, "Dashboard_Behavior_Data", behaviorRows);
+  if (behaviorRows.length >= 3) insertOwnedChartSafely(dashboard, Charts.ChartType.BUBBLE, behaviorRange, 40, 9,
+    GREENNEXT_CHART_TITLE_PREFIX + "Dashboard | Behavior Segments", { width: 600, height: 250 });
+  writeDashboardTable(dashboard, 55, 9, "04 — BEHAVIOR INTELLIGENCE", behaviorRows, 4);
+
+  var timeRows = buildDayHourMatrix(records);
+  dashboard.getRange(68, 1, 1, 25).mergeAcross().setValue("05 — TIME INTELLIGENCE | DAY × LOCAL HOUR HEATMAP")
+    .setFontWeight("bold").setFontColor("#10B981").setBackground("#0F172A");
+  dashboard.getRange(69, 1, 1, 25).mergeAcross().setValue("Darker emerald cells indicate greater observed session density; values remain exact.")
+    .setFontColor("#475569");
+  dashboard.getRange(70, 1, timeRows.length, 25).setValues(padRows(timeRows, 25));
+  dashboard.getRange(70, 1, 1, 25).setFontWeight("bold").setFontColor("#F8FAFC").setBackground("#1E293B");
+  applyPresentationHeatmap(dashboard.getRange(71, 2, Math.max(timeRows.length - 1, 1), 24));
+
+  var total = records.length;
+  var engaged = records.filter(function(record) { return record.engaged; }).length;
+  var cta = records.filter(function(record) { return nativeNumber(record.cta_interactions) > 0; }).length;
+  var form = records.filter(function(record) { return nativeNumber(record.form_interactions) > 0; }).length;
+  var converted = records.filter(function(record) { return record.lead_conversion; }).length;
+  var conversionRows = [["Stage", "Change"], ["Visitors", total], ["Engagement drop", -(total - engaged)],
+    ["CTA drop", -(engaged - cta)], ["Inquiry drop", -(cta - form)], ["Conversion drop", -(form - converted)]];
+  var conversionRange = writeNativeChartData(chartData, state, "Dashboard_Conversion_Data", conversionRows);
+  if (total > 0) insertOwnedChartSafely(dashboard, Charts.ChartType.WATERFALL, conversionRange, 82, 9,
+    GREENNEXT_CHART_TITLE_PREFIX + "Dashboard | Conversion Progression", { width: 600, height: 250 });
+  writeDashboardTable(dashboard, 97, 9, "06 — CONVERSION INTELLIGENCE", conversionRows, 2);
+
+  var networkGroups = nativeGroup(records, function(record) {
+    return [record.network_type, record.isp, record.asn].filter(Boolean).join(" / ");
+  }).filter(function(group) { return group.key !== "Unavailable"; });
+  var networkRows = [["Network Group", "Sessions", "Suspicious Sessions", "Engaged Sessions"]];
+  networkGroups.forEach(function(group) { networkRows.push([group.key, group.sessions, group.suspicious, group.engaged]); });
+  var networkRange = writeNativeChartData(chartData, state, "Dashboard_Network_Data", networkRows);
+  if (networkRows.length >= 3) insertOwnedChartSafely(dashboard, Charts.ChartType.BUBBLE, networkRange, 110, 1,
+    GREENNEXT_CHART_TITLE_PREFIX + "Dashboard | Network Attention", { width: 600, height: 250 });
+  writeDashboardTable(dashboard, 125, 1, "07 — NETWORK / SECURITY INTELLIGENCE", networkRows, 4);
+
+  var aiGroups = {};
+  (auxiliary.aiData || []).forEach(function(row) {
+    var topic = String(row[2] || "Unspecified");
+    aiGroups[topic] = (aiGroups[topic] || 0) + 1;
+  });
+  var aiRows = [["AI Topic", "Interactions"]];
+  Object.keys(aiGroups).forEach(function(topic) { aiRows.push([topic, aiGroups[topic]]); });
+  var aiChartRows = [["Name", "Parent", "Interactions"], ["AI Assistant", "", (auxiliary.aiData || []).length]];
+  Object.keys(aiGroups).forEach(function(topic) { aiChartRows.push([topic, "AI Assistant", aiGroups[topic]]); });
+  var aiRange = writeNativeChartData(chartData, state, "Dashboard_AI_Data", aiChartRows);
+  if (aiChartRows.length >= 4) insertOwnedChartSafely(dashboard, Charts.ChartType.TREEMAP, aiRange, 110, 9,
+    GREENNEXT_CHART_TITLE_PREFIX + "Dashboard | AI Topic Intelligence", { width: 600, height: 250 });
+  writeDashboardTable(dashboard, 125, 9, "08 — AI / CONTENT INTELLIGENCE", aiRows, 2);
+
+  dashboard.getRange("Z1").setValue("GREENNEXT_DASHBOARD_START").setFontColor("#FFFFFF");
+  dashboard.getRange("Z140").setValue("GREENNEXT_DASHBOARD_END").setFontColor("#FFFFFF");
+  dashboard.setFrozenRows(7);
+  dashboard.setColumnWidths(1, 25, 92);
+  dashboard.getRange("A1:Y140").setFontFamily("Arial").setWrap(true).setVerticalAlignment("middle");
+  dashboard.getRange("A1:P3").setHorizontalAlignment("left");
+  try {
+    anaSs.setActiveSheet(dashboard);
+    anaSs.moveActiveSheet(1);
+  } catch (err) {
+    Logger.log("Dashboard tab ordering skipped: " + safeErrorMessage(err));
+  }
+}
+
+function writeDashboardTable(sheet, row, column, title, rows, width, percentColumnFormat) {
+  var normalized = padRows(rows, width);
+  sheet.getRange(row, column, 1, width).mergeAcross().setValue(title)
+    .setFontWeight("bold").setFontColor("#10B981").setBackground("#0F172A");
+  sheet.getRange(row + 1, column, normalized.length, width).setValues(normalized)
+    .setBorder(true, true, true, true, true, true, "#CBD5E1", SpreadsheetApp.BorderStyle.SOLID);
+  sheet.getRange(row + 1, column, 1, width).setFontWeight("bold").setFontColor("#F8FAFC").setBackground("#1E293B");
+  if (percentColumnFormat) sheet.getRange(row + 2, column + width - 1, Math.max(normalized.length - 1, 1), 1).setNumberFormat("0.0%");
+}
+
+function buildDashboardRegionalRows(records, auxiliary) {
+  var rows = [["Region", "Regional Activity", "Corridor Inspections", "Inquiries"]];
+  ["Madurai", "Coimbatore", "Trichy", "Mangalore"].forEach(function(name) {
+    var term = name.toLowerCase();
+    var activity = (auxiliary.regData || []).filter(function(row) {
+      return String(row[2] || "").toLowerCase().indexOf(term) !== -1;
+    }).length;
+    var corridors = (auxiliary.locData || []).filter(function(row) {
+      return String(row[2] || "").toLowerCase().indexOf(term) !== -1;
+    }).length;
+    var inquiries = (auxiliary.longLeads || []).filter(function(row) {
+      return String(row[7] || "").toLowerCase().indexOf(term) !== -1;
+    }).length + (auxiliary.dedicatedLeads || []).filter(function(row) {
+      return String(row[6] || "").toLowerCase().indexOf(term) !== -1;
+    }).length;
+    rows.push([name, activity, corridors, inquiries]);
+  });
+  return rows;
+}
+
+function hasTrustedCountryData(records) {
+  var countries = {};
+  (records || []).forEach(function(record) {
+    var country = String(record.geo_country || "").trim();
+    if (country && country.toLowerCase() !== "unavailable" && country.toLowerCase() !== "geo unavailable") {
+      countries[country] = true;
+    }
+  });
+  return Object.keys(countries).length >= 2;
+}
+
+function addExecutiveNativeCharts(anaSs, state, records) {
+  var sheet = anaSs.getSheetByName("Executive_Summary");
+  if (!sheet || !records.length) return;
+  var converted = records.filter(function(record) { return record.lead_conversion; }).length;
+  var rate = records.length ? converted / records.length * 100 : 0;
+  var range = writeNativeChartData(anaSs.getSheetByName("Chart_Data"), state, "Executive_Gauge_Data", [
+    ["KPI", "Value"], ["Lead conversion rate", rate]
+  ]);
+  insertOwnedChartSafely(sheet, Charts.ChartType.GAUGE, range, 2, 10,
+    GREENNEXT_CHART_TITLE_PREFIX + "Executive | Lead Conversion Rate", {
+      min: 0, max: 100, greenFrom: 0, greenTo: 100, width: 420, height: 260
+    });
+}
+
+function addTrafficNativeCharts(anaSs, chartData, state, records) {
+  var sheet = anaSs.getSheetByName("Traffic_Intelligence");
+  if (!sheet || !records.length) return;
+  var hierarchy = [["Name", "Parent", "Sessions"]];
+  var traffic = nativeGroup(records, function(record) { return record.traffic_source || "Unavailable"; });
+  var leafCount = 0;
+  hierarchy.push(["Traffic", "", records.length]);
+  traffic.forEach(function(category) {
+    if (category.key === "Unavailable") return;
+    hierarchy.push([category.key, "Traffic", category.sessions]);
+    var sources = nativeGroup(records.filter(function(record) {
+      return (record.traffic_source || "Unavailable") === category.key;
+    }), function(record) { return record.utm_source || ""; }).filter(function(group) { return group.key; });
+    sources.forEach(function(source) {
+      var sourceName = category.key + " / " + source.key;
+      hierarchy.push([sourceName, category.key, source.sessions]);
+      leafCount++;
+      var campaigns = nativeGroup(records.filter(function(record) {
+        return (record.traffic_source || "Unavailable") === category.key &&
+          (record.utm_source || "") === source.key;
+      }), function(record) { return record.utm_campaign || ""; }).filter(function(group) { return group.key; });
+      campaigns.forEach(function(campaign) {
+        hierarchy.push([sourceName + " / " + campaign.key, sourceName, campaign.sessions]);
+        leafCount++;
+      });
+    });
+  });
+  var range = leafCount >= 2 ? writeNativeChartData(chartData, state, "Traffic_Treemap_Data", hierarchy) : null;
+  if (range) {
+    insertOwnedChartSafely(sheet, Charts.ChartType.TREEMAP, range, 2, 8,
+      GREENNEXT_CHART_TITLE_PREFIX + "Traffic | Session Hierarchy", { width: 620, height: 340 });
+    return;
+  }
+  var bubbleRows = [["Traffic Source", "Sessions", "Conversion Rate", "Engaged Sessions"]];
+  traffic.filter(function(group) { return group.key !== "Unavailable"; }).forEach(function(group) {
+    bubbleRows.push([group.key, group.sessions,
+      group.sessions ? group.conversions / group.sessions * 100 : 0, group.engaged]);
+  });
+  range = writeNativeChartData(chartData, state, "Traffic_Bubble_Data", bubbleRows);
+  if (range && bubbleRows.length >= 3) {
+    insertOwnedChartSafely(sheet, Charts.ChartType.BUBBLE, range, 2, 8,
+      GREENNEXT_CHART_TITLE_PREFIX + "Traffic | Sessions vs Conversion", { width: 620, height: 340 });
+  }
+}
+
+function addGeoNativeChart(anaSs, state, records) {
+  var sheet = anaSs.getSheetByName("Geo_Intelligence");
+  var chartData = anaSs.getSheetByName("Chart_Data");
+  if (!sheet) return;
+  var geo = nativeGroup(records, function(record) { return record.geo_country; }).filter(function(group) {
+    return group.key && group.key !== "Unavailable" && group.key.toLowerCase() !== "geo unavailable";
+  });
+  if (geo.length < 2) {
+    Logger.log("Geo chart skipped: trusted country data is missing or too sparse.");
+    return;
+  }
+  var rows = [["Country", "Sessions"]];
+  geo.forEach(function(group) { rows.push([group.key, group.sessions]); });
+  var range = writeNativeChartData(chartData, state, "Geo_Data", rows);
+  insertOwnedChartSafely(sheet, Charts.ChartType.GEO, range, 2, 8,
+    GREENNEXT_CHART_TITLE_PREFIX + "Geo | Trusted Country Sessions", { width: 620, height: 340 });
+}
+
+function addSessionNativeCharts(anaSs, state, records) {
+  var sheet = anaSs.getSheetByName("Session_Intelligence");
+  var chartData = anaSs.getSheetByName("Chart_Data");
+  if (!sheet) return;
+  var durations = [["Session Duration (seconds)"]];
+  var pages = [["Pages per Session"]];
+  records.forEach(function(record) {
+    var duration = nativeNumber(record.total_session_duration);
+    var pageCount = nativeNumber(record.pages_count);
+    if (duration > 0) durations.push([duration / 1000]);
+    if (pageCount >= 0) pages.push([pageCount]);
+  });
+  var durationRange = durations.length >= 3 ? writeNativeChartData(chartData, state, "Session_Duration_Histogram_Data", durations) : null;
+  var pagesRange = pages.length >= 3 ? writeNativeChartData(chartData, state, "Session_Pages_Histogram_Data", pages) : null;
+  if (durationRange) insertOwnedChartSafely(sheet, Charts.ChartType.HISTOGRAM, durationRange, 2, 4,
+    GREENNEXT_CHART_TITLE_PREFIX + "Sessions | Duration Distribution", { width: 500, height: 280 });
+  if (pagesRange) insertOwnedChartSafely(sheet, Charts.ChartType.HISTOGRAM, pagesRange, 2, 16,
+    GREENNEXT_CHART_TITLE_PREFIX + "Sessions | Pages Distribution", { width: 500, height: 280 });
+}
+
+function addCtaNativeChart(anaSs, state, records) {
+  var sheet = anaSs.getSheetByName("CTA_and_Funnel");
+  var chartData = anaSs.getSheetByName("Chart_Data");
+  if (!sheet || !records.length) return;
+  var total = records.length;
+  var engaged = records.filter(function(record) { return record.engaged; }).length;
+  var cta = records.filter(function(record) { return nativeNumber(record.cta_interactions) > 0; }).length;
+  var form = records.filter(function(record) { return nativeNumber(record.form_interactions) > 0; }).length;
+  var converted = records.filter(function(record) { return record.lead_conversion; }).length;
+  var rows = [["Funnel Stage", "Change"], ["Total sessions", total],
+    ["Engagement drop", -(total - engaged)], ["CTA drop", -(engaged - cta)],
+    ["Form drop", -(cta - form)], ["Conversion drop", -(form - converted)]];
+  var range = writeNativeChartData(chartData, state, "Funnel_Waterfall_Data", rows);
+  insertOwnedChartSafely(sheet, Charts.ChartType.WATERFALL, range, 2, 6,
+    GREENNEXT_CHART_TITLE_PREFIX + "Funnel | Sequential Drop-off", { width: 620, height: 340 });
+}
+
+function addUnifiedNativeChart(anaSs, state, records) {
+  var sheet = anaSs.getSheetByName("Unified_Intelligence");
+  var chartData = anaSs.getSheetByName("Chart_Data");
+  if (!sheet) return;
+  var groups = nativeGroup(records, function(record) {
+    return record.engagement_segment || unifiedEngagementSegment(record);
+  });
+  var rows = [["Engagement Segment", "Avg Duration (seconds)", "Avg Pages", "Sessions"]];
+  groups.forEach(function(group) {
+    rows.push([group.key, group.avgDuration / 1000, group.avgPages, group.sessions]);
+  });
+  var range = rows.length >= 3 ? writeNativeChartData(chartData, state, "Unified_Bubble_Data", rows) : null;
+  if (range) insertOwnedChartSafely(sheet, Charts.ChartType.BUBBLE, range, 2, 4,
+    GREENNEXT_CHART_TITLE_PREFIX + "Unified | Engagement Segments", { width: 620, height: 340 });
+}
+
+function addRegionalNativeChart(anaSs, state, records, auxiliary) {
+  var sheet = anaSs.getSheetByName("Regional_Analytics");
+  var chartData = anaSs.getSheetByName("Chart_Data");
+  if (!sheet) return;
+  var names = ["Madurai", "Coimbatore", "Trichy", "Mangalore"];
+  var rows = [["Region", "Page Views", "Corridor Inspections", "Inquiries"]];
+  names.forEach(function(name) {
+    var terms = name.toLowerCase();
+    var views = (auxiliary.regData || []).filter(function(row) { return String(row[2] || "").toLowerCase().indexOf(terms) !== -1; }).length;
+    var corridors = (auxiliary.locData || []).filter(function(row) { return String(row[2] || "").toLowerCase().indexOf(terms) !== -1; }).length;
+    var inquiries = (records || []).filter(function(record) {
+      return String(record.geo_region || "").toLowerCase().indexOf(terms) !== -1 ||
+        String(record.geo_city || "").toLowerCase().indexOf(terms) !== -1;
+    }).filter(function(record) { return record.lead_conversion; }).length;
+    rows.push([name, views, corridors, inquiries]);
+  });
+  var populatedRegions = rows.slice(1).filter(function(row) {
+    return row.slice(1).some(function(value) { return nativeNumber(value) > 0; });
+  }).length;
+  if (populatedRegions < 2) {
+    Logger.log("Regional radar skipped: regional data is too sparse.");
+    return;
+  }
+  var range = writeNativeChartData(chartData, state, "Regional_Radar_Data", rows);
+  insertOwnedChartSafely(sheet, Charts.ChartType.RADAR, range, 2, 8,
+    GREENNEXT_CHART_TITLE_PREFIX + "Regional | Comparable Demand Signals", { width: 620, height: 340 });
+}
+
+function addIpNativeChart(anaSs, state, records) {
+  var sheet = anaSs.getSheetByName("IP_Intelligence");
+  var chartData = anaSs.getSheetByName("Chart_Data");
+  if (!sheet) return;
+  var groups = nativeGroup(records, function(record) {
+    return [record.network_type, record.isp, record.asn].filter(Boolean).join(" / ");
+  }).filter(function(group) { return group.key !== "Unavailable"; });
+  var rows = [["Network Group", "Sessions", "Suspicious Sessions", "Engaged Sessions"]];
+  groups.forEach(function(group) { rows.push([group.key, group.sessions, group.suspicious, group.engaged]); });
+  var range = rows.length >= 3 ? writeNativeChartData(chartData, state, "Network_Bubble_Data", rows) : null;
+  if (range) insertOwnedChartSafely(sheet, Charts.ChartType.BUBBLE, range, 2, 8,
+    GREENNEXT_CHART_TITLE_PREFIX + "Network | Activity vs Suspicion", { width: 620, height: 340 });
+}
+
+function addAiNativeChart(anaSs, state, aiData) {
+  var sheet = anaSs.getSheetByName("AI_Assistant_Telemetry");
+  var chartData = anaSs.getSheetByName("Chart_Data");
+  if (!sheet || !aiData.length) return;
+  var groups = {};
+  aiData.forEach(function(row) {
+    var topic = String(row[2] || "Unspecified");
+    groups[topic] = (groups[topic] || 0) + 1;
+  });
+  var rows = [["Name", "Parent", "Interactions"], ["AI Assistant", "", aiData.length]];
+  Object.keys(groups).forEach(function(topic) { rows.push([topic, "AI Assistant", groups[topic]]); });
+  var range = rows.length >= 4 ? writeNativeChartData(chartData, state, "AI_Topic_Treemap_Data", rows) : null;
+  if (range) insertOwnedChartSafely(sheet, Charts.ChartType.TREEMAP, range, 2, 5,
+    GREENNEXT_CHART_TITLE_PREFIX + "AI Assistant | Topic Volume", { width: 620, height: 340 });
+}
+
+function addInfrastructureNativeChart(anaSs, state, auxiliary) {
+  var sheet = anaSs.getSheetByName("Infrastructure_and_Energy");
+  var chartData = anaSs.getSheetByName("Chart_Data");
+  if (!sheet) return;
+  var rows = [["Name", "Parent", "Views"], ["Technical engagement", "", 0]];
+  [["Infrastructure", auxiliary.infData || []], ["Energy", auxiliary.eneData || []],
+    ["Automation", auxiliary.autData || []]].forEach(function(item) {
+      var counts = countValues(item[1], 2);
+      Object.keys(counts).forEach(function(key) {
+        rows.push([item[0] + " / " + key, item[0], counts[key]]);
+      });
+    });
+  rows[1][2] = rows.slice(2).reduce(function(total, row) { return total + nativeNumber(row[2]); }, 0);
+  var range = rows.length >= 4 ? writeNativeChartData(chartData, state, "Technical_Engagement_Treemap_Data", rows) : null;
+  if (range) insertOwnedChartSafely(sheet, Charts.ChartType.TREEMAP, range, 2, 4,
+    GREENNEXT_CHART_TITLE_PREFIX + "Technical Engagement | Capability Volume", { width: 620, height: 340 });
 }
 
 /**

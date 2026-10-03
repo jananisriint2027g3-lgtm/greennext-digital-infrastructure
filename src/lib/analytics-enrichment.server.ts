@@ -203,12 +203,33 @@ export async function enrichCanonicalAnalyticsPayload(payload: Record<string, un
 export async function forwardCanonicalAnalyticsEvent(payload: Record<string, unknown>, env?: unknown): Promise<Response> {
   const config = getEnrichmentRuntimeConfig(env);
   if (!config.appsScriptUrl) return new Response("Analytics forwarding is not configured.", { status: 503 });
-  const response = await fetch(config.appsScriptUrl, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=UTF-8" },
-    body: JSON.stringify(payload),
-  });
-  return new Response(null, { status: response.ok ? 204 : 502 });
+  try {
+    const response = await fetch(config.appsScriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const category = response.status >= 500 ? "upstream_server_error" :
+        response.status >= 400 ? "upstream_client_error" : "upstream_non_success";
+      console.warn("Analytics forwarding failed", {
+        stage: "apps_script_forward",
+        status: response.status,
+        category,
+      });
+      return new Response(null, { status: 502 });
+    }
+    return new Response(null, { status: 204 });
+  } catch (error) {
+    const errorName = error && typeof error === "object" && "name" in error
+      ? String((error as { name?: unknown }).name || "")
+      : "";
+    console.warn("Analytics forwarding failed", {
+      stage: "apps_script_forward",
+      category: errorName === "AbortError" ? "timeout" : "network_error",
+    });
+    throw error;
+  }
 }
 
 export async function handleAnalyticsRequest(request: Request, env?: unknown): Promise<Response> {
