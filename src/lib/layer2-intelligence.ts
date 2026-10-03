@@ -125,9 +125,9 @@ function providerConfidence(value: unknown): string {
 export function normalizeGeoEnrichment(input: unknown): GeoEnrichment {
   const value = input && typeof input === "object" ? input as Record<string, unknown> : {};
   return {
-    country: providerString(value["country"] ?? value["country_code"], 100),
+    country: providerString(value["country"] ?? value["country_name"] ?? value["country_code"], 100),
     region: providerString(value["region"] ?? value["region_name"], 150),
-    city: providerString(value["city"], 150),
+    city: providerString(value["city"] ?? value["city_name"], 150),
     confidence: providerConfidence(value["confidence"]),
     source: providerString(value["source"] ?? value["provider"], 100),
   };
@@ -138,7 +138,7 @@ export function normalizeNetworkEnrichment(input: unknown): NetworkEnrichment {
   return {
     networkType: providerString(value["networkType"] ?? value["network_type"], 100),
     isp: providerString(value["isp"], 200),
-    organization: providerString(value["organization"] ?? value["org"], 200),
+    organization: providerString(value["organization"] ?? value["org"] ?? value["as_name"], 200),
     asn: providerString(value["asn"], 100),
     confidence: providerConfidence(value["confidence"]),
     source: providerString(value["source"] ?? value["provider"], 100),

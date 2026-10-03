@@ -6,7 +6,7 @@ import ts from "typescript";
 let source = fs.readFileSync(new URL("../src/lib/analytics-enrichment.server.ts", import.meta.url), "utf8");
 source = source.replace(
   'import { normalizeGeoEnrichment, normalizeNetworkEnrichment } from "./layer2-intelligence";\n',
-  `const normalizeGeoEnrichment = (input) => {\n    const value = input && typeof input === "object" ? input : {};\n    const text = (value) => typeof value === "string" ? value.trim() : "";\n    return { country: text(value.country ?? value.country_code), region: text(value.region ?? value.region_name), city: text(value.city), confidence: typeof value.confidence === "number" && value.confidence >= 0 && value.confidence <= 1 ? String(value.confidence) : "", source: text(value.source ?? value.provider) };\n  };\n  const normalizeNetworkEnrichment = (input) => {\n    const value = input && typeof input === "object" ? input : {};\n    const text = (value) => typeof value === "string" ? value.trim() : "";\n    return { networkType: text(value.networkType ?? value.network_type), isp: text(value.isp), organization: text(value.organization ?? value.org), asn: text(value.asn), confidence: typeof value.confidence === "number" && value.confidence >= 0 && value.confidence <= 1 ? String(value.confidence) : "", source: text(value.source ?? value.provider) };\n  };\n`,
+  `const normalizeGeoEnrichment = (input) => {\n    const value = input && typeof input === "object" ? input : {};\n    const text = (value) => typeof value === "string" ? value.trim() : "";\n    return { country: text(value.country ?? value.country_name ?? value.country_code), region: text(value.region ?? value.region_name), city: text(value.city ?? value.city_name), confidence: typeof value.confidence === "number" && value.confidence >= 0 && value.confidence <= 1 ? String(value.confidence) : "", source: text(value.source ?? value.provider) };\n  };\n  const normalizeNetworkEnrichment = (input) => {\n    const value = input && typeof input === "object" ? input : {};\n    const text = (value) => typeof value === "string" ? value.trim() : "";\n    return { networkType: text(value.networkType ?? value.network_type), isp: text(value.isp), organization: text(value.organization ?? value.org ?? value.as_name), asn: text(value.asn), confidence: typeof value.confidence === "number" && value.confidence >= 0 && value.confidence <= 1 ? String(value.confidence) : "", source: text(value.source ?? value.provider) };\n  };\n`,
 );
 const compiled = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
@@ -44,6 +44,25 @@ test("valid and invalid provider responses normalize safely", () => {
   });
   assert.equal(adapter.normalizeTrustedGeo({ country: 123 }).country, "");
   assert.equal(adapter.normalizeTrustedNetwork({ asn: 123 }).asn, "");
+});
+
+test("IPLocation-style field names normalize into trusted Geo and network fields", () => {
+  const providerResponse = {
+    country_name: "India",
+    country_code: "IN",
+    region_name: "Tamil Nadu",
+    city_name: "Chennai",
+    as_name: "Example ISP",
+    asn: "AS64500",
+    network_type: "corporate",
+    provider: "iplocation.net",
+  };
+  assert.equal(adapter.normalizeTrustedGeo(providerResponse).country, "India");
+  assert.equal(adapter.normalizeTrustedGeo(providerResponse).region, "Tamil Nadu");
+  assert.equal(adapter.normalizeTrustedGeo(providerResponse).city, "Chennai");
+  assert.equal(adapter.normalizeTrustedNetwork(providerResponse).organization, "Example ISP");
+  assert.equal(adapter.normalizeTrustedNetwork(providerResponse).asn, "AS64500");
+  assert.equal(adapter.normalizeTrustedNetwork(providerResponse).networkType, "corporate");
 });
 
 test("provider failure preserves the canonical payload and keeps the server-derived IP", async () => {
@@ -97,11 +116,11 @@ test("IPLocation.net response supplies Geo and supported network fields with one
   globalThis.fetch = async (url, init) => {
     calls.push({ url: String(url), init });
     return new Response(JSON.stringify({
-      country: "India",
+      country_name: "India",
       country_code: "IN",
       region_name: "Tamil Nadu",
-      city: "Chennai",
-      isp: "Example ISP",
+      city_name: "Chennai",
+      as_name: "Example ISP",
       asn: "AS64500",
       network_type: "corporate",
       provider: "iplocation.net",
@@ -125,7 +144,7 @@ test("IPLocation.net response supplies Geo and supported network fields with one
     assert.equal(enriched.geoCountry, "India");
     assert.equal(enriched.geoRegion, "Tamil Nadu");
     assert.equal(enriched.geoCity, "Chennai");
-    assert.equal(enriched.isp, "Example ISP");
+    assert.equal(enriched.organization, "Example ISP");
     assert.equal(enriched.asn, "AS64500");
     assert.equal(enriched.networkType, "corporate");
     assert.equal(enriched.clientIp, "203.0.113.17");
