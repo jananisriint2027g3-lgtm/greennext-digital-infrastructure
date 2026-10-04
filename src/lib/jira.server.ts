@@ -339,9 +339,9 @@ async function resolveAssignableAccountId(
 ): Promise<string> {
   try {
     const users = await jiraRequest<JiraCurrentUser[]>(
-      `/rest/api/3/user/assignable/search?project=${encodeURIComponent(config.projectKey)}&accountId=${encodeURIComponent(accountId)}&maxResults=1`,
+      `/rest/api/3/user/assignable/search?project=${encodeURIComponent(config.projectKey)}&query=${encodeURIComponent(config.email)}&maxResults=50`,
       {},
-      "validate Jira assignee",
+      "validate Jira assignee by project and account email",
     );
     if (!users.some((user) => user.accountId === accountId && user.active !== false)) {
       throw new Error("Configured Jira assignee is not assignable in the configured project.");
