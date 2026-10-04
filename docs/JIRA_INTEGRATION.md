@@ -14,10 +14,9 @@ JIRA_PROJECT_KEY=DI
 JIRA_ENABLED=false
 JIRA_PARENT_ISSUE_TYPE=
 JIRA_JANANI_ACCOUNT_ID=
-JIRA_RUBA_ACCOUNT_ID=
 ```
 
-Create the local file from the example, then set `JIRA_EMAIL` to the Jira account email and `JIRA_API_TOKEN` to the token generated for that account. The assignment workflow also requires the Atlassian account IDs in `JIRA_JANANI_ACCOUNT_ID` and `JIRA_RUBA_ACCOUNT_ID`; these are account ID strings, not API tokens. Never put any of these values in source code or a `VITE_*` variable. `.env` is ignored by Git.
+Create the local file from the example, then set `JIRA_EMAIL` to the Jira account email and `JIRA_API_TOKEN` to the token generated for that account. The assignment workflow requires the Janani Sri NS Atlassian account ID in `JIRA_JANANI_ACCOUNT_ID`; this is an account ID string, not an API token. Never put any of these values in source code or a `VITE_*` variable. `.env` is ignored by Git.
 
 `JIRA_ENABLED=false` is the safe default. With this value, technical infrastructure inquiries still submit to Google Sheets, but the website does not create Jira issues. Set it to `true` only in the server/deployment environment when production Jira creation is approved.
 
@@ -42,7 +41,7 @@ These requests must be run manually. No website form invokes them.
 
 ## Manual infrastructure workflow test
 
-After configuring both assignee account IDs, create one sample parent Task and its five subtasks with:
+After configuring the Janani assignee account ID, create one sample parent Task and its five subtasks with:
 
 ```powershell
 node --env-file=.env --experimental-strip-types scripts/jira-infrastructure-test.ts
@@ -72,4 +71,4 @@ If the token is exposed or needs to be replaced, revoke it in the Jira account's
 
 ## Jira setup still required
 
-The Jira account must have permission to browse the `DI` project, create the project-supported parent and subtask issue types, and assign issues to both configured account IDs. The account's email and API token must belong to the same Atlassian account. The exact assignment configuration variables are `JIRA_JANANI_ACCOUNT_ID` and `JIRA_RUBA_ACCOUNT_ID`.
+The Jira account must have permission to browse the `DI` project, create the project-supported parent and subtask issue types, and assign issues to the configured Janani account ID. The account's email and API token must belong to the same Atlassian account. The exact assignment configuration variable is `JIRA_JANANI_ACCOUNT_ID`.

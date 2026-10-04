@@ -3,7 +3,6 @@ import {
   createJiraConnectionTestTask,
   getJiraCurrentUser,
   getJiraProjectIssueTypes,
-  findJiraUsersByDisplayName,
   JiraRequestError,
 } from "../src/lib/jira.server.ts";
 
@@ -18,15 +17,6 @@ try {
     console.log(
       JSON.stringify({ accountId: user.accountId, displayName: user.displayName }, null, 2),
     );
-  } else if (kind === "find-ruba") {
-    const users = await findJiraUsersByDisplayName("Ruba Dharshini M");
-    console.log(
-      JSON.stringify(
-        users.map(({ accountId, displayName }) => ({ accountId, displayName })),
-        null,
-        2,
-      ),
-    );
   } else if (kind === "parent") {
     const issue = await createJiraConnectionTestTask();
     console.log(JSON.stringify(issue, null, 2));
@@ -34,7 +24,7 @@ try {
     const issue = await createJiraConnectionTestSubtask(parentKey);
     console.log(JSON.stringify(issue, null, 2));
   } else {
-    console.error("Usage: current-user | find-ruba | metadata | parent | subtask <parent-key>");
+    console.error("Usage: current-user | metadata | parent | subtask <parent-key>");
     process.exitCode = 1;
   }
 } catch (error) {

@@ -151,16 +151,12 @@ function getRequiredConfig(): JiraConfig {
   return { baseUrl: baseUrl.replace(/\/$/, ""), email, apiToken, projectKey };
 }
 
-function getConfiguredWorkflowAssignees(): {
-  jananiAccountId?: string;
-  rubaAccountId?: string;
-} {
-  const jananiAccountId = getServerEnv("JIRA_JANANI_ACCOUNT_ID")?.trim() || undefined;
-  const rubaAccountId = getServerEnv("JIRA_RUBA_ACCOUNT_ID")?.trim() || undefined;
-  const assignees: { jananiAccountId?: string; rubaAccountId?: string } = {};
-  if (jananiAccountId) assignees.jananiAccountId = jananiAccountId;
-  if (rubaAccountId) assignees.rubaAccountId = rubaAccountId;
-  return assignees;
+function getRequiredWorkflowAssignee(): string {
+  const jananiAccountId = getServerEnv("JIRA_JANANI_ACCOUNT_ID")?.trim();
+  if (!jananiAccountId) {
+    throw new Error("Technical infrastructure Jira workflow requires JIRA_JANANI_ACCOUNT_ID.");
+  }
+  return jananiAccountId;
 }
 
 function encodeBasicAuth(email: string, apiToken: string): string {
@@ -339,19 +335,18 @@ async function findSubtasks(config: JiraConfig, parentKey: string): Promise<Jira
 
 async function resolveAssignableAccountId(
   config: JiraConfig,
-  accountId: string | undefined,
-): Promise<string | undefined> {
-  if (!accountId) return undefined;
-
+  accountId: string,
+): Promise<string> {
   try {
     const users = await jiraRequest<JiraCurrentUser[]>(
       `/rest/api/3/user/assignable/search?project=${encodeURIComponent(config.projectKey)}&accountId=${encodeURIComponent(accountId)}&maxResults=1`,
       {},
       "validate Jira assignee",
     );
-    return users.some((user) => user.accountId === accountId && user.active !== false)
-      ? accountId
-      : undefined;
+    if (!users.some((user) => user.accountId === accountId && user.active !== false)) {
+      throw new Error("Configured Jira assignee is not assignable in the configured project.");
+    }
+    return accountId;
   } catch (error) {
     if (error instanceof JiraRequestError) {
       console.warn("Jira assignee validation failed", {
@@ -361,7 +356,7 @@ async function resolveAssignableAccountId(
         configured: true,
       });
     }
-    return undefined;
+    throw error;
   }
 }
 
@@ -561,13 +556,10 @@ export async function createTechnicalInfrastructureInquiryWorkflow(
 ): Promise<TechnicalInfrastructureInquiryWorkflowResult> {
   const workflow = leadWorkflowConfig[payload.leadType || "technical"];
   const config = getRequiredConfig();
-  const { jananiAccountId: configuredJananiAccountId, rubaAccountId: configuredRubaAccountId } =
-    getConfiguredWorkflowAssignees();
+  const jananiAccountId = await resolveAssignableAccountId(config, getRequiredWorkflowAssignee());
   const issueTypes = await getProjectIssueTypes(config);
   const parentIssueType = selectParentIssueType(issueTypes, config.projectKey);
   const subtaskIssueType = selectSubtaskIssueType(issueTypes, config.projectKey);
-  const jananiAccountId = await resolveAssignableAccountId(config, configuredJananiAccountId);
-  const rubaAccountId = await resolveAssignableAccountId(config, configuredRubaAccountId);
   const idempotencyLabel = await createIdempotencyLabel(payload);
   const contactLabel = payload.organization
     ? `${payload.name} / ${payload.organization}`
@@ -581,12 +573,12 @@ export async function createTechnicalInfrastructureInquiryWorkflow(
       description,
       priority: "Medium",
       labels: [...workflow.labels, idempotencyLabel],
-      ...(jananiAccountId ? { assigneeAccountId: jananiAccountId } : {}),
+      assigneeAccountId: jananiAccountId,
     }, parentIssueType));
 
-  const subtaskDefinitions = workflow.subtasks.map((summary, index) => ({
+  const subtaskDefinitions = workflow.subtasks.map((summary) => ({
     summary,
-    assigneeAccountId: index === 1 || index === 2 ? rubaAccountId : jananiAccountId,
+    assigneeAccountId: jananiAccountId,
   }));
 
   const existingSubtasks = await findSubtasks(config, parent.key);
@@ -602,9 +594,7 @@ export async function createTechnicalInfrastructureInquiryWorkflow(
         description: `Follow-up step for ${parent.key}: ${definition.summary}.`,
         priority: "Medium",
         labels: workflow.labels,
-        ...(definition.assigneeAccountId
-          ? { assigneeAccountId: definition.assigneeAccountId }
-          : {}),
+        assigneeAccountId: definition.assigneeAccountId,
       }, subtaskIssueType));
     subtasks.push({ summary: definition.summary, issue });
   }
