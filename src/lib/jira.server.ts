@@ -334,17 +334,16 @@ async function findSubtasks(config: JiraConfig, parentKey: string): Promise<Jira
 }
 
 async function resolveAssignableAccountId(
-  config: JiraConfig,
   accountId: string,
 ): Promise<string> {
   try {
-    const users = await jiraRequest<JiraCurrentUser[]>(
-      `/rest/api/3/user/assignable/search?project=${encodeURIComponent(config.projectKey)}&query=${encodeURIComponent(config.email)}&maxResults=50`,
+    const user = await jiraRequest<JiraCurrentUser>(
+      `/rest/api/3/user?accountId=${encodeURIComponent(accountId)}`,
       {},
-      "validate Jira assignee by project and account email",
+      "validate Jira assignee account",
     );
-    if (!users.some((user) => user.accountId === accountId && user.active !== false)) {
-      throw new Error("Configured Jira assignee is not assignable in the configured project.");
+    if (user.accountId !== accountId || user.active === false) {
+      throw new Error("Configured Jira assignee account is missing or inactive.");
     }
     return accountId;
   } catch (error) {
@@ -352,7 +351,7 @@ async function resolveAssignableAccountId(
       console.warn("Jira assignee validation failed", {
         operation: error.operation,
         status: error.status,
-        project: config.projectKey,
+        accountLookup: true,
         configured: true,
       });
     }
@@ -416,9 +415,9 @@ export async function createJiraSubtask(
 }
 
 export async function assignJiraIssue(issueKey: string, accountId: string): Promise<void> {
-  await jiraRequest<void>(`/rest/api/3/issue/${encodeURIComponent(issueKey)}`, {
+  await jiraRequest<void>(`/rest/api/3/issue/${encodeURIComponent(issueKey)}/assignee`, {
     method: "PUT",
-    body: JSON.stringify({ fields: { assignee: { accountId } } }),
+    body: JSON.stringify({ accountId }),
   }, "assign Jira issue");
 }
 
@@ -556,7 +555,7 @@ export async function createTechnicalInfrastructureInquiryWorkflow(
 ): Promise<TechnicalInfrastructureInquiryWorkflowResult> {
   const workflow = leadWorkflowConfig[payload.leadType || "technical"];
   const config = getRequiredConfig();
-  const jananiAccountId = await resolveAssignableAccountId(config, getRequiredWorkflowAssignee());
+  const jananiAccountId = await resolveAssignableAccountId(getRequiredWorkflowAssignee());
   const issueTypes = await getProjectIssueTypes(config);
   const parentIssueType = selectParentIssueType(issueTypes, config.projectKey);
   const subtaskIssueType = selectSubtaskIssueType(issueTypes, config.projectKey);
