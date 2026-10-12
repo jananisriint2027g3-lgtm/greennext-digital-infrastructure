@@ -268,6 +268,14 @@ export function getIntegrationHealth(): IntegrationHealth[] {
       note: "Configure GEO_PROVIDER_URL and GEO_PROVIDER_API_KEY to enable. Compatible with iplocation.net.",
     },
     {
+      name: "Vercel Web Analytics",
+      description: "First-party privacy-preserving web analytics tag (@vercel/analytics)",
+      status: "configured",
+      dataQuality: "live",
+      note: "Tracking tag embedded via RootComponent. Aggregate metrics queryable via Vercel Web Analytics API.",
+      docLink: "https://vercel.com/analytics",
+    },
+    {
       name: "Network Provider",
       description: "Server-side IP network/ISP enrichment",
       status: "optional",

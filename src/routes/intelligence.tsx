@@ -62,6 +62,12 @@ import {
   IntegrationHealthPanel,
   PrivacyGovernancePanel,
 } from "../components/intelligence/IntegrationPanels";
+import { DailyAnalysisPanel } from "../components/intelligence/DailyAnalysisPanel";
+import {
+  getDashboardIntelligenceData,
+  triggerManualIntelligenceRun,
+  type DashboardIntelligenceServerData,
+} from "../lib/intelligence.server-fn";
 
 // ─── Route Definition ─────────────────────────────────────────────────────────
 
@@ -111,6 +117,7 @@ interface DashboardState {
   engagement: EngagementSnapshot | null;
   layerStatuses: LayerStatus[];
   integrations: IntegrationHealth[];
+  serverData: DashboardIntelligenceServerData | null;
   loaded: boolean;
 }
 
@@ -125,10 +132,20 @@ function IntelligenceDashboard() {
     engagement: null,
     layerStatuses: [],
     integrations: [],
+    serverData: null,
     loaded: false,
   });
 
-  // Load all dashboard data on mount (client-side only)
+  const loadServerData = useCallback(async () => {
+    try {
+      const data = await getDashboardIntelligenceData();
+      setState((prev) => ({ ...prev, serverData: data }));
+    } catch {
+      // Non-blocking for client telemetry
+    }
+  }, []);
+
+  // Load all dashboard data on mount
   useEffect(() => {
     if (typeof window === "undefined") return;
     const session = getLiveSessionSnapshot();
@@ -136,8 +153,22 @@ function IntelligenceDashboard() {
     const engagement = getEngagementSnapshot();
     const layerStatuses = getLayerStatuses();
     const integrations = getIntegrationHealth();
-    setState({ session, visitor, engagement, layerStatuses, integrations, loaded: true });
-  }, []);
+    setState((prev) => ({
+      ...prev,
+      session,
+      visitor,
+      engagement,
+      layerStatuses,
+      integrations,
+      loaded: true,
+    }));
+    void loadServerData();
+  }, [loadServerData]);
+
+  const handleTriggerRun = async () => {
+    await triggerManualIntelligenceRun({ data: { force: true } });
+    await loadServerData();
+  };
 
   const handleNavClick = useCallback((id: SectionId) => {
     setActiveSection(id);
@@ -280,13 +311,20 @@ function IntelligenceDashboard() {
         {/* Main Content */}
         <main className="flex-1 min-w-0 px-6 py-8 space-y-12 overflow-y-auto">
           {/* Section: Overview */}
-          <div id="section-overview">
+          <div id="section-overview" className="space-y-6">
             <TierArchitectureBanner />
             <DashboardOverview
               visitor={visitor}
               session={session}
               engagement={engagement}
             />
+            {state.serverData && (
+              <DailyAnalysisPanel
+                vercelMetrics={state.serverData.vercelMetrics}
+                latestRun={state.serverData.latestRun}
+                onTriggerRun={handleTriggerRun}
+              />
+            )}
           </div>
 
           {/* Section: Foundational Intelligence */}

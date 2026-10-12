@@ -121,32 +121,41 @@ export function validateEvent(raw: unknown): string[] {
 
 /** Enrich a raw analytics payload with schema version and validated defaults. */
 export function normalizeEvent(raw: Record<string, unknown>): AnalyticsEvent {
-  return {
+  const event: AnalyticsEvent = {
     eventId: String(raw["eventId"] ?? raw["id"] ?? ""),
     eventName: String(raw["eventName"] ?? raw["event"] ?? ""),
     timestamp: String(raw["timestamp"] ?? new Date().toISOString()),
     schemaVersion: String(raw["schemaVersion"] ?? SCHEMA_VERSION),
-    sessionId: raw["sessionId"] ? String(raw["sessionId"]) : undefined,
-    visitorId: raw["visitorId"] ? String(raw["visitorId"]) : undefined,
     pagePath: String(raw["pagePath"] ?? raw["page"] ?? "/"),
-    landingPage: raw["landingPage"] ? String(raw["landingPage"]) : undefined,
-    trafficSource: raw["trafficSource"] ? String(raw["trafficSource"]) : undefined,
-    referrerCategory: raw["referrerCategory"] ?? raw["referrerUrl"] ? String(raw["referrerCategory"] ?? raw["referrerUrl"]) : undefined,
-    utmSource: raw["utmSource"] ? String(raw["utmSource"]) : undefined,
-    utmMedium: raw["utmMedium"] ? String(raw["utmMedium"]) : undefined,
-    utmCampaign: raw["utmCampaign"] ? String(raw["utmCampaign"]) : undefined,
-    utmTerm: raw["utmTerm"] ? String(raw["utmTerm"]) : undefined,
-    utmContent: raw["utmContent"] ? String(raw["utmContent"]) : undefined,
-    timezone: raw["timezone"] ? String(raw["timezone"]) : undefined,
-    utcOffset: raw["utcOffset"] ? String(raw["utcOffset"]) : undefined,
-    activityLocalHour: raw["activityLocalHour"] ? String(raw["activityLocalHour"]) : undefined,
-    activityDay: raw["activityDay"] ? String(raw["activityDay"]) : undefined,
-    sessionKind: (raw["sessionKind"] === "returning_session") ? "returning_session" : (raw["sessionKind"] === "new_session" ? "new_session" : undefined),
-    sourceTab: raw["sourceTab"] ? String(raw["sourceTab"]) : undefined,
-    eventValue: raw["eventValue"] ?? raw["value"] ? String(raw["eventValue"] ?? raw["value"]) : undefined,
-    consentStatus: undefined, // Consent is not tracked in the raw payload
-    properties: undefined,
   };
+
+  if (raw["sessionId"]) event.sessionId = String(raw["sessionId"]);
+  if (raw["visitorId"]) event.visitorId = String(raw["visitorId"]);
+  if (raw["landingPage"]) event.landingPage = String(raw["landingPage"]);
+  if (raw["trafficSource"]) event.trafficSource = String(raw["trafficSource"]);
+  if (raw["referrerCategory"] || raw["referrerUrl"]) {
+    event.referrerCategory = String(raw["referrerCategory"] ?? raw["referrerUrl"]);
+  }
+  if (raw["utmSource"]) event.utmSource = String(raw["utmSource"]);
+  if (raw["utmMedium"]) event.utmMedium = String(raw["utmMedium"]);
+  if (raw["utmCampaign"]) event.utmCampaign = String(raw["utmCampaign"]);
+  if (raw["utmTerm"]) event.utmTerm = String(raw["utmTerm"]);
+  if (raw["utmContent"]) event.utmContent = String(raw["utmContent"]);
+  if (raw["timezone"]) event.timezone = String(raw["timezone"]);
+  if (raw["utcOffset"]) event.utcOffset = String(raw["utcOffset"]);
+  if (raw["activityLocalHour"]) event.activityLocalHour = String(raw["activityLocalHour"]);
+  if (raw["activityDay"]) event.activityDay = String(raw["activityDay"]);
+  if (raw["sessionKind"] === "returning_session") {
+    event.sessionKind = "returning_session";
+  } else if (raw["sessionKind"] === "new_session") {
+    event.sessionKind = "new_session";
+  }
+  if (raw["sourceTab"]) event.sourceTab = String(raw["sourceTab"]);
+  if (raw["eventValue"] ?? raw["value"]) {
+    event.eventValue = String(raw["eventValue"] ?? raw["value"]);
+  }
+
+  return event;
 }
 
 // ─── Intelligence Layer Metadata ────────────────────────────────────────────
