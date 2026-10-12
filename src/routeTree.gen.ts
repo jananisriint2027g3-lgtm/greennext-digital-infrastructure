@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as IntelligenceRouteImport } from './routes/intelligence'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as AboutSlugRouteImport } from './routes/about/$slug'
 import { Route as AutomationIndexRouteImport } from './routes/automation/index'
@@ -37,6 +38,11 @@ const IndexRoute = IndexRouteImport.update({
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IntelligenceRoute = IntelligenceRouteImport.update({
+  id: '/intelligence',
+  path: '/intelligence',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutIndexRoute = AboutIndexRouteImport.update({
@@ -130,6 +136,7 @@ const SustainabilitySlugRoute = SustainabilitySlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
+  '/intelligence': typeof IntelligenceRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
   '/energy/$slug': typeof EnergySlugRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
+  '/intelligence': typeof IntelligenceRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
   '/energy/$slug': typeof EnergySlugRoute
@@ -173,6 +181,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
+  '/intelligence': typeof IntelligenceRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
   '/energy/$slug': typeof EnergySlugRoute
@@ -196,6 +205,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/contact'
+    | '/intelligence'
     | '/about/$slug'
     | '/automation/$slug'
     | '/energy/$slug'
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/contact'
+    | '/intelligence'
     | '/about/$slug'
     | '/automation/$slug'
     | '/energy/$slug'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/contact'
+    | '/intelligence'
     | '/about/$slug'
     | '/automation/$slug'
     | '/energy/$slug'
@@ -260,6 +272,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ContactRoute: typeof ContactRoute
+  IntelligenceRoute: typeof IntelligenceRoute
   AboutSlugRoute: typeof AboutSlugRoute
   AutomationSlugRoute: typeof AutomationSlugRoute
   EnergySlugRoute: typeof EnergySlugRoute
@@ -293,6 +306,13 @@ declare module '@tanstack/react-router' {
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/intelligence': {
+      id: '/intelligence'
+      path: '/intelligence'
+      fullPath: '/intelligence'
+      preLoaderRoute: typeof IntelligenceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about/': {
@@ -420,6 +440,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ContactRoute: ContactRoute,
+  IntelligenceRoute: IntelligenceRoute,
   AboutSlugRoute: AboutSlugRoute,
   AutomationSlugRoute: AutomationSlugRoute,
   EnergySlugRoute: EnergySlugRoute,

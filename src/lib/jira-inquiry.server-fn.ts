@@ -26,7 +26,7 @@ const technicalInquirySchema = z.object({
 
 export type JiraInquirySubmissionResult =
   | { status: "disabled" }
-  | { status: "created"; parentKey: string; subtaskKeys: string[] }
+  | { status: "created"; parentKey: string; parentUrl: string; subtaskKeys: string[] }
   | { status: "failed" };
 
 export const submitTechnicalInfrastructureInquiryToJira = createServerFn({ method: "POST" })
@@ -55,6 +55,7 @@ export const submitTechnicalInfrastructureInquiryToJira = createServerFn({ metho
       return {
         status: "created",
         parentKey: result.parent.key,
+        parentUrl: result.parent.url || "",
         subtaskKeys: result.subtasks.map(({ issue }) => issue.key),
       };
     } catch (error) {

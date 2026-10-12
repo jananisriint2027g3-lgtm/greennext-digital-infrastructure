@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Leaf, ChevronDown, Menu, X, ArrowRight, MessageCircle, ExternalLink } from "../icons";
-import { NAVIGATION_STRUCTURE, NavigationCategory } from "../../data/navigation";
+import { NAVIGATION_STRUCTURE } from "../../data/navigation";
 import { WHATSAPP_CONFIG } from "../../data/whatsapp";
 import { WhatsAppDemoModal, openQuickInquiry } from "../common/FloatingContact";
 import { trackEvent } from "../../lib/analytics";
@@ -17,6 +17,7 @@ export function SiteHeader() {
   const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,6 +33,34 @@ export function SiteHeader() {
     setActiveDropdown(null);
   }, [currentPath]);
 
+  // Lock body scroll when mobile drawer is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
+  // Keyboard: Escape closes menus and restores focus
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (activeDropdown) {
+          setActiveDropdown(null);
+        } else if (mobileMenuOpen) {
+          setMobileMenuOpen(false);
+          hamburgerRef.current?.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [activeDropdown, mobileMenuOpen]);
+
   const handleMouseEnter = (id: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setActiveDropdown(id);
@@ -41,6 +70,11 @@ export function SiteHeader() {
     timeoutRef.current = setTimeout(() => {
       setActiveDropdown(null);
     }, 150);
+  };
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+    hamburgerRef.current?.focus();
   };
 
   const toggleMobileCategory = (id: string) => {
