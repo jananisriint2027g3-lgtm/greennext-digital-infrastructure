@@ -338,11 +338,4 @@ export const NAVIGATION_STRUCTURE: NavigationCategory[] = [
     description: "Connect with the GreenNext infrastructure planning team.",
     isDirectLink: true,
   },
-  {
-    id: "intelligence",
-    label: "Intelligence",
-    path: "/intelligence",
-    description: "Website Intelligence Platform — 13-layer analytics workspace.",
-    isDirectLink: true,
-  },
 ];

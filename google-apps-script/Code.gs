@@ -48,17 +48,46 @@ var INTELLIGENCE_PROVIDER_PROPERTY_NAMES = {
   enrichmentSecret: "ANALYTICS_ENRICHMENT_SECRET"
 };
 
+var CALENDAR_CONFIG_PROPERTY_NAMES = {
+  enabled: "CALENDAR_INTEGRATION_ENABLED",
+  calendarId: "CALENDAR_ID",
+  testCalendarId: "CALENDAR_TEST_ID",
+  timezone: "CALENDAR_TIMEZONE",
+  followUpHour: "CALENDAR_FOLLOWUP_HOUR",
+  followUpMinute: "CALENDAR_FOLLOWUP_MINUTE",
+  durationMinutes: "CALENDAR_FOLLOWUP_DURATION_MINUTES",
+  inviteGuest: "CALENDAR_INVITE_GUEST"
+};
+
+var CALENDAR_DEFAULTS = {
+  enabled: false,
+  calendarId: "",
+  testCalendarId: "",
+  timezone: "Asia/Kolkata",
+  followUpHour: 10,
+  followUpMinute: 0,
+  durationMinutes: 30,
+  inviteGuest: false
+};
+
 // ─── 1. HTTP GET & POST ENDPOINTS ──────────────────────────────────────────
 
 /**
  * Health check & diagnostic status endpoint.
  */
 function doGet(e) {
+  var calConfig = getCalendarConfig();
   var output = {
     status: "online",
     system: "GreenNext Digital Infrastructure Data Platform",
-    version: "2.0.0",
-    timestamp: new Date().toISOString()
+    version: "2.1.0",
+    timestamp: new Date().toISOString(),
+    calendar: {
+      enabled: !!calConfig.enabled,
+      timezone: calConfig.timezone,
+      defaultFollowUpTime: calConfig.followUpHour + ":" + (calConfig.followUpMinute < 10 ? "0" : "") + calConfig.followUpMinute,
+      durationMinutes: calConfig.durationMinutes
+    }
   };
   return ContentService.createTextOutput(JSON.stringify(output))
     .setMimeType(ContentService.MimeType.JSON);
@@ -111,7 +140,7 @@ function doPost(e) {
         payload.sessionId || "",
         payload.sessionKind || "",
         payload.requestId || ""
-      ], payload.requestId, 11);
+      ], payload.requestId, 10);
       if (quickWasDuplicate) return jsonResponse(true, "Quick inquiry already recorded.");
 
       // Dual recording: Also log high-intent CTA event (no PII in CTA tab)
@@ -125,6 +154,20 @@ function doPost(e) {
         payload.page || "",
         payload.sessionId || ""
       ]);
+
+      // Schedule calendar follow-up (safe, non-blocking, disabled by default)
+      createCalendarFollowUpSafely({
+        leadType: payload.leadType || "Quick Inquiry",
+        name: payload.name,
+        email: payload.email,
+        phone: payload.phone,
+        organization: "",
+        topic: payload.interest || "General",
+        message: payload.message,
+        page: payload.page,
+        requestId: payload.requestId,
+        submissionTime: timestamp
+      });
 
       // Refresh analytics asynchronously or best-effort
       tryUpdateAnalytics();
@@ -165,6 +208,20 @@ function doPost(e) {
         payload.page || "",
         payload.sessionId || ""
       ]);
+
+      // Schedule calendar follow-up (safe, non-blocking, disabled by default)
+      createCalendarFollowUpSafely({
+        leadType: payload.leadType || "Technical Infrastructure Inquiry",
+        name: payload.name,
+        email: payload.email,
+        phone: payload.phone,
+        organization: payload.organization,
+        topic: payload.category || "General Requirements",
+        message: payload.message,
+        page: payload.page,
+        requestId: payload.requestId,
+        submissionTime: timestamp
+      });
 
       // Refresh analytics
       tryUpdateAnalytics();
@@ -607,6 +664,21 @@ function processLeadSubmission(payload, rawSs, timestamp, diagStartedAt) {
     greenNextDiag("STATUS UPDATE START", diagStartedAt);
     leadSheet.getRange(rowNumber, 16).setValue(emailStatus);
     greenNextDiag("STATUS UPDATE COMPLETE", diagStartedAt);
+
+    // Schedule calendar follow-up (safe, non-blocking, disabled by default)
+    createCalendarFollowUpSafely({
+      leadType: payload.leadType,
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone,
+      organization: payload.organization,
+      topic: payload.topic,
+      message: payload.message,
+      page: payload.page,
+      requestId: payload.requestId,
+      submissionTime: leadTimestamp
+    });
+
     greenNextDiag("RESPONSE START", diagStartedAt);
     return jsonResponse(true, "Lead submission recorded successfully.");
   } finally {
@@ -1333,8 +1405,18 @@ function findInquiryRequest(sheet, requestId, requestColumnIndex) {
   if (!requestId || !sheet || sheet.getLastRow() <= 1) return 0;
   var lastRow = sheet.getLastRow();
   var values = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+  var reqStr = String(requestId).trim();
   for (var i = 0; i < values.length; i++) {
-    if (String(values[i][requestColumnIndex] || "") === String(requestId)) return i + 2;
+    var row = values[i];
+    if (requestColumnIndex !== undefined && requestColumnIndex < row.length && String(row[requestColumnIndex] || "").trim() === reqStr) {
+      return i + 2;
+    }
+    if (requestColumnIndex !== undefined && (requestColumnIndex - 1) >= 0 && (requestColumnIndex - 1) < row.length && String(row[requestColumnIndex - 1] || "").trim() === reqStr) {
+      return i + 2;
+    }
+    if (row.length > 0 && String(row[row.length - 1] || "").trim() === reqStr) {
+      return i + 2;
+    }
   }
   return 0;
 }
@@ -4951,5 +5033,602 @@ function sizeRawDataColumns(sheet, headers) {
 
     var currentWidth = sheet.getColumnWidth(index + 1);
     sheet.setColumnWidth(index + 1, Math.max(minimum, Math.min(maximum, currentWidth)));
+  });
+}
+
+// ─── 15. GOOGLE CALENDAR FOLLOW-UP INTEGRATION ────────────────────────────
+
+/**
+ * Reads Google Calendar integration settings from Script Properties.
+ * Disabled by default until CALENDAR_INTEGRATION_ENABLED is set to "true".
+ */
+function getCalendarConfig() {
+  var props = {};
+  try {
+    if (typeof PropertiesService !== "undefined" && PropertiesService.getScriptProperties) {
+      props = PropertiesService.getScriptProperties().getProperties() || {};
+    }
+  } catch (err) {
+    Logger.log("Failed reading calendar properties: " + safeErrorMessage(err));
+  }
+
+  var isEnabled = String(props[CALENDAR_CONFIG_PROPERTY_NAMES.enabled] || "").trim().toLowerCase() === "true";
+  var calendarId = String(props[CALENDAR_CONFIG_PROPERTY_NAMES.calendarId] || "").trim();
+  var testCalendarId = String(props[CALENDAR_CONFIG_PROPERTY_NAMES.testCalendarId] || "").trim();
+  var timezone = String(props[CALENDAR_CONFIG_PROPERTY_NAMES.timezone] || "").trim() || CALENDAR_DEFAULTS.timezone;
+
+  var hourVal = parseInt(props[CALENDAR_CONFIG_PROPERTY_NAMES.followUpHour], 10);
+  var followUpHour = (!isNaN(hourVal) && hourVal >= 0 && hourVal <= 23) ? hourVal : CALENDAR_DEFAULTS.followUpHour;
+
+  var minVal = parseInt(props[CALENDAR_CONFIG_PROPERTY_NAMES.followUpMinute], 10);
+  var followUpMinute = (!isNaN(minVal) && minVal >= 0 && minVal <= 59) ? minVal : CALENDAR_DEFAULTS.followUpMinute;
+
+  var durVal = parseInt(props[CALENDAR_CONFIG_PROPERTY_NAMES.durationMinutes], 10);
+  var durationMinutes = (!isNaN(durVal) && durVal > 0 && durVal <= 480) ? durVal : CALENDAR_DEFAULTS.durationMinutes;
+
+  var inviteGuest = String(props[CALENDAR_CONFIG_PROPERTY_NAMES.inviteGuest] || "").trim().toLowerCase() === "true";
+
+  return {
+    enabled: isEnabled,
+    calendarId: calendarId,
+    testCalendarId: testCalendarId,
+    timezone: timezone,
+    followUpHour: followUpHour,
+    followUpMinute: followUpMinute,
+    durationMinutes: durationMinutes,
+    inviteGuest: inviteGuest
+  };
+}
+
+/**
+ * Computes the next calendar day's follow-up window (e.g. 10:00 AM - 10:30 AM IST).
+ * Always advances to the immediate next calendar day in the target timezone.
+ */
+function calculateNextDayFollowUpWindow(timezone, targetHour, targetMinute, durationMinutes, referenceDate) {
+  var tz = timezone || CALENDAR_DEFAULTS.timezone;
+  var hour = typeof targetHour === "number" ? targetHour : CALENDAR_DEFAULTS.followUpHour;
+  var minute = typeof targetMinute === "number" ? targetMinute : CALENDAR_DEFAULTS.followUpMinute;
+  var duration = typeof durationMinutes === "number" ? durationMinutes : CALENDAR_DEFAULTS.durationMinutes;
+  var now = referenceDate ? new Date(referenceDate) : new Date();
+
+  var pad = function(n) { return (n < 10 ? "0" : "") + n; };
+
+  if (typeof Utilities !== "undefined" && Utilities.formatDate && Utilities.parseDate) {
+    var year = parseInt(Utilities.formatDate(now, tz, "yyyy"), 10);
+    var month = parseInt(Utilities.formatDate(now, tz, "MM"), 10) - 1;
+    var day = parseInt(Utilities.formatDate(now, tz, "dd"), 10);
+
+    var tomorrowUtc = new Date(Date.UTC(year, month, day + 1, 0, 0, 0));
+    var tYear = tomorrowUtc.getUTCFullYear();
+    var tMonth = tomorrowUtc.getUTCMonth() + 1;
+    var tDay = tomorrowUtc.getUTCDate();
+    var dateString = tYear + "/" + pad(tMonth) + "/" + pad(tDay) + " " + pad(hour) + ":" + pad(minute) + ":00";
+    var startTime = Utilities.parseDate(dateString, tz, "yyyy/MM/dd HH:mm:ss");
+    var endTime = new Date(startTime.getTime() + duration * 60 * 1000);
+    return {
+      startTime: startTime,
+      endTime: endTime,
+      dateString: dateString,
+      isoDate: tYear + "-" + pad(tMonth) + "-" + pad(tDay),
+      timezone: tz
+    };
+  } else {
+    // Pure JS / Intl fallback for testing outside Apps Script runtime
+    var dateParts = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).formatToParts(now);
+    var p = {};
+    dateParts.forEach(function(item) { p[item.type] = item.value; });
+    var y = parseInt(p.year, 10);
+    var m = parseInt(p.month, 10) - 1;
+    var d = parseInt(p.day, 10);
+
+    var nextDayUtc = new Date(Date.UTC(y, m, d + 1, 0, 0, 0));
+    var ny = nextDayUtc.getUTCFullYear();
+    var nm = nextDayUtc.getUTCMonth() + 1;
+    var nd = nextDayUtc.getUTCDate();
+    var isoDate = ny + "-" + pad(nm) + "-" + pad(nd);
+
+    var testDate = new Date(Date.UTC(ny, nm - 1, nd, hour, minute, 0));
+    var tzStr = testDate.toLocaleString("en-US", { timeZone: tz });
+    var tzDate = new Date(tzStr);
+    var offsetMs = tzDate.getTime() - testDate.getTime();
+    var startEpoch = Date.UTC(ny, nm - 1, nd, hour, minute, 0) - offsetMs;
+    var startTimeFallback = new Date(startEpoch);
+    var endTimeFallback = new Date(startTimeFallback.getTime() + duration * 60 * 1000);
+
+    return {
+      startTime: startTimeFallback,
+      endTime: endTimeFallback,
+      dateString: isoDate + " " + pad(hour) + ":" + pad(minute) + ":00",
+      isoDate: isoDate,
+      timezone: tz
+    };
+  }
+}
+
+/**
+ * Formats a clean, structured title and description for the follow-up calendar event.
+ */
+function buildCalendarEventDetails(payload) {
+  var leadType = String(payload.leadType || "Inquiry").trim();
+  var name = String(payload.name || "Website Lead").trim();
+  var email = String(payload.email || "").trim();
+  var phone = String(payload.phone || "").trim();
+  var org = String(payload.organization || "").trim();
+  var topic = String(payload.topic || payload.interest || payload.category || "General").trim();
+  var message = String(payload.message || "").trim();
+  var page = String(payload.page || "").trim();
+  var requestId = String(payload.requestId || "").trim();
+
+  var title = "[GreenNext Follow-up] " + leadType + " - " + name;
+  if (org) {
+    title += " (" + org + ")";
+  }
+
+  var messageSummary = message;
+  if (messageSummary.length > 1000) {
+    messageSummary = messageSummary.substring(0, 997) + "...";
+  }
+  if (!messageSummary) {
+    messageSummary = "(No message provided)";
+  }
+
+  var lines = [
+    "GreenNext Follow-up Action",
+    "====================================",
+    "Lead Type:        " + leadType,
+    "Full Name:        " + name,
+    "Email:            " + (email || "Not provided"),
+    "Phone:            " + (phone || "Not provided"),
+    "Organization:     " + (org || "Not provided"),
+    "Topic / Category: " + topic,
+    "Website Page:     " + (page || "Not specified"),
+    "Request ID:       " + (requestId || "None"),
+    "",
+    "Message Summary:",
+    "------------------------------------",
+    messageSummary,
+    "",
+    "====================================",
+    "System: Generated automatically by GreenNext Apps Script backend.",
+    "Timestamp: " + new Date().toISOString()
+  ];
+
+  return {
+    title: title,
+    description: lines.join("\n"),
+    requestId: requestId,
+    email: email
+  };
+}
+
+/**
+ * Deduplication guard: Checks CacheService and searches existing calendar events
+ * within the target window to prevent duplicate events on retried submissions.
+ */
+function isCalendarEventAlreadyCreated(calendar, requestId, startTime, endTime) {
+  if (!requestId) return false;
+  var reqStr = String(requestId).trim();
+  if (!reqStr) return false;
+
+  // Layer 1: CacheService check (fast in-memory check within cache TTL)
+  var cacheKey = "gn_cal_req_" + reqStr.slice(-100);
+  try {
+    if (typeof CacheService !== "undefined" && CacheService.getScriptCache) {
+      var cache = CacheService.getScriptCache();
+      if (cache && cache.get(cacheKey)) {
+        Logger.log("[CALENDAR] Duplicate detected via CacheService: " + reqStr);
+        return true;
+      }
+    }
+  } catch (cErr) {
+    Logger.log("[CALENDAR] CacheService check skipped: " + safeErrorMessage(cErr));
+  }
+
+  // Layer 2: CalendarApp search within search window (+/- 24 hours)
+  if (calendar && typeof calendar.getEvents === "function") {
+    try {
+      var searchStart = new Date(startTime.getTime() - 24 * 60 * 60 * 1000);
+      var searchEnd = new Date(endTime.getTime() + 24 * 60 * 60 * 1000);
+      var existingEvents = calendar.getEvents(searchStart, searchEnd, { search: reqStr });
+      if (existingEvents && existingEvents.length > 0) {
+        Logger.log("[CALENDAR] Duplicate detected via Calendar event search for request ID: " + reqStr);
+        try {
+          if (typeof CacheService !== "undefined" && CacheService.getScriptCache) {
+            var c = CacheService.getScriptCache();
+            if (c) c.put(cacheKey, "1", 21600);
+          }
+        } catch (e) {}
+        return true;
+      }
+    } catch (sErr) {
+      Logger.log("[CALENDAR] Event search error: " + safeErrorMessage(sErr));
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Resolves the target Google Calendar instance.
+ */
+function getTargetCalendar(calendarId) {
+  if (typeof CalendarApp === "undefined") {
+    throw new Error("CalendarApp service is not available in this environment.");
+  }
+  if (calendarId && calendarId !== "primary") {
+    var cal = CalendarApp.getCalendarById(calendarId);
+    if (!cal) {
+      throw new Error("Specified calendar ID not found: " + calendarId);
+    }
+    return cal;
+  }
+  var defaultCal = CalendarApp.getDefaultCalendar();
+  if (!defaultCal) {
+    throw new Error("Default calendar unavailable or unauthorized.");
+  }
+  return defaultCal;
+}
+
+/**
+ * Creates the Google Calendar follow-up event.
+ * Validates configuration, checks deduplication with LockService protection, and stores cache signature.
+ */
+function createCalendarFollowUp(payload) {
+  var config = getCalendarConfig();
+  if (!config.enabled) {
+    Logger.log("[CALENDAR] Integration disabled (CALENDAR_INTEGRATION_ENABLED != true). Event skipped.");
+    return { success: false, reason: "disabled" };
+  }
+
+  var requestId = payload && payload.requestId ? String(payload.requestId).trim() : "";
+  if (!requestId) {
+    requestId = "gn_sub_" + (payload.email || "anon") + "_" + (payload.submissionTime || "");
+  }
+
+  // Concurrency guard: ScriptLock prevents race conditions from simultaneous duplicate submissions
+  var lock = null;
+  if (typeof LockService !== "undefined" && LockService.getScriptLock) {
+    try {
+      lock = LockService.getScriptLock();
+      if (!lock) {
+        throw new Error("LockService.getScriptLock() returned null.");
+      }
+      lock.waitLock(10000);
+    } catch (lockErr) {
+      // Ensure lock is cleared before rethrowing
+      lock = null;
+      throw new Error("Unable to acquire calendar script lock: " + safeErrorMessage(lockErr));
+    }
+  }
+
+  try {
+    var eventDetails = buildCalendarEventDetails(payload || {});
+    var timeWindow = calculateNextDayFollowUpWindow(
+      config.timezone,
+      config.followUpHour,
+      config.followUpMinute,
+      config.durationMinutes,
+      payload && payload.submissionTime ? payload.submissionTime : null
+    );
+
+    var calendar = getTargetCalendar(config.calendarId);
+
+    // Check deduplication (both CacheService and Calendar event search)
+    if (requestId && isCalendarEventAlreadyCreated(calendar, requestId, timeWindow.startTime, timeWindow.endTime)) {
+      Logger.log("[CALENDAR] Skipped duplicate event creation for request ID: " + requestId);
+      return { success: true, duplicate: true, requestId: requestId };
+    }
+
+    var eventOptions = {
+      description: eventDetails.description
+    };
+
+    if (config.inviteGuest && eventDetails.email && isValidEmail(eventDetails.email)) {
+      eventOptions.guests = eventDetails.email;
+    }
+
+    var event = calendar.createEvent(
+      eventDetails.title,
+      timeWindow.startTime,
+      timeWindow.endTime,
+      eventOptions
+    );
+
+    var eventId = event ? event.getId() : "";
+
+    // Store in cache immediately
+    if (requestId) {
+      try {
+        if (typeof CacheService !== "undefined" && CacheService.getScriptCache) {
+          var cache = CacheService.getScriptCache();
+          if (cache) cache.put("gn_cal_req_" + requestId.slice(-100), eventId || "1", 21600);
+        }
+      } catch (e) {}
+    }
+
+    Logger.log("[CALENDAR] Successfully created follow-up event: " + eventId + " for request: " + requestId);
+    return {
+      success: true,
+      eventId: eventId,
+      title: eventDetails.title,
+      startTime: timeWindow.startTime.toISOString(),
+      endTime: timeWindow.endTime.toISOString(),
+      requestId: requestId
+    };
+  } finally {
+    if (lock) {
+      try {
+        lock.releaseLock();
+      } catch (rErr) {}
+    }
+  }
+}
+
+/**
+ * Safe top-level wrapper. Errors are trapped and never bubble up to
+ * disrupt lead storage or email notifications.
+ */
+function createCalendarFollowUpSafely(payload) {
+  try {
+    return createCalendarFollowUp(payload);
+  } catch (err) {
+    Logger.log("[CALENDAR] Safe handler trapped error: " + safeErrorMessage(err));
+    return { success: false, error: safeErrorMessage(err) };
+  }
+}
+
+/**
+ * Safe status inspection for admins. Can be executed directly in the Apps Script editor.
+ */
+function getCalendarIntegrationStatus() {
+  var config = getCalendarConfig();
+  var status = {
+    enabled: config.enabled,
+    configuredCalendarId: config.calendarId || "(primary/default)",
+    configuredTestCalendarId: config.testCalendarId || "(none - testing disabled until set)",
+    timezone: config.timezone,
+    followUpHour: config.followUpHour,
+    followUpMinute: config.followUpMinute,
+    durationMinutes: config.durationMinutes,
+    inviteGuest: config.inviteGuest,
+    calendarAppAuthorized: false,
+    calendarName: null,
+    calendarTimezone: null,
+    testCalendarAvailable: false,
+    testCalendarName: null,
+    error: null
+  };
+
+  try {
+    var cal = getTargetCalendar(config.calendarId);
+    status.calendarAppAuthorized = true;
+    status.calendarName = cal.getName();
+    status.calendarTimezone = cal.getTimeZone();
+  } catch (err) {
+    status.error = safeErrorMessage(err);
+  }
+
+  if (config.testCalendarId && config.testCalendarId.toLowerCase() !== "primary" && config.testCalendarId.toLowerCase() !== "default") {
+    try {
+      if (typeof CalendarApp !== "undefined") {
+        var testCal = CalendarApp.getCalendarById(config.testCalendarId);
+        if (testCal) {
+          status.testCalendarAvailable = true;
+          status.testCalendarName = testCal.getName();
+        }
+      }
+    } catch (tErr) {}
+  }
+
+  Logger.log("[CALENDAR STATUS]\n" + JSON.stringify(status, null, 2));
+  return status;
+}
+
+/**
+ * Diagnostic test runner for the Apps Script editor.
+ * Creates a verified test event on an explicitly configured dedicated test calendar
+ * and cleans it up (unless keepEvent is true).
+ *
+ * SAFETY GUARANTEES:
+ * 1. NEVER creates test events on the default or primary calendar.
+ * 2. Requires an explicitly configured test calendar ID (via CALENDAR_TEST_ID or options.testCalendarId).
+ * 3. Does not require production Calendar integration to be enabled.
+ * 4. Never invites real customer emails as guests.
+ * 5. Test events are explicitly tagged with "[TEST]".
+ * 6. Attempts cleanup and reports cleanup status / errors clearly.
+ */
+function testCalendarIntegration(options) {
+  var config = getCalendarConfig();
+  var opts = options || {};
+  if (typeof options === "boolean") {
+    opts = { keepEvent: options };
+  }
+
+  var keepEvent = !!opts.keepEvent;
+  var targetTestCalendarId = String(opts.testCalendarId || config.testCalendarId || "").trim();
+
+  // Safety check 1: Reject missing test calendar ID
+  if (!targetTestCalendarId) {
+    var missingMsg = "Test calendar ID is missing. To prevent accidental test events on your primary or default calendar, you must specify a dedicated test calendar ID. Set Script Property 'CALENDAR_TEST_ID' or run: testCalendarIntegration({ testCalendarId: 'your-dedicated-test-calendar-id@group.calendar.google.com' })";
+    Logger.log("[CALENDAR TEST REJECTED] " + missingMsg);
+    return {
+      success: false,
+      error: missingMsg,
+      code: "MISSING_TEST_CALENDAR_ID"
+    };
+  }
+
+  // Safety check 2: Reject "primary" or "default"
+  var normalizedId = targetTestCalendarId.toLowerCase();
+  if (normalizedId === "primary" || normalizedId === "default") {
+    var primaryMsg = "Test calendar cannot be 'primary' or 'default'. Please specify a dedicated secondary test calendar ID to isolate test events.";
+    Logger.log("[CALENDAR TEST REJECTED] " + primaryMsg);
+    return {
+      success: false,
+      error: primaryMsg,
+      code: "INVALID_TEST_CALENDAR_ID"
+    };
+  }
+
+  // Safety check 3: Reject when test calendar matches production calendar
+  var prodCalendarId = String(config.calendarId || "").trim().toLowerCase();
+  if (prodCalendarId && normalizedId === prodCalendarId) {
+    var matchMsg = "Test calendar ID matches the configured production calendar ID. Please specify a distinct, dedicated secondary calendar for testing.";
+    Logger.log("[CALENDAR TEST REJECTED] " + matchMsg);
+    return {
+      success: false,
+      error: matchMsg,
+      code: "TEST_CALENDAR_MATCHES_PRODUCTION"
+    };
+  }
+
+  if (typeof CalendarApp === "undefined") {
+    return {
+      success: false,
+      error: "CalendarApp service is not available in this environment.",
+      code: "CALENDAR_APP_UNAVAILABLE"
+    };
+  }
+
+  try {
+    var calendar = CalendarApp.getCalendarById(targetTestCalendarId);
+    if (!calendar) {
+      var notFoundMsg = "Dedicated test calendar not found or access denied for ID: " + targetTestCalendarId + ". Verify that the calendar exists and has been shared with or created by the script owner account.";
+      Logger.log("[CALENDAR TEST REJECTED] " + notFoundMsg);
+      return {
+        success: false,
+        error: notFoundMsg,
+        code: "TEST_CALENDAR_NOT_FOUND"
+      };
+    }
+
+    var calName = calendar.getName();
+    var calTz = calendar.getTimeZone();
+    Logger.log("[CALENDAR TEST] Connected to dedicated test calendar: " + calName + " (" + calTz + ", ID=" + targetTestCalendarId + ")");
+
+    var testRequestId = "gn_req_test_" + Date.now();
+    var testPayload = {
+      leadType: "Technical Consultation / Session Booking",
+      name: "GreenNext Test Lead (Diagnostic)",
+      email: "test.lead@greennext.example", // Safe fictitious email
+      phone: "+91 98765 43210",
+      organization: "GreenNext Verification Lab",
+      topic: "System Diagnostic Verification",
+      message: "Automated verification test of GreenNext Google Calendar follow-up integration.",
+      page: "/contact",
+      requestId: testRequestId
+    };
+
+    var timeWindow = calculateNextDayFollowUpWindow(
+      config.timezone,
+      config.followUpHour,
+      config.followUpMinute,
+      config.durationMinutes
+    );
+
+    var eventDetails = buildCalendarEventDetails(testPayload);
+    // Guarantee no guests are invited during testing
+    var event = calendar.createEvent(
+      "[TEST] " + eventDetails.title,
+      timeWindow.startTime,
+      timeWindow.endTime,
+      { description: eventDetails.description }
+    );
+
+    var eventId = event ? event.getId() : "";
+    Logger.log("[CALENDAR TEST] Event created successfully with ID: " + eventId);
+
+    var cleanupStatus = "not_requested";
+    var cleanupError = null;
+
+    if (!keepEvent && event) {
+      try {
+        event.deleteEvent();
+        cleanupStatus = "cleaned_up";
+        Logger.log("[CALENDAR TEST] Test event cleaned up successfully from test calendar.");
+      } catch (cleanErr) {
+        cleanupStatus = "cleanup_failed";
+        cleanupError = safeErrorMessage(cleanErr);
+        Logger.log("[CALENDAR TEST WARNING] Failed to clean up test event: " + cleanupError);
+      }
+    } else {
+      cleanupStatus = "retained";
+      Logger.log("[CALENDAR TEST] Test event retained on test calendar for manual inspection.");
+    }
+
+    return {
+      success: true,
+      calendarId: targetTestCalendarId,
+      calendarName: calName,
+      calendarTimezone: calTz,
+      eventId: eventId,
+      scheduledStart: timeWindow.startTime.toISOString(),
+      scheduledEnd: timeWindow.endTime.toISOString(),
+      cleanupStatus: cleanupStatus,
+      cleanupError: cleanupError
+    };
+  } catch (err) {
+    var errMsg = safeErrorMessage(err);
+    Logger.log("[CALENDAR TEST ERROR] " + errMsg);
+    return {
+      success: false,
+      error: errMsg,
+      code: "TEST_EXECUTION_ERROR"
+    };
+  }
+}
+
+/**
+ * Convenient configuration helper for script owners.
+ */
+function configureCalendarIntegration(settings) {
+  if (typeof PropertiesService === "undefined" || !PropertiesService.getScriptProperties) {
+    throw new Error("PropertiesService is not available.");
+  }
+  var props = PropertiesService.getScriptProperties();
+  if (!settings || typeof settings !== "object") {
+    throw new Error("Settings object is required.");
+  }
+
+  if (settings.enabled !== undefined) {
+    props.setProperty(CALENDAR_CONFIG_PROPERTY_NAMES.enabled, settings.enabled ? "true" : "false");
+  }
+  if (settings.calendarId !== undefined) {
+    props.setProperty(CALENDAR_CONFIG_PROPERTY_NAMES.calendarId, String(settings.calendarId).trim());
+  }
+  if (settings.testCalendarId !== undefined) {
+    props.setProperty(CALENDAR_CONFIG_PROPERTY_NAMES.testCalendarId, String(settings.testCalendarId).trim());
+  }
+  if (settings.timezone !== undefined) {
+    props.setProperty(CALENDAR_CONFIG_PROPERTY_NAMES.timezone, String(settings.timezone).trim());
+  }
+  if (settings.followUpHour !== undefined) {
+    props.setProperty(CALENDAR_CONFIG_PROPERTY_NAMES.followUpHour, String(settings.followUpHour));
+  }
+  if (settings.followUpMinute !== undefined) {
+    props.setProperty(CALENDAR_CONFIG_PROPERTY_NAMES.followUpMinute, String(settings.followUpMinute));
+  }
+  if (settings.durationMinutes !== undefined) {
+    props.setProperty(CALENDAR_CONFIG_PROPERTY_NAMES.durationMinutes, String(settings.durationMinutes));
+  }
+  if (settings.inviteGuest !== undefined) {
+    props.setProperty(CALENDAR_CONFIG_PROPERTY_NAMES.inviteGuest, settings.inviteGuest ? "true" : "false");
+  }
+
+  var updatedConfig = getCalendarConfig();
+  Logger.log("[CALENDAR CONFIG UPDATED]\n" + JSON.stringify(updatedConfig, null, 2));
+  return updatedConfig;
+}
+
+
+function runGreenNextCalendarTest() {
+  return testCalendarIntegration({
+    testCalendarId: "778739e04dac3612da58093e3ea231e615a70d6e272889a321a17246690db44e@group.calendar.google.com",
+    keepEvent: false
   });
 }
