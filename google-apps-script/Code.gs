@@ -112,6 +112,8 @@ function doPost(e) {
     greenNextDiag("OPEN SPREADSHEET COMPLETE", diagStartedAt);
     var timestamp = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
     upsertSessionContext(rawSs, payload, timestamp);
+    var trafficCtx = normalizeTrafficContext(payload);
+    recordLinkedInRawEventIfApplicable(rawSs, payload, timestamp, trafficCtx);
 
     // ── Unified Lead Submission ──
     // Lead payloads intentionally do not need a sheet name; they are routed by formType.
@@ -532,7 +534,7 @@ function normalizeTrafficContext(payload) {
   var referrerHost = extractHost(referrer);
   var trafficSource = "unknown";
   if (["cpc", "ppc", "paid", "paid_social", "display", "programmatic"].indexOf(mediumLower) !== -1) trafficSource = "paid";
-  else if (mediumLower === "social" || isSocialHost(sourceLower) || isSocialHost(referrerHost)) trafficSource = "social";
+  else if (mediumLower === "social" || isSocialHost(sourceLower) || sourceLower === "linkedin" || isSocialHost(referrerHost)) trafficSource = "social";
   else if (mediumLower === "organic" || isOrganicHost(sourceLower) || isOrganicHost(referrerHost)) trafficSource = "organic";
   else if (source || medium || campaign) trafficSource = "campaign";
   else if (!referrer || (referrerHost && String(payload.siteHost || "").toLowerCase().replace(/^www\./, "") === referrerHost)) trafficSource = "direct";
@@ -562,12 +564,150 @@ function extractHost(value) {
   return match ? match[1].toLowerCase().replace(/^www\./, "").split(":")[0] : "";
 }
 
+function isLinkedInHost(host) {
+  if (!host) return false;
+  var h = String(host).toLowerCase().trim().replace(/^www\./, "").split(":")[0];
+  return (
+    h === "linkedin.com" ||
+    (h.length > 13 && h.indexOf(".linkedin.com") === (h.length - 13)) ||
+    h === "lnkd.in" ||
+    (h.length > 8 && h.indexOf(".lnkd.in") === (h.length - 8))
+  );
+}
+
 function isSocialHost(host) {
-  return ["facebook.com", "instagram.com", "linkedin.com", "twitter.com", "x.com", "youtube.com", "tiktok.com"].indexOf(host) !== -1;
+  if (!host) return false;
+  var h = String(host).toLowerCase().trim().replace(/^www\./, "").split(":")[0];
+  if (isLinkedInHost(h)) return true;
+  var exactHosts = ["facebook.com", "instagram.com", "twitter.com", "x.com", "youtube.com", "tiktok.com"];
+  for (var i = 0; i < exactHosts.length; i++) {
+    var eh = exactHosts[i];
+    if (h === eh || (h.length > eh.length && h.indexOf("." + eh) === (h.length - eh.length - 1))) return true;
+  }
+  return false;
 }
 
 function isOrganicHost(host) {
-  return ["google.com", "bing.com", "yahoo.com", "duckduckgo.com", "baidu.com"].indexOf(host) !== -1;
+  if (!host) return false;
+  var h = String(host).toLowerCase().trim().replace(/^www\./, "").split(":")[0];
+  var exactHosts = ["google.com", "bing.com", "yahoo.com", "duckduckgo.com", "baidu.com"];
+  for (var i = 0; i < exactHosts.length; i++) {
+    var eh = exactHosts[i];
+    if (h === eh || (h.length > eh.length && h.indexOf("." + eh) === (h.length - eh.length - 1))) return true;
+  }
+  return false;
+}
+
+var LINKEDIN_RAW_DATA_HEADERS = [
+  "Timestamp", "Session ID", "Session Kind", "Traffic Source", "Referrer URL",
+  "Landing Page", "UTM Source", "UTM Medium", "UTM Campaign", "UTM Term", "UTM Content",
+  "Event Name", "Event Detail", "Page", "Inquiry Type", "Submission Reference",
+  "Technical Session Status", "Booking Status"
+];
+
+function isLinkedInTrafficContext(context, payload) {
+  var ref = (context && context.referrer_url) || (payload && payload.referrerUrl) || "";
+  var host = extractHost(ref);
+  if (isLinkedInHost(host)) return true;
+  var src = String((context && context.utm_source) || (payload && payload.utmSource) || "").toLowerCase().trim();
+  if (src === "linkedin" || src === "lnkd.in" || src.indexOf("linkedin") !== -1) return true;
+  var trafficSrc = (context && context.traffic_source) || (payload && payload.trafficSource) || "";
+  if (trafficSrc === "social" && ref.toLowerCase().indexOf("linkedin") !== -1) return true;
+  return false;
+}
+
+function recordLinkedInRawEventIfApplicable(rawSs, payload, timestamp, context) {
+  if (!rawSs || !payload || !payload.sessionId) return;
+  if (!isLinkedInTrafficContext(context, payload)) return;
+
+  var eventName = String(payload.event || payload.formType || "session_start");
+  // Select key milestone events to ensure high signal and prevent noise
+  var isKeyMilestone = (
+    eventName === "session_start" ||
+    eventName === "page_view" ||
+    eventName === "nav_page_view" ||
+    eventName === "lead_inquiry" ||
+    eventName === "quick_inquiry" ||
+    eventName === "long_form_inquiry" ||
+    eventName === "quick_inquiry_submit" ||
+    eventName === "long_form_inquiry_submit" ||
+    eventName === "lead_conversion" ||
+    eventName === "form_open" ||
+    eventName === "form_start" ||
+    eventName === "whatsapp_modal_trigger" ||
+    eventName === "cta_click" ||
+    eventName === "scroll_90" ||
+    eventName === "engagement_120s"
+  );
+  if (!isKeyMilestone) return;
+
+  var sheet = getOrCreateSheet(rawSs, "LinkedIn_Raw_Data", LINKEDIN_RAW_DATA_HEADERS);
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return;
+
+  try {
+    var eventDetail = String(payload.value || payload.destination || payload.cta || payload.topic || payload.interest || payload.category || "");
+    var inquiryType = "";
+    var submissionRef = String(payload.requestId || "");
+    var techSessionStatus = "NONE";
+    var bookingStatus = "NONE";
+
+    if (payload.formType === "lead_inquiry") {
+      inquiryType = payload.leadType || "Lead Inquiry";
+      eventDetail = "Lead: " + inquiryType;
+      if (payload.leadType === "Technical Consultation / Session Booking") {
+        techSessionStatus = "REQUESTED";
+        bookingStatus = "PENDING_CONFIRMATION";
+      }
+    } else if (payload.formType === "quick_inquiry" || payload.sheet === "Quick_Inquiries" || eventName === "quick_inquiry_submit") {
+      inquiryType = "Quick Inquiry (" + (payload.interest || "General") + ")";
+      eventDetail = "Quick Inquiry";
+    } else if (payload.formType === "long_form_inquiry" || payload.sheet === "Contact_Submissions" || eventName === "long_form_inquiry_submit") {
+      inquiryType = "Long-Form Technical Inquiry (" + (payload.category || "General Requirements") + ")";
+      eventDetail = "Long-Form Technical Inquiry";
+    }
+
+    // Deduplication: prevent duplicate rows within recent 30 entries
+    var lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      var checkRows = Math.min(30, lastRow - 1);
+      var recentValues = sheet.getRange(lastRow - checkRows + 1, 1, checkRows, 16).getValues();
+      for (var k = 0; k < recentValues.length; k++) {
+        var rSid = String(recentValues[k][1] || "");
+        var rEvt = String(recentValues[k][11] || "");
+        var rRef = String(recentValues[k][15] || "");
+        if (rSid === String(payload.sessionId) && rEvt === eventName) {
+          if (submissionRef && rRef === submissionRef) return; // Duplicate inquiry
+          var rPage = String(recentValues[k][13] || "");
+          if ((eventName === "page_view" || eventName === "nav_page_view") && rPage === String(payload.page || "/")) return; // Duplicate view on same page
+          if (!submissionRef && eventName !== "page_view" && eventName !== "nav_page_view") return;
+        }
+      }
+    }
+
+    sheet.appendRow([
+      timestamp,
+      payload.sessionId || "",
+      payload.sessionKind || "",
+      context.traffic_source || payload.trafficSource || "social",
+      context.referrer_url || payload.referrerUrl || "",
+      context.landing_page || payload.landingPage || payload.page || "/",
+      context.utm_source || payload.utmSource || "",
+      context.utm_medium || payload.utmMedium || "",
+      context.utm_campaign || payload.utmCampaign || "",
+      context.utm_term || payload.utmTerm || "",
+      context.utm_content || payload.utmContent || "",
+      eventName,
+      eventDetail,
+      payload.page || "/",
+      inquiryType,
+      submissionRef,
+      techSessionStatus,
+      bookingStatus
+    ]);
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 /**
@@ -920,6 +1060,7 @@ function updateAnalyticsSpreadsheet() {
   renderTimezoneIntelligence(anaSs, sessionRecords);
   renderIpIntelligence(anaSs, sessionRecords);
   renderUnifiedIntelligence(anaSs, buildUnifiedIntelligenceModel(sessionRecords));
+  renderLinkedInAnalytics(anaSs, sessionRecords, advancedModel);
 
   // Distinct Sessions across all tabs
   var allSessions = {};
@@ -1666,6 +1807,11 @@ function refreshPresentationLayerFromReportingSource(rawSs, source, timezone) {
     longLeads: source.Contact_Submissions || [],
     dedicatedLeads: source.Lead_Submissions || []
   });
+  renderLinkedInAnalytics(
+    SpreadsheetApp.openById(ANALYTICS_SPREADSHEET_ID),
+    records,
+    model
+  );
 }
 
 /**
@@ -2002,7 +2148,8 @@ function buildSessionContextMap(rows) {
   (rows || []).forEach(function(row) {
     var sessionId = String(row[0] || "");
     if (!sessionId) return;
-    map[sessionId] = {
+    var existing = map[sessionId];
+    var incoming = {
       session_kind: String(row[1] || ""), traffic_source: String(row[3] || "unknown"),
       referrer_url: String(row[4] || ""), landing_page: String(row[5] || ""),
       utm_source: String(row[6] || ""), utm_medium: String(row[7] || ""),
@@ -2017,6 +2164,42 @@ function buildSessionContextMap(rows) {
       geo_source: String(row[25] || "not_configured"), network_confidence: String(row[26] || ""),
       network_source: String(row[27] || "not_configured"), client_ip: String(row[28] || "")
     };
+
+    if (!existing) {
+      map[sessionId] = incoming;
+      return;
+    }
+
+    // Preserve valid first-touch attribution; never overwrite valid original attribution with empty values
+    if ((!existing.traffic_source || existing.traffic_source === "unknown") && incoming.traffic_source && incoming.traffic_source !== "unknown") {
+      existing.traffic_source = incoming.traffic_source;
+    }
+    if (!existing.referrer_url && incoming.referrer_url) existing.referrer_url = incoming.referrer_url;
+    if (!existing.landing_page && incoming.landing_page) existing.landing_page = incoming.landing_page;
+    if (!existing.utm_source && incoming.utm_source) existing.utm_source = incoming.utm_source;
+    if (!existing.utm_medium && incoming.utm_medium) existing.utm_medium = incoming.utm_medium;
+    if (!existing.utm_campaign && incoming.utm_campaign) existing.utm_campaign = incoming.utm_campaign;
+    if (!existing.utm_term && incoming.utm_term) existing.utm_term = incoming.utm_term;
+    if (!existing.utm_content && incoming.utm_content) existing.utm_content = incoming.utm_content;
+    if (isUnavailableContextValue(existing.geo_country) && !isUnavailableContextValue(incoming.geo_country)) {
+      existing.geo_country = incoming.geo_country;
+      existing.geo_region = incoming.geo_region;
+      existing.geo_city = incoming.geo_city;
+      existing.geo_confidence = incoming.geo_confidence;
+      existing.geo_source = incoming.geo_source;
+    }
+    if (isUnavailableContextValue(existing.network_type) && !isUnavailableContextValue(incoming.network_type)) {
+      existing.network_type = incoming.network_type;
+      existing.isp = incoming.isp;
+      existing.organization = incoming.organization;
+      existing.asn = incoming.asn;
+      existing.network_confidence = incoming.network_confidence;
+      existing.network_source = incoming.network_source;
+    }
+    if (!existing.client_ip && incoming.client_ip) {
+      existing.client_ip = incoming.client_ip;
+      existing.ip_available = incoming.ip_available;
+    }
   });
   return map;
 }
@@ -2307,6 +2490,180 @@ function renderUnifiedIntelligence(anaSs, model) {
   sheet.getRange("A1:AP1").setFontWeight("bold").setBackground("#0F172A").setFontColor("#10B981");
   sheet.getRange("A4:B4").setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
   sheet.autoResizeColumns(1, 42);
+}
+
+function renderLinkedInAnalytics(anaSs, records, model) {
+  if (!anaSs) return;
+  var sheet = getOrCreateSheet(anaSs, "LinkedIn_Analytics");
+  sheet.clear();
+
+  var linkedInRecords = (records || []).filter(function(r) {
+    if (!r) return false;
+    var ref = String(r.referrer_url || "");
+    var host = extractHost(ref);
+    var src = String(r.utm_source || "").toLowerCase().trim();
+    var trafficSrc = String(r.traffic_source || "").toLowerCase().trim();
+    return isLinkedInHost(host) || src === "linkedin" || src === "lnkd.in" || src.indexOf("linkedin") !== -1 || (trafficSrc === "social" && ref.toLowerCase().indexOf("linkedin") !== -1);
+  });
+
+  var totalSessions = linkedInRecords.length;
+  var engagedSessions = linkedInRecords.filter(function(r) { return r.engaged === true; }).length;
+  var bouncedSessions = linkedInRecords.filter(function(r) { return r.bounce === true; }).length;
+
+  var linkedInSessionIds = {};
+  linkedInRecords.forEach(function(r) { linkedInSessionIds[r.session_id] = true; });
+
+  var totalInquiries = 0;
+  var techSessionRequests = 0;
+  var confirmedBookings = 0;
+  var inquiryTypeCounts = {};
+
+  var sessionsMap = (model && model.sessions) || {};
+  Object.keys(sessionsMap).forEach(function(sid) {
+    if (!linkedInSessionIds[sid]) return;
+    var session = sessionsMap[sid];
+    (session.leads || []).forEach(function(lead) {
+      totalInquiries++;
+      var lType = lead.type || "Inquiry";
+      inquiryTypeCounts[lType] = (inquiryTypeCounts[lType] || 0) + 1;
+      if (lType === "Technical Consultation / Session Booking") {
+        techSessionRequests++;
+        var statusStr = String(lead.status || "").toUpperCase();
+        if (statusStr === "CONFIRMED_BOOKING" || statusStr === "BOOKING_CONFIRMED") {
+          confirmedBookings++;
+        }
+      }
+    });
+  });
+
+  var sessionToInquiryRate = totalSessions > 0 ? ((totalInquiries / totalSessions) * 100).toFixed(2) + "%" : "0.00%";
+  var sessionToTechRate = totalSessions > 0 ? ((techSessionRequests / totalSessions) * 100).toFixed(2) + "%" : "0.00%";
+  var engagementRate = totalSessions > 0 ? ((engagedSessions / totalSessions) * 100).toFixed(2) + "%" : "0.00%";
+  var bounceRate = totalSessions > 0 ? ((bouncedSessions / totalSessions) * 100).toFixed(2) + "%" : "0.00%";
+  var bookingConfirmRate = techSessionRequests > 0 ? ((confirmedBookings / techSessionRequests) * 100).toFixed(2) + "%" : "0.00%";
+
+  var campaignGroups = {};
+  var dailyGroups = {};
+  var landingPageGroups = {};
+  var utmCompleteness = {
+    "Complete Campaign Tracking (utm_source + utm_medium + utm_campaign)": 0,
+    "Partial Campaign Tracking (source/medium present, missing campaign)": 0,
+    "Referrer Only / Direct Link (empty UTM parameters)": 0
+  };
+
+  linkedInRecords.forEach(function(r) {
+    var camp = r.utm_campaign || "(none / organic post or profile link)";
+    if (!campaignGroups[camp]) campaignGroups[camp] = { sessions: 0, engaged: 0, inquiries: 0, mediums: {} };
+    campaignGroups[camp].sessions++;
+    if (r.engaged) campaignGroups[camp].engaged++;
+    if (r.utm_medium) campaignGroups[camp].mediums[r.utm_medium] = true;
+
+    var dateKey = String(r.session_start_time || "").substring(0, 10) || "Unknown Date";
+    if (!dailyGroups[dateKey]) dailyGroups[dateKey] = { sessions: 0, engaged: 0, inquiries: 0, techRequests: 0 };
+    dailyGroups[dateKey].sessions++;
+    if (r.engaged) dailyGroups[dateKey].engaged++;
+
+    var lp = r.landing_page || r.entry_page || "/";
+    if (!landingPageGroups[lp]) landingPageGroups[lp] = { sessions: 0, engaged: 0, inquiries: 0, totalDwell: 0 };
+    landingPageGroups[lp].sessions++;
+    if (r.engaged) landingPageGroups[lp].engaged++;
+    if (r.total_session_duration && Number(r.total_session_duration) > 0) landingPageGroups[lp].totalDwell += Number(r.total_session_duration);
+
+    if (r.utm_source && r.utm_medium && r.utm_campaign) {
+      utmCompleteness["Complete Campaign Tracking (utm_source + utm_medium + utm_campaign)"]++;
+    } else if (r.utm_source || r.utm_medium) {
+      utmCompleteness["Partial Campaign Tracking (source/medium present, missing campaign)"]++;
+    } else {
+      utmCompleteness["Referrer Only / Direct Link (empty UTM parameters)"]++;
+    }
+  });
+
+  Object.keys(sessionsMap).forEach(function(sid) {
+    if (!linkedInSessionIds[sid]) return;
+    var session = sessionsMap[sid];
+    var rec = linkedInRecords.find(function(r) { return r.session_id === sid; });
+    if (!rec) return;
+    var count = (session.leads || []).length;
+    if (count > 0) {
+      var camp = rec.utm_campaign || "(none / organic post or profile link)";
+      if (campaignGroups[camp]) campaignGroups[camp].inquiries += count;
+      var dateKey = String(rec.session_start_time || "").substring(0, 10) || "Unknown Date";
+      if (dailyGroups[dateKey]) {
+        dailyGroups[dateKey].inquiries += count;
+        (session.leads || []).forEach(function(lead) {
+          if (lead.type === "Technical Consultation / Session Booking") dailyGroups[dateKey].techRequests++;
+        });
+      }
+      var lp = rec.landing_page || rec.entry_page || "/";
+      if (landingPageGroups[lp]) landingPageGroups[lp].inquiries += count;
+    }
+  });
+
+  var rows = [
+    ["GREENNEXT LINKEDIN TRAFFIC & LEAD ATTRIBUTION INTELLIGENCE"],
+    ["Automated reporting on verified LinkedIn traffic, engagements, inquiries, and technical session bookings."],
+    ["Privacy & Data Protection: No visitor IP addresses or personal lead details are exposed in reporting tables."],
+    [""],
+    ["EXECUTIVE LINKEDIN PERFORMANCE METRICS", "VALUE", "DOCUMENTED CALCULATION / DEFINITION"],
+    ["Unique LinkedIn Sessions", totalSessions, "Distinct session IDs with LinkedIn referrer (*.linkedin.com, lnkd.in) or utm_source=linkedin"],
+    ["Engaged LinkedIn Sessions", engagedSessions, "Sessions with 2+ page views, CTA interaction, form engagement, or >60s active dwell"],
+    ["Engagement Rate", engagementRate, "[Engaged Sessions / Unique Sessions] * 100"],
+    ["Bounced Sessions", bouncedSessions, "Single-page sessions with zero interactions and zero conversions"],
+    ["Bounce Rate", bounceRate, "[Bounced Sessions / Unique Sessions] * 100"],
+    ["Total Inquiries from LinkedIn", totalInquiries, "Deduplicated inquiries submitted by LinkedIn-attributed visitors across all forms"],
+    ["Session-to-Inquiry Conversion Rate", sessionToInquiryRate, "[Total Inquiries from LinkedIn / Unique LinkedIn Sessions] * 100"],
+    ["Technical Session Requests", techSessionRequests, "Distinct consultation / technical infrastructure session bookings requested"],
+    ["Confirmed Bookings", confirmedBookings, "Bookings verified via confirmed calendar appointment schedule status"],
+    ["Session-to-Technical Session Rate", sessionToTechRate, "[Technical Session Requests / Unique LinkedIn Sessions] * 100"],
+    ["Booking Confirmation Rate", bookingConfirmRate, "[Confirmed Bookings / Technical Session Requests] * 100 (Distinct from initial request)"],
+    [""],
+    ["CAMPAIGN PERFORMANCE (GROUPED BY UTM CAMPAIGN)", "UTM MEDIUMS", "SESSIONS", "ENGAGED", "INQUIRIES", "CONVERSION RATE"]
+  ];
+
+  Object.keys(campaignGroups).sort(function(a, b) { return campaignGroups[b].sessions - campaignGroups[a].sessions; }).forEach(function(camp) {
+    var cg = campaignGroups[camp];
+    var rate = cg.sessions > 0 ? ((cg.inquiries / cg.sessions) * 100).toFixed(2) + "%" : "0.00%";
+    var mediumsStr = Object.keys(cg.mediums).join(", ") || "(none)";
+    rows.push([camp, mediumsStr, cg.sessions, cg.engaged, cg.inquiries, rate]);
+  });
+
+  rows.push([""]);
+  rows.push(["DAILY & MONTHLY VISITOR ATTRIBUTION", "SESSIONS", "ENGAGED", "INQUIRIES", "TECH SESSION REQUESTS", "CONVERSION RATE"]);
+  Object.keys(dailyGroups).sort().reverse().forEach(function(dKey) {
+    var dg = dailyGroups[dKey];
+    var rate = dg.sessions > 0 ? ((dg.inquiries / dg.sessions) * 100).toFixed(2) + "%" : "0.00%";
+    rows.push([dKey, dg.sessions, dg.engaged, dg.inquiries, dg.techRequests, rate]);
+  });
+
+  rows.push([""]);
+  rows.push(["LANDING PAGE & ENGAGEMENT BREAKDOWN", "SESSIONS", "ENGAGED", "INQUIRIES", "AVG SESSION DURATION (S)"]);
+  Object.keys(landingPageGroups).sort(function(a, b) { return landingPageGroups[b].sessions - landingPageGroups[a].sessions; }).forEach(function(lp) {
+    var lpg = landingPageGroups[lp];
+    var avgDur = lpg.sessions > 0 ? Math.round(lpg.totalDwell / lpg.sessions / 1000) : 0;
+    rows.push([lp, lpg.sessions, lpg.engaged, lpg.inquiries, avgDur]);
+  });
+
+  rows.push([""]);
+  rows.push(["INQUIRY BREAKDOWN BY FORM TYPE", "SUBMISSIONS", "STATUS DETAILS"]);
+  if (Object.keys(inquiryTypeCounts).length === 0) {
+    rows.push(["No inquiry submissions recorded yet", 0, "Awaiting first form submission"]);
+  } else {
+    Object.keys(inquiryTypeCounts).forEach(function(iType) {
+      rows.push([iType, inquiryTypeCounts[iType], iType === "Technical Consultation / Session Booking" ? "Requests: " + techSessionRequests + " | Confirmed Bookings: " + confirmedBookings : "Standard Inquiry"]);
+    });
+  }
+
+  rows.push([""]);
+  rows.push(["UTM ATTRIBUTION COMPLETENESS & UNATTRIBUTED PARAMETERS", "SESSIONS", "PERCENTAGE SHARE"]);
+  Object.keys(utmCompleteness).forEach(function(uCat) {
+    var share = totalSessions > 0 ? ((utmCompleteness[uCat] / totalSessions) * 100).toFixed(1) + "%" : "0.0%";
+    rows.push([uCat, utmCompleteness[uCat], share]);
+  });
+
+  writeRows(sheet, rows, 6);
+  sheet.getRange("A1:F1").setFontWeight("bold").setBackground("#0F172A").setFontColor("#10B981");
+  sheet.getRange("A5:C5").setFontWeight("bold").setBackground("#1E293B").setFontColor("#F8FAFC");
+  sheet.autoResizeColumns(1, 6);
 }
 
 /**
