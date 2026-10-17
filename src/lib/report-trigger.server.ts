@@ -183,12 +183,15 @@ export async function handleReportCronRequest(
     });
   }
 
-  // 4. Duplicate Execution Protection (Debounce Window)
+  // 4. Action Detection & Duplicate Execution Protection (Debounce Window)
+  const actionParam = url.searchParams.get("action")?.toLowerCase().trim() || "trigger_report";
+  const isStatusCheck = actionParam === "status" || url.searchParams.get("status") === "true";
+
   const now = Date.now();
   const lastTriggered = lastTriggerTimes.get(frequency) || 0;
   const elapsed = now - lastTriggered;
 
-  if (elapsed < TRIGGER_COOLDOWN_MS) {
+  if (!isStatusCheck && elapsed < TRIGGER_COOLDOWN_MS) {
     const retryAfterSec = Math.ceil((TRIGGER_COOLDOWN_MS - elapsed) / 1000);
     return new Response(
       JSON.stringify({
@@ -219,18 +222,23 @@ export async function handleReportCronRequest(
   const isDryRun = isSimulationParam || isSimulationEnv || !appsScriptUrl;
 
   if (isDryRun) {
-    lastTriggerTimes.set(frequency, now);
+    if (!isStatusCheck) {
+      lastTriggerTimes.set(frequency, now);
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
         simulated: true,
+        status: isStatusCheck ? "simulated_status" : "accepted",
+        delivered: false,
         reportType: frequency,
         scheduleReason,
         kolkataDate: kolkataDateStr || new Date().toISOString(),
         dispatchedFunction: getExpectedAppsScriptFunction(frequency),
-        message:
-          "Safe simulation successful: Verified authentication, schedule routing, and single-dispatcher logic. No external request, sheet mutation, or email dispatch was performed.",
+        message: isStatusCheck
+          ? "Safe simulation: Checked report status. No external Apps Script call made."
+          : "Safe simulation successful: Verified authentication, schedule routing, and single-dispatcher logic. No external request, sheet mutation, or email dispatch was performed.",
         triggeredAt: new Date().toISOString(),
       }),
       {
@@ -256,7 +264,7 @@ export async function handleReportCronRequest(
   // 7. Dispatch Authenticated Request to Google Apps Script Web App
   try {
     const payload = {
-      action: "trigger_report",
+      action: isStatusCheck ? "report_status" : "trigger_report",
       reportType: frequency,
       secret: reportTriggerSecret,
       source: "vercel_cron_dispatcher",
@@ -292,10 +300,23 @@ export async function handleReportCronRequest(
       );
     }
 
-    const upstreamResult = (await upstreamResponse.json().catch(() => null)) as {
+    interface UpstreamReportResult {
       success?: boolean;
+      status?: "accepted" | "already_completed" | "in_progress" | "delivered" | "failed" | string;
+      delivered?: boolean;
+      skipped?: boolean;
       message?: string;
-    } | null;
+      reportType?: ReportFrequency;
+      dispatchedFunction?: string;
+      acceptedAt?: string;
+      completedAt?: string;
+      completedTodayAt?: string;
+      lastDeliveredAt?: string;
+      lastError?: string;
+      error?: string;
+    }
+
+    const upstreamResult = (await upstreamResponse.json().catch(() => null)) as UpstreamReportResult | null;
 
     if (!upstreamResult || typeof upstreamResult !== "object") {
       return new Response(
@@ -311,36 +332,106 @@ export async function handleReportCronRequest(
       );
     }
 
-    const message = typeof upstreamResult.message === "string" ? upstreamResult.message : "";
-    const isSkipped = message.toLowerCase().includes("skipped") || message.toLowerCase().includes("cooldown");
-
-    if (isSkipped || upstreamResult.success !== true) {
-      const statusCode = isSkipped ? 429 : 422;
+    // ── Status Inspection Response Handling ──
+    if (isStatusCheck) {
       return new Response(
         JSON.stringify({
-          success: false,
-          skipped: isSkipped,
-          error: message || "Report trigger was rejected or skipped by Google Apps Script.",
+          success: upstreamResult.success !== false,
+          status: upstreamResult.status || "unknown",
+          delivered: upstreamResult.delivered === true,
           reportType: frequency,
+          message: upstreamResult.message || `Status check completed for ${frequency} report.`,
+          completedTodayAt: upstreamResult.completedTodayAt || upstreamResult.completedAt || null,
+          lastDeliveredAt: upstreamResult.lastDeliveredAt || null,
+          lastError: upstreamResult.lastError || null,
         }),
         {
-          status: statusCode,
+          status: upstreamResult.success !== false ? 200 : 422,
           headers: { "Content-Type": "application/json" },
         },
       );
     }
 
-    // Success confirmed by authorized upstream Google Apps Script deployment
+    // ── Rejection Handling ──
+    if (upstreamResult.success !== true) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          status: upstreamResult.status || "rejected",
+          delivered: false,
+          error: upstreamResult.message || upstreamResult.error || "Report trigger was rejected by Google Apps Script.",
+          reportType: frequency,
+        }),
+        {
+          status: 422,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // ── Idempotent Duplicate Completion (Already completed & emailed today) ──
+    if (upstreamResult.status === "already_completed") {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          status: "already_completed",
+          delivered: true,
+          skipped: true,
+          reportType: frequency,
+          scheduleReason,
+          dispatchedFunction: getExpectedAppsScriptFunction(frequency),
+          message: upstreamResult.message || `Report ${frequency} was already completed and emailed today. Duplicate delivery prevented.`,
+          completedAt: upstreamResult.completedAt || upstreamResult.completedTodayAt || upstreamResult.lastDeliveredAt,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // ── Active In-Progress Execution ──
+    if (upstreamResult.status === "in_progress") {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          status: "in_progress",
+          delivered: false,
+          skipped: true,
+          reportType: frequency,
+          scheduleReason,
+          message: upstreamResult.message || `Report ${frequency} is currently in progress. Duplicate execution prevented.`,
+        }),
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "Retry-After": "60",
+          },
+        },
+      );
+    }
+
+    // ── Successful Asynchronous Acceptance or Confirmed Immediate Delivery ──
     lastTriggerTimes.set(frequency, now);
+
+    const isDelivered = upstreamResult.delivered === true;
+    const finalStatus = upstreamResult.status || (isDelivered ? "delivered" : "accepted");
 
     return new Response(
       JSON.stringify({
         success: true,
+        status: finalStatus,
+        delivered: isDelivered,
         reportType: frequency,
         scheduleReason,
         dispatchedFunction: getExpectedAppsScriptFunction(frequency),
-        message: upstreamResult.message || `Report ${frequency} triggered and dispatched successfully.`,
-        executedAt: new Date().toISOString(),
+        message: upstreamResult.message || (isDelivered
+          ? `Report ${frequency} processed and emailed successfully.`
+          : `Report ${frequency} trigger accepted for asynchronous processing.`),
+        ...(isDelivered
+          ? { deliveredAt: upstreamResult.lastDeliveredAt || new Date().toISOString() }
+          : { acceptedAt: upstreamResult.acceptedAt || new Date().toISOString() }),
       }),
       {
         status: 200,

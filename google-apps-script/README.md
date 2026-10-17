@@ -181,3 +181,41 @@ Response:
 - **Fail-Safe Operation**:
   - `createCalendarFollowUpSafely` wraps the entire calendar process in an isolated `try/catch`.
   - In the event of Calendar quota limits, temporary Google API errors, or missing permissions, the enquiry submission is **still recorded in Google Sheets** and the **team email notification is still delivered**.
+
+---
+
+## 6. Scheduled Reporting Setup: Vercel Cron & Native Triggers
+
+The system supports two scheduling mechanisms for daily, weekly, and monthly reports (`runDailyReportAndEmail`, `runWeeklyReportAndEmail`, `runMonthlyReportAndEmail`).
+
+### Option A: Native Google Apps Script Time-Driven Triggers (Strongly Recommended for Hobby)
+Native time-driven triggers are the most reliable, zero-latency solution because they execute entirely within Google's cloud infrastructure:
+* **Execution Limit**: 6 minutes (360 seconds) vs. Vercel Hobby's 10-second limit.
+* **No Platform Limits**: Completely avoids Vercel's 2-cron limit and 504 timeouts.
+* **Setup**: Run `setupReportingTriggers()` in the Apps Script editor once. It automatically installs:
+  * Daily Report: 08:00 AM IST daily (`runDailyReportAndEmail`)
+  * Weekly Report: 09:00 AM IST Mondays (`runWeeklyReportAndEmail`)
+  * Monthly Report: 10:00 AM IST on the 2nd of each month (`runMonthlyReportAndEmail`)
+
+### Option B: Vercel Free / Hobby Single-Dispatcher Cron (`/api/cron/reports`)
+For triggering via Vercel while complying with Vercel Hobby's **2-cron limit**:
+1. **Configuration**:
+   * In Google Apps Script **Project Settings > Script Properties**: add `REPORT_TRIGGER_SECRET`.
+   * In Vercel Environment Variables: add `CRON_SECRET`, `REPORT_APPS_SCRIPT_URL`, `REPORT_TRIGGER_SECRET`, and `REPORT_TRIGGER_SIMULATION=false`.
+2. **Schedules in `vercel.json`** (Exactly 2 total):
+   * `/api/cron/daily-analysis`: `0 2 * * *` (02:00 UTC / 07:30 IST)
+   * `/api/cron/reports`: `30 2 * * *` (02:30 UTC / 08:00 IST)
+3. **Dynamic Daily Resolution (`Asia/Kolkata`)**:
+   The single `/api/cron/reports` endpoint checks the date in `Asia/Kolkata` at 08:00 AM IST and dispatches only the due report:
+   * **2nd of the month**: Dispatches `"monthly"` (`runMonthlyReportAndEmail`).
+   * **Mondays** (except 2nd): Dispatches `"weekly"` (`runWeeklyReportAndEmail`).
+   * **All other days**: Dispatches `"daily"` (`runDailyReportAndEmail`).
+4. **Asynchronous Non-Blocking Handoff (<500ms acknowledgment)**:
+   * **Quick Acceptance**: When `/api/cron/reports` calls Apps Script, the request validates the shared secret, checks for existing same-day completion, creates a temporary one-off trigger (`processAsyncReportTrigger`), and returns an HTTP 200 `{ status: "accepted", delivered: false }` acknowledgment in ~300ms, completely avoiding Vercel's 8.5-second timeout.
+   * **Independent Execution**: The report calculation, chart image rendering, and email dispatch run independently in the background on Google's cloud infrastructure with a 6-minute timeout quota.
+   * **Persistent Idempotency & Safe Retries**: Completed runs record `GN_REPORT_DONE_<type>_<date>` permanently in Script Properties. If Vercel or an operator retries, Apps Script detects the previous completion and returns `{ status: "already_completed", delivered: true, skipped: true }` without dispatching duplicate emails.
+5. **Real-Time Delivery Verification (`action=status`)**:
+   * Querying `/api/cron/reports?action=status` or `&action=status` inspects Google Apps Script's `PropertiesService` to confirm whether the background job delivered the email (`status: "delivered"`, `delivered: true`) versus currently in progress (`status: "in_progress"`).
+
+
+
