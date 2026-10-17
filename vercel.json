@@ -1,9 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "NITRO_PRESET=vercel vite build",
   "crons": [
     {
       "path": "/api/cron/daily-analysis",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/reports",
+      "schedule": "30 2 * * *"
     }
   ]
 }
