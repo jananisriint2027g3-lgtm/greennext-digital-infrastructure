@@ -149,6 +149,36 @@ async function createRequestId(parts: string[]): Promise<string> {
   }
 }
 
+/**
+ * Sends the visitor confirmation email after a successful lead save.
+ * Email problems are logged (never thrown) so they cannot cause a duplicate
+ * submission, a repeated Jira ticket, or a failed form result.
+ */
+async function sendVisitorConfirmation(
+  flow: string,
+  input: {
+    name: string;
+    email: string;
+    formType: "quick_inquiry" | "long_form_inquiry" | "lead_inquiry";
+    leadType?: string;
+    category?: string;
+    page?: string;
+    requestId: string;
+  },
+): Promise<void> {
+  try {
+    const res = await dispatchVisitorConfirmationEmail({ data: input });
+    if (!res.success) {
+      console.warn(`[visitor-email] ${flow}: confirmation NOT sent (${res.error || "unknown error"})`);
+    }
+  } catch (emailErr) {
+    console.error(
+      `[visitor-email] ${flow}: dispatch call failed`,
+      emailErr instanceof Error ? emailErr.message : emailErr,
+    );
+  }
+}
+
 /** Shared website-side lead payload for the next Apps Script integration step. */
 export async function submitLead(data: LeadPayload): Promise<InquiryResult> {
   const page = data.page || getCurrentPage();
@@ -179,22 +209,15 @@ export async function submitLead(data: LeadPayload): Promise<InquiryResult> {
   const inquiryResult = await postInquiryPayload(payload, `Lead: ${data.leadType}`);
   if (!inquiryResult.success) return inquiryResult;
 
-  // Dispatch branded visitor confirmation email safely in background
-  try {
-    await dispatchVisitorConfirmationEmail({
-      data: {
-        name: data.name,
-        email: data.email,
-        formType: "lead_inquiry",
-        leadType: data.leadType,
-        category: data.topic,
-        page: payload.page,
-        requestId,
-      },
-    });
-  } catch (emailErr) {
-    console.error("Visitor confirmation email dispatch error:", emailErr);
-  }
+  await sendVisitorConfirmation("lead_inquiry", {
+    name: data.name,
+    email: data.email,
+    formType: "lead_inquiry",
+    leadType: data.leadType,
+    category: data.topic,
+    page: payload.page,
+    requestId,
+  });
 
   try {
     const jiraResult = await submitTechnicalInfrastructureInquiryToJira({
@@ -353,21 +376,14 @@ export async function submitQuickInquiry(data: QuickInquiryData): Promise<Inquir
   const inquiryResult = await postInquiryPayload(payload, fallbackCta);
   if (!inquiryResult.success) return inquiryResult;
 
-  // Dispatch branded visitor confirmation email safely in background
-  try {
-    await dispatchVisitorConfirmationEmail({
-      data: {
-        name: data.name,
-        email: data.email,
-        formType: "quick_inquiry",
-        category: data.interest || "General Inquiry",
-        page,
-        requestId,
-      },
-    });
-  } catch (emailErr) {
-    console.error("Visitor confirmation email dispatch error:", emailErr);
-  }
+  await sendVisitorConfirmation("quick_inquiry", {
+    name: data.name,
+    email: data.email,
+    formType: "quick_inquiry",
+    category: data.interest || "General Inquiry",
+    page,
+    requestId,
+  });
 
   try {
     const jiraResult = await submitTechnicalInfrastructureInquiryToJira({
@@ -439,21 +455,14 @@ export async function submitLongFormInquiry(data: LongFormInquiryData): Promise<
   const inquiryResult = await postInquiryPayload(payload, fallbackCta);
   if (!inquiryResult.success) return inquiryResult;
 
-  // Dispatch branded visitor confirmation email safely in background
-  try {
-    await dispatchVisitorConfirmationEmail({
-      data: {
-        name: data.name,
-        email: data.email,
-        formType: "long_form_inquiry",
-        category: data.category || "General Requirements",
-        page,
-        requestId,
-      },
-    });
-  } catch (emailErr) {
-    console.error("Visitor confirmation email dispatch error:", emailErr);
-  }
+  await sendVisitorConfirmation("long_form_inquiry", {
+    name: data.name,
+    email: data.email,
+    formType: "long_form_inquiry",
+    category: data.category || "General Requirements",
+    page,
+    requestId,
+  });
 
   try {
     const jiraResult = await submitTechnicalInfrastructureInquiryToJira({

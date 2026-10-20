@@ -488,3 +488,87 @@ test("Visitor Email: All Three Form Inquiries Trigger Confirmation Dispatch and 
     assert.equal(emailFailedSafely, true);
   }
 });
+
+test("Visitor Email: Resend transport surfaces unverified-domain rejection (mocked fetch)", async () => {
+  const origFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ message: "You can only send testing emails to your own email address" }), { status: 403 });
+    const t = new ResendMailTransport("re_test_key", "GreenNext <onboarding@resend.dev>");
+    const res = await t.send({ to: "visitor@example.com", subject: "s", htmlBody: "<p>x</p>", plainTextBody: "x" });
+    assert.equal(res.success, false);
+    assert.match(res.error, /HTTP 403/);
+    assert.match(res.error, /resend\.com\/domains/);
+    assert.equal(res.error.includes("re_test_key"), false);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test("Visitor Email: Resend transport returns provider id on acceptance and sends bearer auth (mocked fetch)", async () => {
+  const origFetch = globalThis.fetch;
+  let seen;
+  try {
+    globalThis.fetch = async (url, init) => {
+      seen = { url, init };
+      return new Response(JSON.stringify({ id: "abc123" }), { status: 200 });
+    };
+    const t = new ResendMailTransport("re_test_key", "GreenNext <hello@example.org>");
+    const res = await t.send({ to: "visitor@example.com", subject: "s", htmlBody: "<p>x</p>", plainTextBody: "x" });
+    assert.equal(res.success, true);
+    assert.equal(res.messageId, "resend_abc123");
+    assert.equal(seen.url, "https://api.resend.com/emails");
+    assert.equal(seen.init.headers.Authorization, "Bearer re_test_key");
+    assert.equal(JSON.parse(seen.init.body).from, "GreenNext <hello@example.org>");
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
+
+test("Visitor Email: describeMailConfig reports simulation fallback and live config without leaking secrets", () => {
+  const keys = ["EMAIL_SIMULATION_MODE", "EMAIL_PROVIDER", "RESEND_API_KEY", "EMAIL_FROM"];
+  const saved = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
+  try {
+    delete process.env["EMAIL_SIMULATION_MODE"];
+    delete process.env["EMAIL_PROVIDER"];
+    process.env["RESEND_API_KEY"] = "re_secret_value";
+    const sim = mailModule.describeMailConfig();
+    assert.equal(sim.mode, "simulated");
+    assert.ok(sim.warnings.some((w) => /SIMULATION ACTIVE/.test(w)));
+    assert.equal(JSON.stringify(sim).includes("re_secret_value"), false);
+
+    process.env["EMAIL_SIMULATION_MODE"] = "false";
+    process.env["EMAIL_PROVIDER"] = "resend";
+    process.env["EMAIL_FROM"] = "GreenNext <hello@example.org>";
+    const live = mailModule.describeMailConfig();
+    assert.equal(live.mode, "resend");
+    assert.deepEqual(live.warnings, []);
+  } finally {
+    for (const k of keys) {
+      if (saved[k] === undefined) delete process.env[k];
+      else process.env[k] = saved[k];
+    }
+  }
+});
+
+test("Visitor Email: rendered email includes next-steps copy for every form flow", () => {
+  for (const formType of ["quick_inquiry", "long_form_inquiry", "lead_inquiry"]) {
+    const r = renderVisitorWelcomeEmail({
+      recipientName: "Asha Rao",
+      recipientEmail: "asha@example.com",
+      formType,
+      siteBaseUrl: "https://greennext-ai.vercel.app",
+    });
+    assert.ok(r.html.includes("What happens next"));
+    assert.ok(r.plainText.includes("What happens next"));
+    assert.ok(r.html.includes("https://greennext-ai.vercel.app/images/email/greennext-email-header.png"));
+  }
+});
+
+test("Visitor Email: all three inquiry flows call the shared dispatch helper that inspects the result", () => {
+  const src = fs.readFileSync(new URL("../src/lib/inquiry.ts", import.meta.url), "utf8");
+  for (const flow of ["lead_inquiry", "quick_inquiry", "long_form_inquiry"]) {
+    assert.ok(src.includes(`sendVisitorConfirmation("${flow}"`), `${flow} must dispatch`);
+  }
+  assert.ok(src.includes("if (!res.success)"), "dispatch result must not be ignored");
+});

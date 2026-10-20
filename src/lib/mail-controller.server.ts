@@ -21,6 +21,7 @@ export interface MailDispatchResult {
 
 export interface MailTransport {
   readonly isSimulated: boolean;
+  readonly name?: string;
   send(options: MailDeliveryOptions): Promise<{ success: boolean; messageId?: string; error?: string }>;
 }
 
@@ -51,6 +52,7 @@ export interface SimulatedDispatchEntry {
  */
 export class SimulatedMailTransport implements MailTransport {
   public readonly isSimulated = true;
+  public readonly name = "simulated";
   private static ledger: SimulatedDispatchEntry[] = [];
 
   public static getLedger(): readonly SimulatedDispatchEntry[] {
@@ -87,6 +89,7 @@ export class SimulatedMailTransport implements MailTransport {
  */
 export class AppsScriptMailTransport implements MailTransport {
   public readonly isSimulated = false;
+  public readonly name = "apps_script";
   private endpointUrl: string;
   private secretToken: string;
 
@@ -150,6 +153,7 @@ export class AppsScriptMailTransport implements MailTransport {
  */
 export class ResendMailTransport implements MailTransport {
   public readonly isSimulated = false;
+  public readonly name = "resend";
   private apiKey: string;
   private defaultFrom: string;
 
@@ -225,10 +229,18 @@ export class ResendMailTransport implements MailTransport {
       }
 
       if (!response.ok) {
-        const errorMsg =
+        let errorMsg: string =
           resJson?.message ||
           resJson?.error ||
           `Resend API error (HTTP ${response.status}): ${responseText.slice(0, 200)}`;
+        errorMsg = `Resend rejected the request (HTTP ${response.status}): ${errorMsg}`;
+        if (response.status === 403 || /domain|verify|testing emails/i.test(errorMsg)) {
+          errorMsg +=
+            " | ACTION: verify the sender domain at https://resend.com/domains and set EMAIL_FROM to an address on that domain. " +
+            "The onboarding@resend.dev sender can only deliver to the Resend account owner's own email.";
+        } else if (response.status === 401) {
+          errorMsg += " | ACTION: RESEND_API_KEY is invalid or revoked; create a new key in Resend.";
+        }
         return {
           success: false,
           error: errorMsg,
@@ -250,6 +262,47 @@ export class ResendMailTransport implements MailTransport {
       };
     }
   }
+}
+
+/**
+ * Secret-free snapshot of the mail configuration, safe to log.
+ * `warnings` lists misconfigurations that would silently prevent real delivery.
+ */
+export function describeMailConfig(): {
+  mode: "simulated" | "resend" | "apps_script";
+  simulationFlag: string;
+  provider: string;
+  hasResendKey: boolean;
+  hasFrom: boolean;
+  warnings: string[];
+} {
+  const simulationFlag = process.env["EMAIL_SIMULATION_MODE"] ?? "(unset)";
+  const provider = (process.env["EMAIL_PROVIDER"] || "(unset)").toLowerCase().trim();
+  const hasResendKey = Boolean((process.env["RESEND_API_KEY"] || "").trim());
+  const hasFrom = Boolean((process.env["EMAIL_FROM"] || process.env["RESEND_FROM"] || "").trim());
+  const transport = resolveMailTransport();
+  const mode = transport.isSimulated
+    ? "simulated"
+    : (transport.name as "resend" | "apps_script") || "resend";
+  const warnings: string[] = [];
+
+  if (transport.isSimulated) {
+    warnings.push(
+      "SIMULATION ACTIVE: no real email will be sent. Set EMAIL_SIMULATION_MODE=false and EMAIL_PROVIDER=resend in the server environment.",
+    );
+  }
+  if (!transport.isSimulated && provider === "resend") {
+    if (!hasResendKey) warnings.push("RESEND_API_KEY is not set.");
+    if (!hasFrom) {
+      warnings.push(
+        "EMAIL_FROM is not set: falling back to onboarding@resend.dev, which only delivers to the Resend account owner.",
+      );
+    }
+  }
+  if (!transport.isSimulated && provider !== "resend" && provider !== "apps_script") {
+    warnings.push(`EMAIL_PROVIDER="${provider}" is not recognised.`);
+  }
+  return { mode, simulationFlag, provider, hasResendKey, hasFrom, warnings };
 }
 
 export function resolveMailTransport(): MailTransport {
@@ -353,6 +406,10 @@ export class MailController implements SecurityNotifier {
 
   public get isSimulation(): boolean {
     return this.transport.isSimulated;
+  }
+
+  public get transportName(): string {
+    return this.transport.name || (this.transport.isSimulated ? "simulated" : "unknown");
   }
 
   public async notify(alert: SecurityAlertEvent): Promise<{ accepted: boolean; messageId?: string }> {

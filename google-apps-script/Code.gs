@@ -111,6 +111,11 @@ function doPost(e) {
       return handleReportTriggerAction(payload);
     }
 
+    // ── Authenticated Visitor Confirmation Email Action (see VisitorEmail.gs) ──
+    if (payload && payload.action === "dispatch_email") {
+      return handleDispatchEmailAction(payload);
+    }
+
     validateIncomingPayload(payload);
     var targetSheet = payload.sheet;
     greenNextDiag("OPEN SPREADSHEET START", diagStartedAt);

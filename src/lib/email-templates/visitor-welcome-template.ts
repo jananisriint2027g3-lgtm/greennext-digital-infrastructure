@@ -351,6 +351,7 @@ export function renderVisitorWelcomeEmail(
     <h1>Hello ${escapedFirstName},</h1>
     <p>Thank you for your interest in GreenNext and for submitting our <strong>${escapedFormName}</strong> form.</p>
     <p>We are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start.</p>
+    <p><strong>What happens next:</strong> we have received your submission and our team will review it and get back to you by email. There is nothing more you need to do right now.</p>
     <div class="resource">
       <h2>${escapedServiceTitle}</h2>
       <p>${escapedServiceDescription}</p>
@@ -380,6 +381,8 @@ export function renderVisitorWelcomeEmail(
 Thank you for your interest in GreenNext and for submitting our ${formName} form.
 
 We are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start:
+
+What happens next: we have received your submission and our team will review it and get back to you by email. There is nothing more you need to do right now.
 
 ${serviceContent.title}
 ${serviceContent.description}
