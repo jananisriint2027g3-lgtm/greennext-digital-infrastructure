@@ -97,13 +97,26 @@ export function isOrganicHost(host: string): boolean {
   );
 }
 
+/**
+ * Validates whether a UTM source represents legitimate LinkedIn traffic.
+ * Handles campaign tags (e.g. linkedin_newsletter, linkedin-ads) and LinkedIn domains (linkedin.com, lnkd.in),
+ * while rejecting lookalikes (notlinkedin.com, linkedin-phishing.com, fake-linkedin).
+ */
+export function isValidLinkedInSource(source: string): boolean {
+  if (!source) return false;
+  const s = source.toLowerCase().trim();
+  if (s === "linkedin" || s === "lnkd.in") return true;
+  if (s.includes(".")) return isLinkedInHost(s);
+  return s.startsWith("linkedin_") || s.startsWith("linkedin-") || s.startsWith("linkedin/");
+}
+
 export function isLinkedInAttributed(context: {
   referrerUrl?: string;
   utmSource?: string;
   trafficSource?: string;
 }): boolean {
-  const source = (context.utmSource || "").trim().toLowerCase();
-  if (source === "linkedin" || source === "lnkd.in" || source.includes("linkedin")) return true;
+  const source = (context.utmSource || "").trim();
+  if (isValidLinkedInSource(source)) return true;
   if (context.referrerUrl) {
     const host = hostOf(context.referrerUrl);
     if (isLinkedInHost(host)) return true;

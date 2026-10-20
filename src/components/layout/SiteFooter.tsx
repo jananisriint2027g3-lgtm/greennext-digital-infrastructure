@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { InternalLink as Link } from "../common/InternalLink";
-import { Leaf, MessageCircle, ExternalLink, ShieldCheck } from "../icons";
+import { MessageCircle, ExternalLink, ShieldCheck } from "../icons";
 import { NAVIGATION_STRUCTURE } from "../../data/navigation";
 import { WHATSAPP_CONFIG } from "../../data/whatsapp";
 import { WhatsAppDemoModal, openQuickInquiry } from "../common/FloatingContact";
@@ -27,14 +27,18 @@ export function SiteFooter() {
             <div className="lg:col-span-4 flex flex-col gap-4">
               <Link
                 to="/"
-                className="flex items-center gap-2.5 text-white font-bold text-xl tracking-tight"
+                className="inline-flex items-center gap-2.5 text-white font-bold text-xl tracking-tight group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981] rounded-lg"
+                aria-label="GreenNext Home"
               >
-                <div className="w-8 h-8 rounded-lg bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981]">
-                  <Leaf size={18} />
-                </div>
-                <span>
-                  Green<span className="text-[#10B981]">Next</span>
-                </span>
+                <img
+                  src="/images/greennext-logo.png"
+                  alt="GreenNext - Digital Infrastructure"
+                  width={180}
+                  height={40}
+                  className="h-9 sm:h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-[1.02]"
+                  loading="lazy"
+                  decoding="async"
+                />
               </Link>
 
               <p className="text-xs font-mono tracking-wider text-[#10B981] uppercase mt-1">
@@ -256,6 +260,20 @@ export function SiteFooter() {
                     className="hover:text-white transition-colors"
                   >
                     7-Layer Architecture
+                  </Link>
+                  <Link
+                    to="/infrastructure/cybersecurity"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/infrastructure/cybersecurity",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
+                    Cybersecurity & Protection
                   </Link>
                 </div>
               </div>

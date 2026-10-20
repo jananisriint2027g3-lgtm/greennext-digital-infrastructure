@@ -602,7 +602,137 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     cta: { label: "Explore Intelligent Monitoring →", path: "/automation/monitoring" },
     relatedPages: [
       { title: "Power Monitoring", path: "/energy/monitoring" },
+      { title: "Cybersecurity & Protection", path: "/infrastructure/cybersecurity" },
       { title: "Intelligent Monitoring", path: "/automation/monitoring" },
+    ],
+  },
+  "infrastructure/cybersecurity": {
+    slug: "cybersecurity",
+    category: "Infrastructure",
+    parentPath: "/infrastructure",
+    route: "/infrastructure/cybersecurity",
+    title: "Cybersecurity & Infrastructure Protection",
+    eyebrow: "Infrastructure Security",
+    h1: "Defense-in-Depth for AI-Ready Digital Infrastructure",
+    intro:
+      "As AI compute clusters, high-density accelerators, regional networks, and automated telemetry systems expand, infrastructure cybersecurity becomes a foundational operational discipline. GreenNext approaches security as an integrated defense-in-depth model safeguarding hardware, identity, network perimeters, data lifecycle, and autonomous control planes across South India.",
+    isConceptual: true,
+    sections: [
+      {
+        title: "AI Infrastructure Security & Confidential Compute",
+        body: [
+          "Modern AI training and inference environments present unique attack vectors: large-scale memory residency, multi-tenant GPU slicing, and complex model weight pipelines.",
+          "GreenNext designs security at the silicon layer, incorporating hardware root-of-trust (RoT), cryptographically signed firmware, secure boot enforcement, and confidential computing enclaves to protect sensitive intellectual property and training datasets during active compute execution.",
+        ],
+        cards: [
+          {
+            title: "Hardware Root-of-Trust (RoT)",
+            meta: "Silicon Layer",
+            description:
+              "Cryptographically verified boot sequences and tamper-evident TPM 2.0 module validation across all server chassis.",
+          },
+          {
+            title: "Confidential GPU Execution",
+            meta: "Memory Protection",
+            description:
+              "Hardware-isolated enclaves safeguarding training pipelines and inference weights against unauthorized memory inspection.",
+          },
+          {
+            title: "Firmware Integrity Verification",
+            meta: "Baseboard Management",
+            description:
+              "Cryptographic signature enforcement on BMC, UEFI, and NIC microcode to prevent persistent low-level firmware implants.",
+          },
+        ],
+      },
+      {
+        title: "Identity & Access Management (IAM) & Zero Trust",
+        body: [
+          "Physical data center perimeters must be matched by strict logical identity perimeters. GreenNext adheres to Zero Trust Architecture (ZTA) principles: verify explicitly, enforce least-privilege access, and assume breach.",
+          "Every operator, control-plane service, and remote automation runner authenticates via multi-factor cryptographic tokens with ephemeral, time-bounded session grants.",
+        ],
+        cards: [
+          {
+            title: "Least-Privilege RBAC",
+            meta: "Access Control",
+            description:
+              "Fine-grained role-based permissions separating facility engineering, network operations, and tenant workload management.",
+          },
+          {
+            title: "Mutual TLS (mTLS) Mesh",
+            meta: "Service Identity",
+            description:
+              "Cryptographic peer authentication and line-rate encryption for all telemetry signals and inter-service control calls.",
+          },
+          {
+            title: "Ephemeral Credential Lifecycles",
+            meta: "Key Management",
+            description:
+              "Short-lived rotating tokens replacing static credentials, eliminating long-term attack surfaces.",
+          },
+        ],
+      },
+      {
+        title: "Network Protection & Micro-Segmentation",
+        body: [
+          "High-speed InfiniBand and RoCEv2 compute fabrics operate alongside out-of-band management networks (OOBM) and public transit links. Rigid network segmentation prevents lateral movement in the event of an endpoint compromise.",
+          "Critical supervisory control and data acquisition (SCADA) telemetry for cooling and power systems is physically and logically air-gapped from internet-facing networks.",
+        ],
+        cards: [
+          {
+            title: "Out-of-Band Management (OOBM)",
+            meta: "Isolation",
+            description:
+              "Dedicated, air-gapped physical networks for remote server consoles, PDU management, and chiller controllers.",
+          },
+          {
+            title: "Line-Rate Transit Encryption",
+            meta: "Interconnect Fabric",
+            description:
+              "Hardware-accelerated MACsec (Layer 2) and IPsec (Layer 3) encryption across regional focus hub dark-fiber interlinks.",
+          },
+          {
+            title: "Adaptive DDoS Mitigation",
+            meta: "Perimeter Defense",
+            description:
+              "Volumetric and application-layer traffic inspection filtering multi-gigabit anomalies before reaching facility ingress points.",
+          },
+        ],
+      },
+      {
+        title: "Data Protection & Cryptographic Lifecycle",
+        body: [
+          "Data at rest, data in transit, and data in memory require calibrated cryptographic guarantees. GreenNext implements AES-256-GCM encryption with keys held in dedicated Hardware Security Modules (HSMs).",
+          "Comprehensive data sanitization procedures adhere to institutional standards, ensuring scratch volumes and decommissioned drives are cryptographically erased and physically verified.",
+        ],
+        list: [
+          "Full-disk AES-256 encryption across all high-throughput NVMe tiers and persistent object archives",
+          "Automated cryptographic sanitization conforming to NIST SP 800-88 guidelines upon workload termination",
+          "Hardware Security Module (HSM) root-of-trust custody for institutional master encryption keys",
+          "Strict data residency compliance aligned with India's Digital Personal Data Protection (DPDP) Act",
+        ],
+      },
+      {
+        title: "Vulnerability Management & Anomaly Detection",
+        body: [
+          "Continuous vulnerability scanning inspects container registries, system packages, and orchestrator configurations against current CVE repositories.",
+          "GreenNext connects its operational telemetry engine to behavioral anomaly detectors, identifying unusual data transfer surges, irregular login timestamps, or anomalous command executions in real time.",
+        ],
+      },
+      {
+        title: "Incident Response & Forensic Immutability",
+        body: [
+          "Pre-approved automated containment runbooks isolate compromised nodes from cluster fabrics within milliseconds of confirmed threat detection.",
+          "All audit logs, telemetry streams, and administrative session transcripts are written to immutable, append-only storage with cryptographic hash chains to ensure non-repudiation during forensic post-mortems.",
+        ],
+      },
+    ],
+    cta: { label: "Explore Infrastructure Architecture →", path: "/infrastructure/architecture" },
+    relatedPages: [
+      { title: "Infrastructure Architecture", path: "/infrastructure/architecture" },
+      { title: "Network & Connectivity", path: "/infrastructure/network" },
+      { title: "Intelligent Monitoring", path: "/automation/monitoring" },
+      { title: "Automated Alerts", path: "/automation/alerts" },
     ],
   },
 

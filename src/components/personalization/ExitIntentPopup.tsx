@@ -75,9 +75,12 @@ export function ExitIntentPopup() {
             <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl border border-[#10B981]/30 bg-[#10B981]/10 text-[#34D399]">
               <Sparkles size={20} aria-hidden="true" />
             </div>
-            <DialogTitle className="text-2xl font-semibold tracking-tight text-white">Before you go</DialogTitle>
+            <DialogTitle className="text-2xl font-semibold tracking-tight text-white">
+              Before you go
+            </DialogTitle>
             <DialogDescription className="mt-3 max-w-md text-sm leading-6 text-[#A8B5C4]">
-              Explore how GreenNext can help you build AI-ready, efficient and sustainable data center infrastructure.
+              Explore how GreenNext can help you build AI-ready, efficient and sustainable data
+              center infrastructure.
             </DialogDescription>
           </DialogHeader>
 

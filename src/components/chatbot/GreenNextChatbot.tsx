@@ -1,11 +1,15 @@
-import { Bot, RotateCcw, Send, X } from "../icons";
+import { ArrowRight, Bot, RotateCcw, Send, X } from "../icons";
 import { useEffect, useRef, useState } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatSuggestions } from "./ChatSuggestions";
-import { getAssistantOpening, getAssistantResponse, type AssistantResponse } from "./chatService";
-import { getAssistantVisitorContext } from "../../lib/action-layer";
+import { getAssistantResponse, type AssistantResponse } from "./chatService";
+import {
+  getAssistantVisitorContext,
+  getPersonalizationRecommendation,
+} from "../../lib/action-layer";
 import { getChatPageContext } from "../../lib/chat-page-context";
 import { trackEvent, sanitizeChatTopic, getCurrentPage, getSessionId } from "../../lib/analytics";
+import { getChatGreeting } from "../../lib/visitor-greetings";
 import { useRouterState } from "@tanstack/react-router";
 
 interface ChatEntry {
@@ -18,14 +22,17 @@ interface ChatEntry {
 export function GreenNextChatbot() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const pageContext = getChatPageContext(pathname);
+  const recommendation = getPersonalizationRecommendation(pathname, getSessionId());
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [messages, setMessages] = useState<ChatEntry[]>(() => [{
-    id: 1,
-    role: "assistant",
-    text: getAssistantOpening(getAssistantVisitorContext(pathname, getSessionId()), pageContext),
-  }]);
+  const [messages, setMessages] = useState<ChatEntry[]>(() => [
+    {
+      id: 1,
+      role: "assistant",
+      text: getChatGreeting(),
+    },
+  ]);
   const nextId = useRef(2);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -43,14 +50,6 @@ export function GreenNextChatbot() {
   }, [isOpen, messages, isTyping]);
 
   useEffect(() => {
-    if (isOpen) return;
-    setMessages((current) => {
-      if (current.length !== 1 || current[0]?.role !== "assistant") return current;
-      return [{ ...current[0], text: getAssistantOpening(getAssistantVisitorContext(pathname, getSessionId()), pageContext) }];
-    });
-  }, [isOpen, pageContext, pathname]);
-
-  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && isOpen) setIsOpen(false);
     };
@@ -64,11 +63,13 @@ export function GreenNextChatbot() {
     timersRef.current = [];
     setInput("");
     setIsTyping(false);
-    setMessages([{
-      id: nextId.current++,
-      role: "assistant",
-      text: getAssistantOpening(getAssistantVisitorContext(pathname, getSessionId()), pageContext),
-    }]);
+    setMessages([
+      {
+        id: nextId.current++,
+        role: "assistant",
+        text: getChatGreeting(),
+      },
+    ]);
   };
 
   const sendMessage = (value = input) => {
@@ -188,7 +189,27 @@ export function GreenNextChatbot() {
             ))}
 
             {messages.length === 1 && !isTyping && (
-              <ChatSuggestions suggestions={pageContext.suggestedQuestions} onSelect={sendMessage} />
+              <div className="space-y-3">
+                {recommendation.show && (
+                  <div className="rounded-xl border border-[#10B981]/30 bg-[#0E1A26] p-3 text-left">
+                    <p className="text-[12px] leading-relaxed text-[#CBD5E1]">
+                      {recommendation.body}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => sendMessage(recommendation.primaryLabel)}
+                      className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-[#10B981] px-2.5 py-1.5 text-[11px] font-semibold text-[#06110D] transition-colors hover:bg-[#34D399] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]"
+                    >
+                      <span>{recommendation.primaryLabel}</span>
+                      <ArrowRight size={12} aria-hidden="true" />
+                    </button>
+                  </div>
+                )}
+                <ChatSuggestions
+                  suggestions={pageContext.suggestedQuestions}
+                  onSelect={sendMessage}
+                />
+              </div>
             )}
 
             {isTyping && (

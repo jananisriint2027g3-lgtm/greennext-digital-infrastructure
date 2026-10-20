@@ -22,6 +22,8 @@ function createAppsScriptContext() {
       formatDate: (date, tz, format) => {
         return new Date(date).toISOString().replace("T", " ").substring(0, 19);
       },
+      base64Decode: (str) => Buffer.from(str || "", "base64"),
+      newBlob: (bytes, mime, name) => ({ bytes, mime, name }),
     },
     LockService: {
       getScriptLock: () => ({
@@ -38,6 +40,23 @@ function createAppsScriptContext() {
     },
     SpreadsheetApp: {
       openById: (id) => ({ id }),
+    },
+    MailApp: {
+      sendEmail: () => {},
+    },
+    ContentService: {
+      createTextOutput: (content) => {
+        const text = String(content);
+        return {
+          setMimeType: () => ({
+            getContent: () => text,
+            getContentText: () => text,
+          }),
+          getContent: () => text,
+          getContentText: () => text,
+        };
+      },
+      MimeType: { JSON: "application/json" },
     },
     Logger: {
       log: () => {},
@@ -343,3 +362,512 @@ test("Apps Script: renderLinkedInAnalytics correctly aggregates metrics and main
   // Verify that Google inquiry is NOT in LinkedIn analytics
   assert.notEqual(metricMap["Total Inquiries from LinkedIn"], 2);
 });
+
+test("Apps Script: isValidLinkedInSource validates legitimate LinkedIn tags and rejects deceptive/lookalike values", () => {
+  const ctx = createAppsScriptContext();
+  assert.equal(ctx.isValidLinkedInSource("linkedin"), true);
+  assert.equal(ctx.isValidLinkedInSource("lnkd.in"), true);
+  assert.equal(ctx.isValidLinkedInSource("LinkedIn_Newsletter"), true);
+  assert.equal(ctx.isValidLinkedInSource("linkedin-ads"), true);
+  assert.equal(ctx.isValidLinkedInSource("linkedin.com"), true);
+
+  // Deceptive
+  assert.equal(ctx.isValidLinkedInSource("notlinkedin.com"), false);
+  assert.equal(ctx.isValidLinkedInSource("notlinkedin"), false);
+  assert.equal(ctx.isValidLinkedInSource("fake-linkedin"), false);
+  assert.equal(ctx.isValidLinkedInSource("linkedin-phishing.com"), false);
+  assert.equal(ctx.isValidLinkedInSource("google.com"), false);
+});
+
+test("Apps Script: isLinkedInTrafficContext strictly rejects lookalike domains and deceptive UTM sources", () => {
+  const ctx = createAppsScriptContext();
+  assert.equal(ctx.isLinkedInTrafficContext({ utm_source: "linkedin" }, {}), true);
+  assert.equal(ctx.isLinkedInTrafficContext({ referrer_url: "https://www.linkedin.com/feed" }, {}), true);
+  assert.equal(ctx.isLinkedInTrafficContext({ referrer_url: "https://lnkd.in/post1" }, {}), true);
+
+  // Lookalikes rejected
+  assert.equal(ctx.isLinkedInTrafficContext({ utm_source: "notlinkedin.com" }, {}), false);
+  assert.equal(ctx.isLinkedInTrafficContext({ utm_source: "fake-linkedin" }, {}), false);
+  assert.equal(ctx.isLinkedInTrafficContext({ referrer_url: "https://notlinkedin.com/" }, {}), false);
+  assert.equal(ctx.isLinkedInTrafficContext({ referrer_url: "https://linkedin-phishing.com/" }, {}), false);
+});
+
+test("Apps Script: processLeadSubmission writes to Lead_Submissions and LinkedIn_Raw_Data only on success, and rejects invalid leads without conversion recording", () => {
+  const ctx = createAppsScriptContext();
+
+  const rawSheets = {};
+  function getMockSheet(name, headers) {
+    if (!rawSheets[name]) {
+      const rows = [];
+      rawSheets[name] = {
+        name,
+        getLastRow: () => rows.length,
+        getLastColumn: () => headers ? headers.length : (rows[0] ? rows[0].length : 18),
+        getRange: (startRow, startCol, numRows, numCols) => ({
+          getValues: () => rows.slice(Math.max(0, startRow - 1), startRow - 1 + (numRows || 1)),
+          setValue: (val) => {},
+          setFontWeight: () => ({ setBackground: () => ({ setFontColor: () => {} }) }),
+          setValues: () => {},
+        }),
+        appendRow: (row) => rows.push(row),
+        setFrozenRows: () => {},
+        _rows: rows,
+      };
+    }
+    return rawSheets[name];
+  }
+
+  const mockRawSs = {
+    id: "1X4gGWCFfs48gcTcapB1LNb-5ieThCPNO35uXGRJNdoY",
+    getSheetByName: (name) => rawSheets[name] || null,
+    insertSheet: (name) => getMockSheet(name),
+  };
+
+  // Test 1: Invalid lead type is rejected and DOES NOT write to LinkedIn_Raw_Data
+  const invalidPayload = {
+    leadType: "Unrecognized / Invalid Type",
+    name: "Test Hacker",
+    email: "hacker@example.com",
+    message: "Test message",
+    sessionId: "gn_s_test_inv",
+    utmSource: "linkedin",
+  };
+  const res1 = ctx.processLeadSubmission(invalidPayload, mockRawSs, "2026-10-14 11:40:00", Date.now());
+  const res1Obj = JSON.parse(res1.getContentText());
+  assert.equal(res1Obj.success, false);
+  assert.equal(mockRawSs.getSheetByName("LinkedIn_Raw_Data"), null); // No conversion written!
+
+  // Test 2: Valid Career Inquiry without required resume document is rejected and DOES NOT write to LinkedIn_Raw_Data
+  const noResumePayload = {
+    leadType: "Career Inquiry",
+    name: "Applicant Without Resume",
+    email: "applicant@example.com",
+    message: "Looking for job",
+    sessionId: "gn_s_test_no_doc",
+    utmSource: "linkedin",
+    document: null,
+  };
+  const res2 = ctx.processLeadSubmission(noResumePayload, mockRawSs, "2026-10-14 11:41:00", Date.now());
+  const res2Obj = JSON.parse(res2.getContentText());
+  assert.equal(res2Obj.success, false);
+  assert.equal(mockRawSs.getSheetByName("LinkedIn_Raw_Data"), null); // Still no conversion written!
+
+  // Test 3: Successful consultation submission persists to Lead_Submissions and writes conversion to LinkedIn_Raw_Data
+  const validConsultationPayload = {
+    formType: "lead_inquiry",
+    leadType: "Technical Consultation / Session Booking",
+    name: "Dr. Jane Doe",
+    email: "jane.doe@enterprise.com",
+    phone: "+91 98765 00000",
+    organization: "Enterprise AI Labs",
+    topic: "Hyperscale Thermal Modeling",
+    message: "Requesting a dedicated architecture review.",
+    sessionId: "gn_s_li_valid_1",
+    sessionKind: "new_session",
+    requestId: "gn_req_jane_001",
+    utmSource: "linkedin",
+    utmMedium: "social",
+    utmCampaign: "oct_launch",
+    referrerUrl: "https://www.linkedin.com/",
+    landingPage: "/solutions",
+    page: "/contact",
+  };
+  const res3 = ctx.processLeadSubmission(validConsultationPayload, mockRawSs, "2026-10-14 11:42:00", Date.now());
+  const res3Obj = JSON.parse(res3.getContentText());
+  assert.equal(res3Obj.success, true);
+
+  const leadSheet = mockRawSs.getSheetByName("Lead_Submissions");
+  assert.ok(leadSheet);
+  assert.equal(leadSheet._rows.length, 2); // 1 header row + 1 lead row
+  assert.equal(leadSheet._rows[1][1], "Technical Consultation / Session Booking");
+  assert.equal(leadSheet._rows[1][2], "Dr. Jane Doe");
+  assert.equal(leadSheet._rows[1][16], "gn_req_jane_001");
+
+  const liRawSheet = mockRawSs.getSheetByName("LinkedIn_Raw_Data");
+  assert.ok(liRawSheet);
+  assert.equal(liRawSheet._rows.length, 2); // 1 header row + 1 conversion event
+  assert.equal(liRawSheet._rows[1][1], "gn_s_li_valid_1");
+  assert.equal(liRawSheet._rows[1][11], "lead_inquiry");
+  assert.equal(liRawSheet._rows[1][15], "gn_req_jane_001");
+  assert.equal(liRawSheet._rows[1][16], "REQUESTED");
+  assert.equal(liRawSheet._rows[1][17], "PENDING_CONFIRMATION"); // Distinct from confirmed booking!
+
+  // Test 4: Identical retry with same requestId returns already recorded and does NOT create duplicate rows
+  const res4 = ctx.processLeadSubmission(validConsultationPayload, mockRawSs, "2026-10-14 11:42:05", Date.now());
+  const res4Obj = JSON.parse(res4.getContentText());
+  assert.equal(res4Obj.success, true);
+  assert.ok(res4Obj.message.includes("already recorded"));
+  assert.equal(leadSheet._rows.length, 2); // No duplicate lead
+  assert.equal(liRawSheet._rows.length, 2); // No duplicate conversion
+});
+
+test("Apps Script: renderLinkedInAnalytics clears only LinkedIn_Analytics and preserves unrelated tabs", () => {
+  const ctx = createAppsScriptContext();
+
+  const clearedSheets = [];
+  const mockSheets = {
+    "Executive_Summary": { clear: () => clearedSheets.push("Executive_Summary") },
+    "Overview": { clear: () => clearedSheets.push("Overview") },
+    "CTA Interactions": { clear: () => clearedSheets.push("CTA Interactions") },
+    "LinkedIn_Analytics": {
+      clear: () => clearedSheets.push("LinkedIn_Analytics"),
+      getRange: () => ({
+        setFontWeight: () => ({ setBackground: () => ({ setFontColor: () => {} }) }),
+        setValues: () => {},
+      }),
+      autoResizeColumns: () => {},
+    },
+  };
+
+  const mockAnaSs = {
+    id: "1OTeDPp9JP36ztYa3ZNcE6Ev221wQIQ9Bi094zoxcF18",
+    getSheetByName: (name) => mockSheets[name] || null,
+    insertSheet: (name) => mockSheets[name],
+  };
+
+  ctx.renderLinkedInAnalytics(mockAnaSs, [], { sessions: {} });
+
+  // Only LinkedIn_Analytics was cleared
+  assert.equal(clearedSheets.length, 1);
+  assert.equal(clearedSheets[0], "LinkedIn_Analytics");
+  assert.equal(clearedSheets.includes("Executive_Summary"), false);
+  assert.equal(clearedSheets.includes("Overview"), false);
+  assert.equal(clearedSheets.includes("CTA Interactions"), false);
+});
+
+test("Apps Script: setupLinkedInRawDataSheet creates LinkedIn_Raw_Data with 18 headers and preserves existing data idempotently", () => {
+  const ctx = createAppsScriptContext();
+
+  const sheets = {};
+  function createMockSheet(name) {
+    const rows = [];
+    return {
+      name,
+      getLastRow: () => rows.length,
+      getLastColumn: () => (rows[0] ? rows[0].length : 0),
+      getRange: (startRow, startCol, numRows, numCols) => ({
+        getValues: () => rows.slice(Math.max(0, startRow - 1), startRow - 1 + (numRows || 1)),
+        setValue: () => {},
+        setFontWeight: () => ({ setBackground: () => ({ setFontColor: () => {} }) }),
+        setValues: () => {},
+      }),
+      appendRow: (row) => rows.push(row),
+      setFrozenRows: () => {},
+      _rows: rows,
+    };
+  }
+
+  const mockRawSs = {
+    id: "1X4gGWCFfs48gcTcapB1LNb-5ieThCPNO35uXGRJNdoY",
+    getSheetByName: (name) => sheets[name] || null,
+    insertSheet: (name) => {
+      sheets[name] = createMockSheet(name);
+      return sheets[name];
+    },
+  };
+
+  // Run 1: Tab does not exist yet -> should be created with 18 headers
+  const result1 = ctx.setupLinkedInRawDataSheet(mockRawSs);
+  assert.equal(result1.success, true);
+  assert.equal(result1.sheetName, "LinkedIn_Raw_Data");
+  assert.equal(result1.spreadsheetId, "1X4gGWCFfs48gcTcapB1LNb-5ieThCPNO35uXGRJNdoY");
+
+  const createdSheet = mockRawSs.getSheetByName("LinkedIn_Raw_Data");
+  assert.ok(createdSheet);
+  assert.equal(createdSheet._rows.length, 1); // 1 header row
+  const expectedHeaders = [
+    "Timestamp", "Session ID", "Session Kind", "Traffic Source", "Referrer URL",
+    "Landing Page", "UTM Source", "UTM Medium", "UTM Campaign", "UTM Term", "UTM Content",
+    "Event Name", "Event Detail", "Page", "Inquiry Type", "Submission Reference",
+    "Technical Session Status", "Booking Status"
+  ];
+  assert.equal(JSON.stringify(Array.from(createdSheet._rows[0])), JSON.stringify(expectedHeaders));
+
+  // Simulate existing data row added to the tab
+  createdSheet.appendRow([
+    "2026-10-14 12:00:00", "gn_s_001", "new_session", "social", "https://www.linkedin.com/",
+    "/solutions", "linkedin", "social", "launch", "", "", "page_view", "Solutions",
+    "/solutions", "", "", "NONE", "NONE"
+  ]);
+  assert.equal(createdSheet._rows.length, 2);
+
+  // Run 2: Tab already exists -> should NOT clear, overwrite, or duplicate headers
+  const result2 = ctx.setupLinkedInRawDataSheet(mockRawSs);
+  assert.equal(result2.success, true);
+  assert.equal(createdSheet._rows.length, 2); // Still exactly 2 rows (1 header + 1 data row)
+  assert.equal(createdSheet._rows[1][1], "gn_s_001"); // Data row remains intact!
+});
+
+test("Apps Script: renderLinkedInAnalytics deduplicates 4 event rows from LinkedIn_Raw_Data into 2 unique sessions", () => {
+  const ctx = createAppsScriptContext();
+
+  let renderedRows = [];
+  const mockAnalyticsSheet = {
+    clear: () => { renderedRows = []; },
+    getRange: () => ({
+      setFontWeight: () => ({ setBackground: () => ({ setFontColor: () => {} }) }),
+      setValues: (values) => { renderedRows = values; },
+    }),
+    autoResizeColumns: () => {},
+  };
+
+  const mockAnaSs = {
+    getSheetByName: (name) => (name === "LinkedIn_Analytics" ? mockAnalyticsSheet : null),
+    insertSheet: (name) => mockAnalyticsSheet,
+  };
+
+  // The four supplied event rows from GreenNext_Raw_Data.xlsx -> LinkedIn_Raw_Data
+  const fourEventRows = [
+    ['Timestamp', 'Session ID', 'Session Kind', 'Traffic Source', 'Referrer URL', 'Landing Page', 'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Term', 'UTM Content', 'Event Name', 'Event Detail', 'Page', 'Inquiry Type', 'Submission Reference', 'Technical Session Status', 'Booking Status'],
+    ['46309.7205787037', 'gn_s_8nnp8p1_mv81pec2', 'returning_session', 'social', '', '/', 'linkedin', 'organic_social', 'company_launch', '', '', 'nav_page_view', '/', '/', '', '', 'NONE', 'NONE'],
+    ['46309.7205787037', 'gn_s_8nnp8p1_mv81pec2', 'returning_session', 'social', '', '/', 'linkedin', 'organic_social', 'company_launch', '', '', 'page_view', '/', '/', '', '', 'NONE', 'NONE'],
+    ['46309.72144675926', 'gn_s_7cuqd2j_mv81r0vc', 'returning_session', 'social', 'https://www.linkedin.com/', '/', '', '', '', '', '', 'nav_page_view', '/', '/', '', '', 'NONE', 'NONE'],
+    ['46309.72144675926', 'gn_s_7cuqd2j_mv81r0vc', 'returning_session', 'social', 'https://www.linkedin.com/', '/', '', '', '', '', '', 'page_view', '/', '/', '', '', 'NONE', 'NONE']
+  ];
+
+  ctx.renderLinkedInAnalytics(mockAnaSs, fourEventRows, null);
+
+  const metricMap = {};
+  renderedRows.forEach((row) => {
+    if (row[0] && row[1] !== undefined && row[1] !== "") {
+      metricMap[String(row[0]).trim()] = row[1];
+    }
+  });
+
+  // Task 8 / Task 2: Expected result is 2 unique LinkedIn sessions, not 4
+  assert.equal(metricMap["Unique LinkedIn Sessions"], 2);
+
+  // Parse section rows
+  let campaignSessionsSum = 0;
+  let inCampaignSection = false;
+  let inDailySection = false;
+  let inLandingSection = false;
+  let dailySessionsSum = 0;
+  const campaignsFound = {};
+
+  renderedRows.forEach((row) => {
+    const col0 = String(row[0] || "").trim();
+    if (col0.indexOf("CAMPAIGN PERFORMANCE") === 0) {
+      inCampaignSection = true;
+      inDailySection = false;
+      inLandingSection = false;
+      return;
+    }
+    if (col0.indexOf("DAILY & MONTHLY VISITOR ATTRIBUTION") === 0) {
+      inCampaignSection = false;
+      inDailySection = true;
+      inLandingSection = false;
+      return;
+    }
+    if (col0.indexOf("LANDING PAGE") === 0) {
+      inCampaignSection = false;
+      inDailySection = false;
+      inLandingSection = true;
+      return;
+    }
+    if (col0.indexOf("INQUIRY BREAKDOWN") === 0 || col0.indexOf("UTM ATTRIBUTION") === 0) {
+      inCampaignSection = false;
+      inDailySection = false;
+      inLandingSection = false;
+      return;
+    }
+
+    if (inCampaignSection && row[2] !== undefined && typeof row[2] === "number") {
+      campaignSessionsSum += row[2];
+      campaignsFound[col0] = row[2];
+    }
+    if (inDailySection && row[1] !== undefined && typeof row[1] === "number") {
+      dailySessionsSum += row[1];
+    }
+    if (inLandingSection && col0 === "/") {
+      // Landing page duration should NOT be fabricated from unrelated events
+      // Since timestamps within sessions are identical and no active dwell is present, avg duration is 0
+      assert.equal(row[4], 0, "Duration should not be fabricated from unrelated events");
+    }
+  });
+
+  // Task 8: Verify campaign totals sum to 2
+  assert.equal(campaignSessionsSum, 2);
+  assert.equal(campaignsFound["company_launch"], 1, "company_launch has exactly 1 session");
+  assert.equal(campaignsFound["(none / organic post or profile link)"], 1, "referrer-only has exactly 1 session");
+
+  // Task 8: Verify daily totals also equal 2
+  assert.equal(dailySessionsSum, 2);
+
+  // Task 6: Mutually exclusive engagement & bounce
+  const engaged = metricMap["Engaged LinkedIn Sessions"];
+  const bounced = metricMap["Bounced Sessions"];
+  assert.equal(engaged + bounced, 2, "Sessions cannot be counted as both engaged and bounced");
+
+  // Task 7: No invented inquiry submissions or bookings
+  assert.equal(metricMap["Total Inquiries from LinkedIn"], 0);
+  assert.equal(metricMap["Technical Session Requests"], 0);
+  assert.equal(metricMap["Confirmed Bookings"], 0);
+});
+
+test("Apps Script: renderLinkedInAnalytics coalesces session intelligence records with LinkedIn_Raw_Data preserving engagement and duration", () => {
+  const ctx = createAppsScriptContext();
+
+  let renderedRows = [];
+  const mockAnalyticsSheet = {
+    clear: () => { renderedRows = []; },
+    getRange: () => ({
+      setFontWeight: () => ({ setBackground: () => ({ setFontColor: () => {} }) }),
+      setValues: (values) => { renderedRows = values; },
+    }),
+    autoResizeColumns: () => {},
+  };
+
+  const mockAnaSs = {
+    getSheetByName: (name) => (name === "LinkedIn_Analytics" ? mockAnalyticsSheet : null),
+    insertSheet: (name) => mockAnalyticsSheet,
+  };
+
+  // Session records from buildSessionIntelligenceRecords (as generated from Navigation + CTA Interactions)
+  const sessionRecords = [
+    {
+      session_id: "gn_s_8nnp8p1_mv81pec2",
+      traffic_source: "social",
+      landing_page: "/",
+      utm_source: "linkedin",
+      utm_medium: "organic_social",
+      utm_campaign: "company_launch",
+      session_start_time: "2026-10-14T11:47:38.000Z",
+      engaged: true,
+      bounce: false,
+      total_session_duration: 28000,
+    },
+    {
+      session_id: "gn_s_7cuqd2j_mv81r0vc",
+      traffic_source: "social",
+      referrer_url: "https://www.linkedin.com/",
+      landing_page: "/",
+      session_start_time: "2026-10-14T11:48:53.000Z",
+      engaged: false,
+      bounce: true,
+      total_session_duration: 7000,
+    }
+  ];
+
+  const rawRows = [
+    ['Timestamp', 'Session ID', 'Session Kind', 'Traffic Source', 'Referrer URL', 'Landing Page', 'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Term', 'UTM Content', 'Event Name', 'Event Detail', 'Page', 'Inquiry Type', 'Submission Reference', 'Technical Session Status', 'Booking Status'],
+    ['46309.7205787037', 'gn_s_8nnp8p1_mv81pec2', 'returning_session', 'social', '', '/', 'linkedin', 'organic_social', 'company_launch', '', '', 'nav_page_view', '/', '/', '', '', 'NONE', 'NONE'],
+    ['46309.7205787037', 'gn_s_8nnp8p1_mv81pec2', 'returning_session', 'social', '', '/', 'linkedin', 'organic_social', 'company_launch', '', '', 'page_view', '/', '/', '', '', 'NONE', 'NONE'],
+    ['46309.72144675926', 'gn_s_7cuqd2j_mv81r0vc', 'returning_session', 'social', 'https://www.linkedin.com/', '/', '', '', '', '', '', 'nav_page_view', '/', '/', '', '', 'NONE', 'NONE'],
+    ['46309.72144675926', 'gn_s_7cuqd2j_mv81r0vc', 'returning_session', 'social', 'https://www.linkedin.com/', '/', '', '', '', '', '', 'page_view', '/', '/', '', '', 'NONE', 'NONE']
+  ];
+
+  ctx.renderLinkedInAnalytics(mockAnaSs, sessionRecords, null, null, rawRows);
+
+  const metricMap = {};
+  renderedRows.forEach((row) => {
+    if (row[0] && row[1] !== undefined && row[1] !== "") {
+      metricMap[String(row[0]).trim()] = row[1];
+    }
+  });
+
+  // Exactly 2 unique LinkedIn sessions
+  assert.equal(metricMap["Unique LinkedIn Sessions"], 2);
+  assert.equal(metricMap["Engaged LinkedIn Sessions"], 1);
+  assert.equal(metricMap["Bounced Sessions"], 1);
+  assert.equal(metricMap["Engagement Rate"], "50.00%");
+  assert.equal(metricMap["Bounce Rate"], "50.00%");
+
+  // Check landing page average duration reflects reliable session duration
+  // Session 1 (28s) + Session 2 (7s) = 35s / 2 sessions = 17.5s -> 18s
+  let landingPageDuration = null;
+  let inLandingSection = false;
+  renderedRows.forEach((row) => {
+    const col0 = String(row[0] || "").trim();
+    if (col0.indexOf("LANDING PAGE") === 0) { inLandingSection = true; return; }
+    if (col0.indexOf("INQUIRY BREAKDOWN") === 0) { inLandingSection = false; return; }
+    if (inLandingSection && col0 === "/") {
+      landingPageDuration = row[4];
+    }
+  });
+  assert.equal(landingPageDuration, 18, "Average duration uses reliable session duration, not inter-session gaps");
+});
+
+test("Apps Script: refreshLinkedInAnalyticsManual executes end-to-end and renders deduplicated metrics", () => {
+  const ctx = createAppsScriptContext();
+
+  const sheets = {};
+  function createMockSheet(name, initialRows) {
+    const rows = (initialRows || []).slice();
+    return {
+      name,
+      clear: () => { rows.length = 0; },
+      getLastRow: () => rows.length,
+      getLastColumn: () => (rows[0] ? rows[0].length : 0),
+      getRange: (startRow, startCol, numRows, numCols) => ({
+        getValues: () => rows.slice(Math.max(0, startRow - 1), startRow - 1 + (numRows || 1)),
+        setValue: () => {},
+        setFontWeight: () => ({ setBackground: () => ({ setFontColor: () => {} }) }),
+        setValues: (vals) => {
+          rows.length = 0;
+          vals.forEach(r => rows.push(r));
+        },
+      }),
+      appendRow: (row) => rows.push(row),
+      setFrozenRows: () => {},
+      autoResizeColumns: () => {},
+      _rows: rows,
+    };
+  }
+
+  // Raw Data spreadsheet with LinkedIn_Raw_Data containing the 4 event rows
+  const rawSheets = {
+    "LinkedIn_Raw_Data": createMockSheet("LinkedIn_Raw_Data", [
+      ['Timestamp', 'Session ID', 'Session Kind', 'Traffic Source', 'Referrer URL', 'Landing Page', 'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Term', 'UTM Content', 'Event Name', 'Event Detail', 'Page', 'Inquiry Type', 'Submission Reference', 'Technical Session Status', 'Booking Status'],
+      ['46309.7205787037', 'gn_s_8nnp8p1_mv81pec2', 'returning_session', 'social', '', '/', 'linkedin', 'organic_social', 'company_launch', '', '', 'nav_page_view', '/', '/', '', '', 'NONE', 'NONE'],
+      ['46309.7205787037', 'gn_s_8nnp8p1_mv81pec2', 'returning_session', 'social', '', '/', 'linkedin', 'organic_social', 'company_launch', '', '', 'page_view', '/', '/', '', '', 'NONE', 'NONE'],
+      ['46309.72144675926', 'gn_s_7cuqd2j_mv81r0vc', 'returning_session', 'social', 'https://www.linkedin.com/', '/', '', '', '', '', '', 'nav_page_view', '/', '/', '', '', 'NONE', 'NONE'],
+      ['46309.72144675926', 'gn_s_7cuqd2j_mv81r0vc', 'returning_session', 'social', 'https://www.linkedin.com/', '/', '', '', '', '', '', 'page_view', '/', '/', '', '', 'NONE', 'NONE']
+    ]),
+    "Session_Context": createMockSheet("Session_Context", [
+      ["gn_s_8nnp8p1_mv81pec2", "returning_session", "46309.7205787037", "social", "/", "linkedin", "organic_social", "company_launch"],
+      ["gn_s_7cuqd2j_mv81r0vc", "returning_session", "46309.72144675926", "social", "https://www.linkedin.com/", "/"]
+    ]),
+    "Navigation": createMockSheet("Navigation", []),
+    "Regions": createMockSheet("Regions", []),
+    "Infrastructure": createMockSheet("Infrastructure", []),
+    "Energy": createMockSheet("Energy", []),
+    "Automation": createMockSheet("Automation", []),
+    "Solutions": createMockSheet("Solutions", []),
+    "Industries": createMockSheet("Industries", []),
+    "Locations": createMockSheet("Locations", []),
+    "AI Assistant": createMockSheet("AI Assistant", []),
+    "CTA Interactions": createMockSheet("CTA Interactions", []),
+    "Quick_Inquiries": createMockSheet("Quick_Inquiries", []),
+    "Contact_Submissions": createMockSheet("Contact_Submissions", []),
+    "Lead_Submissions": createMockSheet("Lead_Submissions", []),
+  };
+
+  const anaSheets = {
+    "LinkedIn_Analytics": createMockSheet("LinkedIn_Analytics", []),
+  };
+
+  const mockRawSs = {
+    id: "1X4gGWCFfs48gcTcapB1LNb-5ieThCPNO35uXGRJNdoY",
+    getId: () => "1X4gGWCFfs48gcTcapB1LNb-5ieThCPNO35uXGRJNdoY",
+    getSheetByName: (name) => rawSheets[name] || null,
+  };
+
+  const mockAnaSs = {
+    id: "1OTeDPp9JP36ztYa3ZNcE6Ev221wQIQ9Bi094zoxcF18",
+    getId: () => "1OTeDPp9JP36ztYa3ZNcE6Ev221wQIQ9Bi094zoxcF18",
+    getSheetByName: (name) => anaSheets[name] || null,
+    insertSheet: (name) => {
+      anaSheets[name] = createMockSheet(name);
+      return anaSheets[name];
+    },
+  };
+
+  const result = ctx.refreshLinkedInAnalyticsManual(mockRawSs, mockAnaSs);
+  assert.equal(result.success, true);
+  assert.equal(result.sheetName, "LinkedIn_Analytics");
+  assert.equal(result.totalSessions, 2, "Manual refresh deduplicates 4 raw rows into 2 unique sessions");
+});
+
+
+

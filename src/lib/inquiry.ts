@@ -13,6 +13,7 @@
 import { ANALYTICS_ENDPOINT, getSessionId, getSessionKind, getCurrentPage } from "./analytics";
 import { readClientContext } from "./layer2-intelligence";
 import { submitTechnicalInfrastructureInquiryToJira } from "./jira-inquiry.server-fn";
+import { dispatchVisitorConfirmationEmail } from "./visitor-email.server-fn";
 
 export const LEAD_TYPES = {
   session: "Technical Consultation / Session Booking",
@@ -178,6 +179,23 @@ export async function submitLead(data: LeadPayload): Promise<InquiryResult> {
   const inquiryResult = await postInquiryPayload(payload, `Lead: ${data.leadType}`);
   if (!inquiryResult.success) return inquiryResult;
 
+  // Dispatch branded visitor confirmation email safely in background
+  try {
+    await dispatchVisitorConfirmationEmail({
+      data: {
+        name: data.name,
+        email: data.email,
+        formType: "lead_inquiry",
+        leadType: data.leadType,
+        category: data.topic,
+        page: payload.page,
+        requestId,
+      },
+    });
+  } catch (emailErr) {
+    console.error("Visitor confirmation email dispatch error:", emailErr);
+  }
+
   try {
     const jiraResult = await submitTechnicalInfrastructureInquiryToJira({
       data: {
@@ -243,7 +261,8 @@ async function postInquiryPayload(
     }
 
     // If server responded with "Invalid sheet", the endpoint is running the legacy script.
-    // Gracefully fallback to CTA Interactions so the lead is not lost and the user experiences success.
+    // Log fallback telemetry to CTA Interactions so the interaction record is not lost,
+    // but return a clear failure state because the actual lead was not saved.
     if (data && data.success === false && data.message === "Invalid sheet.") {
       try {
         const fallbackPayload = {
@@ -260,8 +279,8 @@ async function postInquiryPayload(
         const fallbackData = JSON.parse(fallbackText);
         if (fallbackData && fallbackData.success) {
           return {
-            success: true,
-            message: "Inquiry recorded successfully.",
+            success: false,
+            error: "Inquiry could not be saved to lead records. Please try submitting again.",
           };
         }
       } catch {
@@ -334,6 +353,22 @@ export async function submitQuickInquiry(data: QuickInquiryData): Promise<Inquir
   const inquiryResult = await postInquiryPayload(payload, fallbackCta);
   if (!inquiryResult.success) return inquiryResult;
 
+  // Dispatch branded visitor confirmation email safely in background
+  try {
+    await dispatchVisitorConfirmationEmail({
+      data: {
+        name: data.name,
+        email: data.email,
+        formType: "quick_inquiry",
+        category: data.interest || "General Inquiry",
+        page,
+        requestId,
+      },
+    });
+  } catch (emailErr) {
+    console.error("Visitor confirmation email dispatch error:", emailErr);
+  }
+
   try {
     const jiraResult = await submitTechnicalInfrastructureInquiryToJira({
       data: {
@@ -403,6 +438,22 @@ export async function submitLongFormInquiry(data: LongFormInquiryData): Promise<
   const fallbackCta = `Long Form: ${data.category} | ${data.region}`;
   const inquiryResult = await postInquiryPayload(payload, fallbackCta);
   if (!inquiryResult.success) return inquiryResult;
+
+  // Dispatch branded visitor confirmation email safely in background
+  try {
+    await dispatchVisitorConfirmationEmail({
+      data: {
+        name: data.name,
+        email: data.email,
+        formType: "long_form_inquiry",
+        category: data.category || "General Requirements",
+        page,
+        requestId,
+      },
+    });
+  } catch (emailErr) {
+    console.error("Visitor confirmation email dispatch error:", emailErr);
+  }
 
   try {
     const jiraResult = await submitTechnicalInfrastructureInquiryToJira({

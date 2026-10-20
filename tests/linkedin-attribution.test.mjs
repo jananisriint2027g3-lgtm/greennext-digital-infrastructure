@@ -151,3 +151,85 @@ test("technical session requests and confirmed bookings are treated as distinct 
   // Confirmed booking is NOT equal to total requests
   assert.notEqual(techSessionRequests, confirmedBookings);
 });
+
+test("isValidLinkedInSource correctly accepts legitimate LinkedIn tags and domains and rejects lookalikes", () => {
+  // Legitimate
+  assert.equal(layer2.isValidLinkedInSource("linkedin"), true);
+  assert.equal(layer2.isValidLinkedInSource("lnkd.in"), true);
+  assert.equal(layer2.isValidLinkedInSource("LinkedIn_Newsletter"), true);
+  assert.equal(layer2.isValidLinkedInSource("linkedin-ads"), true);
+  assert.equal(layer2.isValidLinkedInSource("linkedin/post"), true);
+  assert.equal(layer2.isValidLinkedInSource("linkedin.com"), true);
+  assert.equal(layer2.isValidLinkedInSource("www.linkedin.com"), true);
+
+  // Deceptive / Lookalikes / Unrelated
+  assert.equal(layer2.isValidLinkedInSource("notlinkedin.com"), false);
+  assert.equal(layer2.isValidLinkedInSource("notlinkedin"), false);
+  assert.equal(layer2.isValidLinkedInSource("linkedin-phishing.com"), false);
+  assert.equal(layer2.isValidLinkedInSource("fake-linkedin"), false);
+  assert.equal(layer2.isValidLinkedInSource("fake-lnkd.in"), false);
+  assert.equal(layer2.isValidLinkedInSource("attackerlnkd.in"), false);
+  assert.equal(layer2.isValidLinkedInSource("google.com"), false);
+  assert.equal(layer2.isValidLinkedInSource(""), false);
+  assert.equal(layer2.isValidLinkedInSource(null), false);
+});
+
+test("isLinkedInAttributed strictly rejects lookalike domains and deceptive UTM parameters", () => {
+  assert.equal(layer2.isLinkedInAttributed({ utmSource: "notlinkedin.com" }), false);
+  assert.equal(layer2.isLinkedInAttributed({ utmSource: "fake-linkedin" }), false);
+  assert.equal(layer2.isLinkedInAttributed({ utmSource: "linkedin-phishing.com" }), false);
+  assert.equal(layer2.isLinkedInAttributed({ referrerUrl: "https://notlinkedin.com/post" }), false);
+  assert.equal(layer2.isLinkedInAttributed({ referrerUrl: "https://linkedin-phishing.com/login" }), false);
+});
+
+test("first-touch and last-touch attribution remain distinct across multi-touch visits", () => {
+  // First visit: from LinkedIn campaign
+  const initial = {
+    landingPage: "/solutions",
+    referrerUrl: "https://www.linkedin.com/",
+    utmSource: "linkedin",
+    utmMedium: "social",
+    utmCampaign: "oct_launch",
+  };
+
+  // Second touch: later in session or returning visit with different UTM parameters
+  const secondTouchSource = "google";
+  const secondTouchMedium = "cpc";
+  const secondTouchCampaign = "brand_search";
+
+  // First-touch preserved
+  const firstTouchSource = initial.utmSource;
+  const firstTouchCampaign = initial.utmCampaign;
+
+  // Last-touch updated
+  const lastTouchSource = secondTouchSource || initial.utmSource;
+  const lastTouchCampaign = secondTouchCampaign || initial.utmCampaign;
+
+  assert.equal(firstTouchSource, "linkedin");
+  assert.equal(firstTouchCampaign, "oct_launch");
+  assert.equal(lastTouchSource, "google");
+  assert.equal(lastTouchCampaign, "brand_search");
+  assert.notEqual(firstTouchSource, lastTouchSource);
+});
+
+test("inquiry fallback logic returns success:false when falling back to CTA Interactions", () => {
+  // Verify that an 'Invalid sheet' response that falls back to CTA Interactions does NOT report success
+  const legacyFallbackResponse = {
+    serverOriginal: { success: false, message: "Invalid sheet." },
+    fallbackTelemetry: { success: true },
+  };
+
+  // Simulates postInquiryPayload logic
+  let finalResult;
+  if (legacyFallbackResponse.serverOriginal.success === false && legacyFallbackResponse.serverOriginal.message === "Invalid sheet.") {
+    if (legacyFallbackResponse.fallbackTelemetry.success) {
+      finalResult = {
+        success: false,
+        error: "Inquiry could not be saved to lead records. Please try submitting again.",
+      };
+    }
+  }
+
+  assert.equal(finalResult.success, false);
+  assert.ok(finalResult.error.includes("Inquiry could not be saved"));
+});

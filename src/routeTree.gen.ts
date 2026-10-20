@@ -26,6 +26,7 @@ import { Route as SolutionsSlugRouteImport } from './routes/solutions/$slug'
 import { Route as SolutionsArchitectureExplorerRouteImport } from './routes/solutions/architecture-explorer'
 import { Route as SolutionsConfiguratorRouteImport } from './routes/solutions/configurator'
 import { Route as SolutionsEnergyCalculatorRouteImport } from './routes/solutions/energy-calculator'
+import { Route as SolutionsInfrastructureIndexRouteImport } from './routes/solutions/infrastructure-index'
 import { Route as SustainabilityIndexRouteImport } from './routes/sustainability/index'
 import { Route as SustainabilitySlugRouteImport } from './routes/sustainability/$slug'
 
@@ -116,6 +117,12 @@ const SolutionsEnergyCalculatorRoute =
     path: '/solutions/energy-calculator',
     getParentRoute: () => rootRouteImport,
   } as any)
+const SolutionsInfrastructureIndexRoute =
+  SolutionsInfrastructureIndexRouteImport.update({
+    id: '/solutions/infrastructure-index',
+    path: '/solutions/infrastructure-index',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const SustainabilityIndexRoute = SustainabilityIndexRouteImport.update({
   id: '/sustainability/',
   path: '/sustainability/',
@@ -139,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/solutions/architecture-explorer': typeof SolutionsArchitectureExplorerRoute
   '/solutions/configurator': typeof SolutionsConfiguratorRoute
   '/solutions/energy-calculator': typeof SolutionsEnergyCalculatorRoute
+  '/solutions/infrastructure-index': typeof SolutionsInfrastructureIndexRoute
   '/sustainability/$slug': typeof SustainabilitySlugRoute
   '/about/': typeof AboutIndexRoute
   '/automation/': typeof AutomationIndexRoute
@@ -160,6 +168,7 @@ export interface FileRoutesByTo {
   '/solutions/architecture-explorer': typeof SolutionsArchitectureExplorerRoute
   '/solutions/configurator': typeof SolutionsConfiguratorRoute
   '/solutions/energy-calculator': typeof SolutionsEnergyCalculatorRoute
+  '/solutions/infrastructure-index': typeof SolutionsInfrastructureIndexRoute
   '/sustainability/$slug': typeof SustainabilitySlugRoute
   '/about': typeof AboutIndexRoute
   '/automation': typeof AutomationIndexRoute
@@ -182,6 +191,7 @@ export interface FileRoutesById {
   '/solutions/architecture-explorer': typeof SolutionsArchitectureExplorerRoute
   '/solutions/configurator': typeof SolutionsConfiguratorRoute
   '/solutions/energy-calculator': typeof SolutionsEnergyCalculatorRoute
+  '/solutions/infrastructure-index': typeof SolutionsInfrastructureIndexRoute
   '/sustainability/$slug': typeof SustainabilitySlugRoute
   '/about/': typeof AboutIndexRoute
   '/automation/': typeof AutomationIndexRoute
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/solutions/architecture-explorer'
     | '/solutions/configurator'
     | '/solutions/energy-calculator'
+    | '/solutions/infrastructure-index'
     | '/sustainability/$slug'
     | '/about/'
     | '/automation/'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/solutions/architecture-explorer'
     | '/solutions/configurator'
     | '/solutions/energy-calculator'
+    | '/solutions/infrastructure-index'
     | '/sustainability/$slug'
     | '/about'
     | '/automation'
@@ -247,6 +259,7 @@ export interface FileRouteTypes {
     | '/solutions/architecture-explorer'
     | '/solutions/configurator'
     | '/solutions/energy-calculator'
+    | '/solutions/infrastructure-index'
     | '/sustainability/$slug'
     | '/about/'
     | '/automation/'
@@ -269,6 +282,7 @@ export interface RootRouteChildren {
   SolutionsArchitectureExplorerRoute: typeof SolutionsArchitectureExplorerRoute
   SolutionsConfiguratorRoute: typeof SolutionsConfiguratorRoute
   SolutionsEnergyCalculatorRoute: typeof SolutionsEnergyCalculatorRoute
+  SolutionsInfrastructureIndexRoute: typeof SolutionsInfrastructureIndexRoute
   SustainabilitySlugRoute: typeof SustainabilitySlugRoute
   AboutIndexRoute: typeof AboutIndexRoute
   AutomationIndexRoute: typeof AutomationIndexRoute
@@ -400,6 +414,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SolutionsEnergyCalculatorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/solutions/infrastructure-index': {
+      id: '/solutions/infrastructure-index'
+      path: '/solutions/infrastructure-index'
+      fullPath: '/solutions/infrastructure-index'
+      preLoaderRoute: typeof SolutionsInfrastructureIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sustainability/': {
       id: '/sustainability/'
       path: '/sustainability'
@@ -429,6 +450,7 @@ const rootRouteChildren: RootRouteChildren = {
   SolutionsArchitectureExplorerRoute: SolutionsArchitectureExplorerRoute,
   SolutionsConfiguratorRoute: SolutionsConfiguratorRoute,
   SolutionsEnergyCalculatorRoute: SolutionsEnergyCalculatorRoute,
+  SolutionsInfrastructureIndexRoute: SolutionsInfrastructureIndexRoute,
   SustainabilitySlugRoute: SustainabilitySlugRoute,
   AboutIndexRoute: AboutIndexRoute,
   AutomationIndexRoute: AutomationIndexRoute,

@@ -81,7 +81,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "author", content: "GreenNext" },
       { property: "og:site_name", content: "GreenNext" },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/images/greennext-og-image.png" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "/images/greennext-og-image.png" },
     ],
     links: [
       {
@@ -89,6 +91,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "icon", href: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+      { rel: "icon", href: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
     ],
   }),
   shellComponent: RootShell,
@@ -126,6 +132,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { trackEvent } from "../lib/analytics";
 import { trackPageView } from "../lib/analytics";
 import { usePageBehaviorTracking } from "../hooks/usePageBehaviorTracking";
+import { VisitorWelcomeBanner } from "../components/personalization/VisitorWelcomeBanner";
 import { PersonalizationBanner } from "../components/personalization/PersonalizationBanner";
 import { ExitIntentPopup } from "../components/personalization/ExitIntentPopup";
 
@@ -150,6 +157,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen flex flex-col bg-[#070A0E] text-white selection:bg-[#10B981] selection:text-[#070A0E]">
         <SiteHeader />
+        <VisitorWelcomeBanner />
         <PersonalizationBanner />
         <ExitIntentPopup />
         <div className="flex-1">

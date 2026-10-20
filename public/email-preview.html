@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GreenNext Branded Visitor Email – Interactive Simulation Preview</title>
+<style>
+  :root {
+    --bg: #0B0F17;
+    --card: #121824;
+    --border: #1E293B;
+    --accent: #10B981;
+    --accent-hover: #059669;
+    --text: #F8FAFC;
+    --muted: #94A3B8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 20px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .header {
+    max-width: 1040px;
+    margin: 0 auto 20px;
+    padding: 16px 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .brand-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-logo {
+    height: 32px;
+    width: auto;
+  }
+  .brand-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+  }
+  .brand-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 2px 0 0;
+  }
+  .sim-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .sim-pulse {
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  /* Scenario Tabs */
+  .tabs-bar {
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tab-btn {
+    padding: 8px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .tab-btn:hover {
+    color: #fff;
+    border-color: #334155;
+  }
+  .tab-btn.active {
+    background: #1E293B;
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /* Main Workspace Layout */
+  .workspace {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  @media (min-width: 960px) {
+    .workspace {
+      grid-template-columns: 320px 1fr;
+    }
+  }
+
+  /* Sidebar Metadata Card */
+  .sidebar {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 12px;
+  }
+  .sidebar h3 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+  }
+  .meta-group {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .meta-label {
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+  .meta-val {
+    color: #F8FAFC;
+    font-weight: 600;
+    word-break: break-all;
+  }
+  .meta-val a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .meta-val a:hover {
+    text-decoration: underline;
+  }
+  .prod-notice {
+    margin-top: 16px;
+    padding: 12px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 8px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #FCD34D;
+  }
+  .prod-notice strong {
+    color: #F59E0B;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* Preview Container */
+  .preview-wrapper {
+    background: #06090e;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .viewport-controls {
+    width: 100%;
+    max-width: 680px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .mode-switch {
+    display: flex;
+    gap: 4px;
+    background: var(--card);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mode-btn {
+    padding: 4px 10px;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .mode-btn.active {
+    background: #1E293B;
+    color: #fff;
+  }
+
+  /* Email Stage */
+  .email-stage {
+    width: 100%;
+    max-width: 680px;
+    transition: max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .email-stage.mobile-view {
+    max-width: 375px;
+  }
+  .email-frame {
+    width: 100%;
+    height: 750px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #ffffff;
+  }
+
+  /* Plain Text Alternative */
+  .plaintext-view {
+    display: none;
+    width: 100%;
+    max-width: 680px;
+    height: 750px;
+    padding: 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #CBD5E1;
+    white-space: pre-wrap;
+    overflow-y: auto;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="brand-bar">
+    <img class="brand-logo" src="/images/email/greennext-logo-original.png" alt="GreenNext Logo">
+    <div>
+      <h1 class="brand-title">GreenNext Visitor Confirmation Email Automation</h1>
+      <p class="brand-sub">End-to-End Simulation & Verification Suite (Approved Brand Handoff)</p>
+    </div>
+  </div>
+  <div class="sim-badge">
+    <span class="sim-pulse"></span>
+    Simulation Mode: Active
+  </div>
+</div>
+
+<div class="tabs-bar" id="scenario-tabs">
+  <button class="tab-btn active" onclick="selectScenario('ai-compute')">AI & Compute</button>
+  <button class="tab-btn " onclick="selectScenario('energy-thermal')">Energy & Thermal</button>
+  <button class="tab-btn " onclick="selectScenario('automation')">Intelligent Automation</button>
+  <button class="tab-btn " onclick="selectScenario('regional-grid')">Regional Grid (South India)</button>
+  <button class="tab-btn " onclick="selectScenario('datacenter')">Modular Data Center</button>
+  <button class="tab-btn " onclick="selectScenario('partnership')">Ecosystem Partner</button>
+  <button class="tab-btn " onclick="selectScenario('career')">Career & Talent</button>
+  <button class="tab-btn " onclick="selectScenario('fallback-unknown')">Fallback (Unknown Topic)</button>
+  <button class="tab-btn " onclick="selectScenario('xss-escaping')">Security & XSS Escaping</button>
+</div>
+
+<div class="workspace">
+  <div class="sidebar" id="sidebar-meta">
+    <!-- Populated by JS -->
+  </div>
+
+  <div class="preview-wrapper">
+    <div class="viewport-controls">
+      <div class="mode-switch">
+        <button class="mode-btn active" id="btn-desktop" onclick="setViewport('desktop')">Desktop (680px)</button>
+        <button class="mode-btn" id="btn-mobile" onclick="setViewport('mobile')">Mobile (375px)</button>
+      </div>
+
+      <div class="mode-switch">
+        <button class="mode-btn active" id="btn-html" onclick="setViewMode('html')">Rendered HTML</button>
+        <button class="mode-btn" id="btn-plain" onclick="setViewMode('plain')">Plain-Text Fallback</button>
+      </div>
+    </div>
+
+    <div class="email-stage" id="stage">
+      <iframe class="email-frame" id="email-frame" title="GreenNext Rendered Welcome Email"></iframe>
+    </div>
+
+    <div class="plaintext-view" id="plaintext-view"></div>
+  </div>
+</div>
+
+<script>
+
+const SCENARIOS = [{"id":"ai-compute","tabLabel":"AI & Compute","badge":"Technical Consultation","recipientName":"Dr. Vikram Seth","recipientEmail":"vikram.seth@enterprise-ai.example","formType":"lead_inquiry","leadType":"Technical Consultation / Session Booking","categoryOrTopic":"AI infrastructure planning","requestId":"gn_req_9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d","rendered":{"subject":"Thank you for contacting GreenNext – AI-Ready Infrastructure & High-Density Topology","html":"<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>GreenNext – Thank You for Connecting</title>\n<style>\n  body { margin:0; padding:24px 12px; background:#eef2f5; font-family:Arial,Helvetica,sans-serif; color:#172536; }\n  .email { max-width:680px; margin:0 auto; background:#ffffff; border:1px solid #dce4eb; border-radius:6px; overflow:hidden; }\n  .banner { display:block; width:100%; height:auto; border:0; }\n  .body { padding:30px 34px; font-size:15px; line-height:1.7; }\n  .eyebrow { color:#07815e; font-size:11px; font-weight:bold; letter-spacing:1.1px; text-transform:uppercase; }\n  h1 { margin:8px 0 18px; font-size:24px; line-height:1.25; color:#102238; }\n  h2 { margin:0 0 8px; font-size:17px; color:#102b42; }\n  p { margin:0 0 16px; }\n  .resource { margin:22px 0; padding:18px 20px; border:1px solid #dce8e4; border-left:4px solid #07815e; background:#f6faf8; border-radius:4px; }\n  .resource p { margin:0; color:#435365; }\n  .button-wrap { margin:24px 0 18px; }\n  .button { display:inline-block; background:#087b60; color:#ffffff !important; text-decoration:none; font-weight:bold; padding:12px 20px; border-radius:4px; }\n  .signoff { margin-top:22px; color:#172536; }\n  .footer-links { text-align:center; padding:14px 10px; color:#415568; font-size:12px; }\n  .footer-links a { color:#087b60; text-decoration:underline; }\n  .smallprint { margin:0; font-size:11px; color:#68798a; line-height:1.5; }\n  @media (max-width:520px) {\n    body { padding:0; }\n    .email { border:0; border-radius:0; }\n    .body { padding:22px 20px; }\n    h1 { font-size:21px; }\n  }\n</style>\n</head>\n<body>\n<div class=\"email\" role=\"article\" aria-label=\"GreenNext welcome email\">\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-header.png\" alt=\"GreenNext – AI Infrastructure. Sustainable Progress.\" width=\"680\" height=\"152\">\n  <div class=\"body\">\n    <div class=\"eyebrow\">Thank you for connecting with us</div>\n    <h1>Hello Vikram,</h1>\n    <p>Thank you for your interest in GreenNext and for submitting our <strong>Technical Consultation</strong> form.</p>\n    <p>We are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start.</p>\n    <div class=\"resource\">\n      <h2>AI-Ready Infrastructure &amp; High-Density Topology</h2>\n      <p>Explore how GreenNext provisions dedicated high-density computing clusters, accelerated GPU topologies, and low-latency interconnects optimized for demanding AI workloads.</p>\n    </div>\n    <p>Explore our website to learn more about the technologies and solutions relevant to your goals.</p>\n    <div class=\"button-wrap\">\n      <a class=\"button\" href=\"https://greennext.internal/infrastructure/ai-ready\" target=\"_blank\" rel=\"noopener noreferrer\">Explore GreenNext</a>\n    </div>\n    <p>If you have any questions, you can contact our team using the details on our website.</p>\n    <div class=\"signoff\">Best regards,<br><strong>GreenNext Team</strong></div>\n  </div>\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-footer.png\" alt=\"GreenNext – Sustainable Regional Digital Infrastructure\" width=\"680\" height=\"152\">\n  <div class=\"footer-links\">\n    <a href=\"https://greennext.internal\">Website</a> &nbsp;|&nbsp;\n    <a href=\"https://www.linkedin.com/company/greennext\">LinkedIn</a> &nbsp;|&nbsp;\n    <a href=\"https://greennext.internal/contact\">Contact</a>\n  </div>\n  <div style=\"padding:0 18px 18px;text-align:center\">\n    <p class=\"smallprint\">You are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.</p>\n  </div>\n</div>\n</body>\n</html>","plainText":"Hello Vikram,\n\nThank you for your interest in GreenNext and for submitting our Technical Consultation form.\n\nWe are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start:\n\nAI-Ready Infrastructure & High-Density Topology\nExplore how GreenNext provisions dedicated high-density computing clusters, accelerated GPU topologies, and low-latency interconnects optimized for demanding AI workloads.\n\nExplore relevant technologies and infrastructure solutions:\nhttps://greennext.internal/infrastructure/ai-ready\n\nIf you have any questions, you can contact our team at https://greennext.internal/contact.\n\nBest regards,\nGreenNext Team\n\n---\nWebsite: https://greennext.internal\nLinkedIn: https://www.linkedin.com/company/greennext\nContact: https://greennext.internal/contact\n\nYou are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.","serviceContent":{"title":"AI-Ready Infrastructure & High-Density Topology","description":"Explore how GreenNext provisions dedicated high-density computing clusters, accelerated GPU topologies, and low-latency interconnects optimized for demanding AI workloads.","url":"https://greennext.internal/infrastructure/ai-ready"},"firstName":"Vikram","formName":"Technical Consultation"}},{"id":"energy-thermal","tabLabel":"Energy & Thermal","badge":"Technical Requirements","recipientName":"Ms. Ananya Roy","recipientEmail":"ananya.roy@cleangrid.example","formType":"long_form_inquiry","categoryOrTopic":"Energy & Thermal Telemetry","requestId":"gn_req_1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d","rendered":{"subject":"Thank you for contacting GreenNext – Energy Intelligence & Thermal Telemetry","html":"<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>GreenNext – Thank You for Connecting</title>\n<style>\n  body { margin:0; padding:24px 12px; background:#eef2f5; font-family:Arial,Helvetica,sans-serif; color:#172536; }\n  .email { max-width:680px; margin:0 auto; background:#ffffff; border:1px solid #dce4eb; border-radius:6px; overflow:hidden; }\n  .banner { display:block; width:100%; height:auto; border:0; }\n  .body { padding:30px 34px; font-size:15px; line-height:1.7; }\n  .eyebrow { color:#07815e; font-size:11px; font-weight:bold; letter-spacing:1.1px; text-transform:uppercase; }\n  h1 { margin:8px 0 18px; font-size:24px; line-height:1.25; color:#102238; }\n  h2 { margin:0 0 8px; font-size:17px; color:#102b42; }\n  p { margin:0 0 16px; }\n  .resource { margin:22px 0; padding:18px 20px; border:1px solid #dce8e4; border-left:4px solid #07815e; background:#f6faf8; border-radius:4px; }\n  .resource p { margin:0; color:#435365; }\n  .button-wrap { margin:24px 0 18px; }\n  .button { display:inline-block; background:#087b60; color:#ffffff !important; text-decoration:none; font-weight:bold; padding:12px 20px; border-radius:4px; }\n  .signoff { margin-top:22px; color:#172536; }\n  .footer-links { text-align:center; padding:14px 10px; color:#415568; font-size:12px; }\n  .footer-links a { color:#087b60; text-decoration:underline; }\n  .smallprint { margin:0; font-size:11px; color:#68798a; line-height:1.5; }\n  @media (max-width:520px) {\n    body { padding:0; }\n    .email { border:0; border-radius:0; }\n    .body { padding:22px 20px; }\n    h1 { font-size:21px; }\n  }\n</style>\n</head>\n<body>\n<div class=\"email\" role=\"article\" aria-label=\"GreenNext welcome email\">\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-header.png\" alt=\"GreenNext – AI Infrastructure. Sustainable Progress.\" width=\"680\" height=\"152\">\n  <div class=\"body\">\n    <div class=\"eyebrow\">Thank you for connecting with us</div>\n    <h1>Hello Ananya,</h1>\n    <p>Thank you for your interest in GreenNext and for submitting our <strong>Technical Requirements</strong> form.</p>\n    <p>We are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start.</p>\n    <div class=\"resource\">\n      <h2>Energy Intelligence &amp; Thermal Telemetry</h2>\n      <p>Discover our real-time power distribution monitoring, heat re-circulation management, and predictive cooling systems engineered to maximize energy efficiency.</p>\n    </div>\n    <p>Explore our website to learn more about the technologies and solutions relevant to your goals.</p>\n    <div class=\"button-wrap\">\n      <a class=\"button\" href=\"https://greennext.internal/energy/monitoring\" target=\"_blank\" rel=\"noopener noreferrer\">Explore GreenNext</a>\n    </div>\n    <p>If you have any questions, you can contact our team using the details on our website.</p>\n    <div class=\"signoff\">Best regards,<br><strong>GreenNext Team</strong></div>\n  </div>\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-footer.png\" alt=\"GreenNext – Sustainable Regional Digital Infrastructure\" width=\"680\" height=\"152\">\n  <div class=\"footer-links\">\n    <a href=\"https://greennext.internal\">Website</a> &nbsp;|&nbsp;\n    <a href=\"https://www.linkedin.com/company/greennext\">LinkedIn</a> &nbsp;|&nbsp;\n    <a href=\"https://greennext.internal/contact\">Contact</a>\n  </div>\n  <div style=\"padding:0 18px 18px;text-align:center\">\n    <p class=\"smallprint\">You are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.</p>\n  </div>\n</div>\n</body>\n</html>","plainText":"Hello Ananya,\n\nThank you for your interest in GreenNext and for submitting our Technical Requirements form.\n\nWe are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start:\n\nEnergy Intelligence & Thermal Telemetry\nDiscover our real-time power distribution monitoring, heat re-circulation management, and predictive cooling systems engineered to maximize energy efficiency.\n\nExplore relevant technologies and infrastructure solutions:\nhttps://greennext.internal/energy/monitoring\n\nIf you have any questions, you can contact our team at https://greennext.internal/contact.\n\nBest regards,\nGreenNext Team\n\n---\nWebsite: https://greennext.internal\nLinkedIn: https://www.linkedin.com/company/greennext\nContact: https://greennext.internal/contact\n\nYou are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.","serviceContent":{"title":"Energy Intelligence & Thermal Telemetry","description":"Discover our real-time power distribution monitoring, heat re-circulation management, and predictive cooling systems engineered to maximize energy efficiency.","url":"https://greennext.internal/energy/monitoring"},"firstName":"Ananya","formName":"Technical Requirements"}},{"id":"automation","tabLabel":"Intelligent Automation","badge":"Quick Inquiry","recipientName":"Mr. Rajesh Kumar","recipientEmail":"rajesh.kumar@operations.example","formType":"quick_inquiry","categoryOrTopic":"Intelligent Automation","requestId":"gn_req_4f5e6d7c8b9a0f1e2d3c4b5a6f7e8d9c","rendered":{"subject":"Thank you for contacting GreenNext – Intelligent Infrastructure Automation","html":"<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>GreenNext – Thank You for Connecting</title>\n<style>\n  body { margin:0; padding:24px 12px; background:#eef2f5; font-family:Arial,Helvetica,sans-serif; color:#172536; }\n  .email { max-width:680px; margin:0 auto; background:#ffffff; border:1px solid #dce4eb; border-radius:6px; overflow:hidden; }\n  .banner { display:block; width:100%; height:auto; border:0; }\n  .body { padding:30px 34px; font-size:15px; line-height:1.7; }\n  .eyebrow { color:#07815e; font-size:11px; font-weight:bold; letter-spacing:1.1px; text-transform:uppercase; }\n  h1 { margin:8px 0 18px; font-size:24px; line-height:1.25; color:#102238; }\n  h2 { margin:0 0 8px; font-size:17px; color:#102b42; }\n  p { margin:0 0 16px; }\n  .resource { margin:22px 0; padding:18px 20px; border:1px solid #dce8e4; border-left:4px solid #07815e; background:#f6faf8; border-radius:4px; }\n  .resource p { margin:0; color:#435365; }\n  .button-wrap { margin:24px 0 18px; }\n  .button { display:inline-block; background:#087b60; color:#ffffff !important; text-decoration:none; font-weight:bold; padding:12px 20px; border-radius:4px; }\n  .signoff { margin-top:22px; color:#172536; }\n  .footer-links { text-align:center; padding:14px 10px; color:#415568; font-size:12px; }\n  .footer-links a { color:#087b60; text-decoration:underline; }\n  .smallprint { margin:0; font-size:11px; color:#68798a; line-height:1.5; }\n  @media (max-width:520px) {\n    body { padding:0; }\n    .email { border:0; border-radius:0; }\n    .body { padding:22px 20px; }\n    h1 { font-size:21px; }\n  }\n</style>\n</head>\n<body>\n<div class=\"email\" role=\"article\" aria-label=\"GreenNext welcome email\">\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-header.png\" alt=\"GreenNext – AI Infrastructure. Sustainable Progress.\" width=\"680\" height=\"152\">\n  <div class=\"body\">\n    <div class=\"eyebrow\">Thank you for connecting with us</div>\n    <h1>Hello Rajesh,</h1>\n    <p>Thank you for your interest in GreenNext and for submitting our <strong>Quick Inquiry</strong> form.</p>\n    <p>We are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start.</p>\n    <div class=\"resource\">\n      <h2>Intelligent Infrastructure Automation</h2>\n      <p>Review our automated operational nodes, predictive failure diagnostics, and closed-loop environmental controls maintaining peak infrastructure stability.</p>\n    </div>\n    <p>Explore our website to learn more about the technologies and solutions relevant to your goals.</p>\n    <div class=\"button-wrap\">\n      <a class=\"button\" href=\"https://greennext.internal/automation/monitoring\" target=\"_blank\" rel=\"noopener noreferrer\">Explore GreenNext</a>\n    </div>\n    <p>If you have any questions, you can contact our team using the details on our website.</p>\n    <div class=\"signoff\">Best regards,<br><strong>GreenNext Team</strong></div>\n  </div>\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-footer.png\" alt=\"GreenNext – Sustainable Regional Digital Infrastructure\" width=\"680\" height=\"152\">\n  <div class=\"footer-links\">\n    <a href=\"https://greennext.internal\">Website</a> &nbsp;|&nbsp;\n    <a href=\"https://www.linkedin.com/company/greennext\">LinkedIn</a> &nbsp;|&nbsp;\n    <a href=\"https://greennext.internal/contact\">Contact</a>\n  </div>\n  <div style=\"padding:0 18px 18px;text-align:center\">\n    <p class=\"smallprint\">You are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.</p>\n  </div>\n</div>\n</body>\n</html>","plainText":"Hello Rajesh,\n\nThank you for your interest in GreenNext and for submitting our Quick Inquiry form.\n\nWe are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start:\n\nIntelligent Infrastructure Automation\nReview our automated operational nodes, predictive failure diagnostics, and closed-loop environmental controls maintaining peak infrastructure stability.\n\nExplore relevant technologies and infrastructure solutions:\nhttps://greennext.internal/automation/monitoring\n\nIf you have any questions, you can contact our team at https://greennext.internal/contact.\n\nBest regards,\nGreenNext Team\n\n---\nWebsite: https://greennext.internal\nLinkedIn: https://www.linkedin.com/company/greennext\nContact: https://greennext.internal/contact\n\nYou are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.","serviceContent":{"title":"Intelligent Infrastructure Automation","description":"Review our automated operational nodes, predictive failure diagnostics, and closed-loop environmental controls maintaining peak infrastructure stability.","url":"https://greennext.internal/automation/monitoring"},"firstName":"Rajesh","formName":"Quick Inquiry"}},{"id":"regional-grid","tabLabel":"Regional Grid (South India)","badge":"Regional Deployment","recipientName":"Karthik Subramanian","recipientEmail":"karthik.s@southtech.example","formType":"quick_inquiry","categoryOrTopic":"Regional Infrastructure (MDU/CJB/TRZ/IXE)","requestId":"gn_req_5e6d7c8b9a0f1e2d3c4b5a6f7e8d9c0b","rendered":{"subject":"Thank you for contacting GreenNext – Regional Infrastructure Grid across South India","html":"<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>GreenNext – Thank You for Connecting</title>\n<style>\n  body { margin:0; padding:24px 12px; background:#eef2f5; font-family:Arial,Helvetica,sans-serif; color:#172536; }\n  .email { max-width:680px; margin:0 auto; background:#ffffff; border:1px solid #dce4eb; border-radius:6px; overflow:hidden; }\n  .banner { display:block; width:100%; height:auto; border:0; }\n  .body { padding:30px 34px; font-size:15px; line-height:1.7; }\n  .eyebrow { color:#07815e; font-size:11px; font-weight:bold; letter-spacing:1.1px; text-transform:uppercase; }\n  h1 { margin:8px 0 18px; font-size:24px; line-height:1.25; color:#102238; }\n  h2 { margin:0 0 8px; font-size:17px; color:#102b42; }\n  p { margin:0 0 16px; }\n  .resource { margin:22px 0; padding:18px 20px; border:1px solid #dce8e4; border-left:4px solid #07815e; background:#f6faf8; border-radius:4px; }\n  .resource p { margin:0; color:#435365; }\n  .button-wrap { margin:24px 0 18px; }\n  .button { display:inline-block; background:#087b60; color:#ffffff !important; text-decoration:none; font-weight:bold; padding:12px 20px; border-radius:4px; }\n  .signoff { margin-top:22px; color:#172536; }\n  .footer-links { text-align:center; padding:14px 10px; color:#415568; font-size:12px; }\n  .footer-links a { color:#087b60; text-decoration:underline; }\n  .smallprint { margin:0; font-size:11px; color:#68798a; line-height:1.5; }\n  @media (max-width:520px) {\n    body { padding:0; }\n    .email { border:0; border-radius:0; }\n    .body { padding:22px 20px; }\n    h1 { font-size:21px; }\n  }\n</style>\n</head>\n<body>\n<div class=\"email\" role=\"article\" aria-label=\"GreenNext welcome email\">\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-header.png\" alt=\"GreenNext – AI Infrastructure. Sustainable Progress.\" width=\"680\" height=\"152\">\n  <div class=\"body\">\n    <div class=\"eyebrow\">Thank you for connecting with us</div>\n    <h1>Hello Karthik,</h1>\n    <p>Thank you for your interest in GreenNext and for submitting our <strong>Quick Inquiry</strong> form.</p>\n    <p>We are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start.</p>\n    <div class=\"resource\">\n      <h2>Regional Infrastructure Grid across South India</h2>\n      <p>Learn about our strategically distributed Tier-2 edge nodes across Madurai, Coimbatore, Trichy, and Mangalore, delivering sub-15ms regional latency.</p>\n    </div>\n    <p>Explore our website to learn more about the technologies and solutions relevant to your goals.</p>\n    <div class=\"button-wrap\">\n      <a class=\"button\" href=\"https://greennext.internal/regions/overview\" target=\"_blank\" rel=\"noopener noreferrer\">Explore GreenNext</a>\n    </div>\n    <p>If you have any questions, you can contact our team using the details on our website.</p>\n    <div class=\"signoff\">Best regards,<br><strong>GreenNext Team</strong></div>\n  </div>\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-footer.png\" alt=\"GreenNext – Sustainable Regional Digital Infrastructure\" width=\"680\" height=\"152\">\n  <div class=\"footer-links\">\n    <a href=\"https://greennext.internal\">Website</a> &nbsp;|&nbsp;\n    <a href=\"https://www.linkedin.com/company/greennext\">LinkedIn</a> &nbsp;|&nbsp;\n    <a href=\"https://greennext.internal/contact\">Contact</a>\n  </div>\n  <div style=\"padding:0 18px 18px;text-align:center\">\n    <p class=\"smallprint\">You are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.</p>\n  </div>\n</div>\n</body>\n</html>","plainText":"Hello Karthik,\n\nThank you for your interest in GreenNext and for submitting our Quick Inquiry form.\n\nWe are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start:\n\nRegional Infrastructure Grid across South India\nLearn about our strategically distributed Tier-2 edge nodes across Madurai, Coimbatore, Trichy, and Mangalore, delivering sub-15ms regional latency.\n\nExplore relevant technologies and infrastructure solutions:\nhttps://greennext.internal/regions/overview\n\nIf you have any questions, you can contact our team at https://greennext.internal/contact.\n\nBest regards,\nGreenNext Team\n\n---\nWebsite: https://greennext.internal\nLinkedIn: https://www.linkedin.com/company/greennext\nContact: https://greennext.internal/contact\n\nYou are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.","serviceContent":{"title":"Regional Infrastructure Grid across South India","description":"Learn about our strategically distributed Tier-2 edge nodes across Madurai, Coimbatore, Trichy, and Mangalore, delivering sub-15ms regional latency.","url":"https://greennext.internal/regions/overview"},"firstName":"Karthik","formName":"Quick Inquiry"}},{"id":"datacenter","tabLabel":"Modular Data Center","badge":"Solutions Explorer","recipientName":"David Vance","recipientEmail":"david.vance@cloudinfra.example","formType":"quick_inquiry","categoryOrTopic":"Data Center Solutions","requestId":"gn_req_6f7e8d9c0b1a2f3e4d5c6b7a8f9e0d1c","rendered":{"subject":"Thank you for contacting GreenNext – Next-Generation Modular Data Center Architecture","html":"<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>GreenNext – Thank You for Connecting</title>\n<style>\n  body { margin:0; padding:24px 12px; background:#eef2f5; font-family:Arial,Helvetica,sans-serif; color:#172536; }\n  .email { max-width:680px; margin:0 auto; background:#ffffff; border:1px solid #dce4eb; border-radius:6px; overflow:hidden; }\n  .banner { display:block; width:100%; height:auto; border:0; }\n  .body { padding:30px 34px; font-size:15px; line-height:1.7; }\n  .eyebrow { color:#07815e; font-size:11px; font-weight:bold; letter-spacing:1.1px; text-transform:uppercase; }\n  h1 { margin:8px 0 18px; font-size:24px; line-height:1.25; color:#102238; }\n  h2 { margin:0 0 8px; font-size:17px; color:#102b42; }\n  p { margin:0 0 16px; }\n  .resource { margin:22px 0; padding:18px 20px; border:1px solid #dce8e4; border-left:4px solid #07815e; background:#f6faf8; border-radius:4px; }\n  .resource p { margin:0; color:#435365; }\n  .button-wrap { margin:24px 0 18px; }\n  .button { display:inline-block; background:#087b60; color:#ffffff !important; text-decoration:none; font-weight:bold; padding:12px 20px; border-radius:4px; }\n  .signoff { margin-top:22px; color:#172536; }\n  .footer-links { text-align:center; padding:14px 10px; color:#415568; font-size:12px; }\n  .footer-links a { color:#087b60; text-decoration:underline; }\n  .smallprint { margin:0; font-size:11px; color:#68798a; line-height:1.5; }\n  @media (max-width:520px) {\n    body { padding:0; }\n    .email { border:0; border-radius:0; }\n    .body { padding:22px 20px; }\n    h1 { font-size:21px; }\n  }\n</style>\n</head>\n<body>\n<div class=\"email\" role=\"article\" aria-label=\"GreenNext welcome email\">\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-header.png\" alt=\"GreenNext – AI Infrastructure. Sustainable Progress.\" width=\"680\" height=\"152\">\n  <div class=\"body\">\n    <div class=\"eyebrow\">Thank you for connecting with us</div>\n    <h1>Hello David,</h1>\n    <p>Thank you for your interest in GreenNext and for submitting our <strong>Quick Inquiry</strong> form.</p>\n    <p>We are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start.</p>\n    <div class=\"resource\">\n      <h2>Next-Generation Modular Data Center Architecture</h2>\n      <p>Examine our modular facility architecture, scalable power backups, and enterprise redundancy specifications for mission-critical digital operations.</p>\n    </div>\n    <p>Explore our website to learn more about the technologies and solutions relevant to your goals.</p>\n    <div class=\"button-wrap\">\n      <a class=\"button\" href=\"https://greennext.internal/solutions/architecture-explorer\" target=\"_blank\" rel=\"noopener noreferrer\">Explore GreenNext</a>\n    </div>\n    <p>If you have any questions, you can contact our team using the details on our website.</p>\n    <div class=\"signoff\">Best regards,<br><strong>GreenNext Team</strong></div>\n  </div>\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-footer.png\" alt=\"GreenNext – Sustainable Regional Digital Infrastructure\" width=\"680\" height=\"152\">\n  <div class=\"footer-links\">\n    <a href=\"https://greennext.internal\">Website</a> &nbsp;|&nbsp;\n    <a href=\"https://www.linkedin.com/company/greennext\">LinkedIn</a> &nbsp;|&nbsp;\n    <a href=\"https://greennext.internal/contact\">Contact</a>\n  </div>\n  <div style=\"padding:0 18px 18px;text-align:center\">\n    <p class=\"smallprint\">You are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.</p>\n  </div>\n</div>\n</body>\n</html>","plainText":"Hello David,\n\nThank you for your interest in GreenNext and for submitting our Quick Inquiry form.\n\nWe are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start:\n\nNext-Generation Modular Data Center Architecture\nExamine our modular facility architecture, scalable power backups, and enterprise redundancy specifications for mission-critical digital operations.\n\nExplore relevant technologies and infrastructure solutions:\nhttps://greennext.internal/solutions/architecture-explorer\n\nIf you have any questions, you can contact our team at https://greennext.internal/contact.\n\nBest regards,\nGreenNext Team\n\n---\nWebsite: https://greennext.internal\nLinkedIn: https://www.linkedin.com/company/greennext\nContact: https://greennext.internal/contact\n\nYou are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.","serviceContent":{"title":"Next-Generation Modular Data Center Architecture","description":"Examine our modular facility architecture, scalable power backups, and enterprise redundancy specifications for mission-critical digital operations.","url":"https://greennext.internal/solutions/architecture-explorer"},"firstName":"David","formName":"Quick Inquiry"}},{"id":"partnership","tabLabel":"Ecosystem Partner","badge":"Partner Collaboration","recipientName":"Priya Sundaram","recipientEmail":"priya@greenenergy-consortium.example","formType":"lead_inquiry","leadType":"Partner / Collaboration Inquiry","categoryOrTopic":"Technology partnership","requestId":"gn_req_7e8d9c0b1a2f3e4d5c6b7a8f9e0d1c2b","rendered":{"subject":"Thank you for contacting GreenNext – Technology & Regional Ecosystem Collaboration","html":"<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>GreenNext – Thank You for Connecting</title>\n<style>\n  body { margin:0; padding:24px 12px; background:#eef2f5; font-family:Arial,Helvetica,sans-serif; color:#172536; }\n  .email { max-width:680px; margin:0 auto; background:#ffffff; border:1px solid #dce4eb; border-radius:6px; overflow:hidden; }\n  .banner { display:block; width:100%; height:auto; border:0; }\n  .body { padding:30px 34px; font-size:15px; line-height:1.7; }\n  .eyebrow { color:#07815e; font-size:11px; font-weight:bold; letter-spacing:1.1px; text-transform:uppercase; }\n  h1 { margin:8px 0 18px; font-size:24px; line-height:1.25; color:#102238; }\n  h2 { margin:0 0 8px; font-size:17px; color:#102b42; }\n  p { margin:0 0 16px; }\n  .resource { margin:22px 0; padding:18px 20px; border:1px solid #dce8e4; border-left:4px solid #07815e; background:#f6faf8; border-radius:4px; }\n  .resource p { margin:0; color:#435365; }\n  .button-wrap { margin:24px 0 18px; }\n  .button { display:inline-block; background:#087b60; color:#ffffff !important; text-decoration:none; font-weight:bold; padding:12px 20px; border-radius:4px; }\n  .signoff { margin-top:22px; color:#172536; }\n  .footer-links { text-align:center; padding:14px 10px; color:#415568; font-size:12px; }\n  .footer-links a { color:#087b60; text-decoration:underline; }\n  .smallprint { margin:0; font-size:11px; color:#68798a; line-height:1.5; }\n  @media (max-width:520px) {\n    body { padding:0; }\n    .email { border:0; border-radius:0; }\n    .body { padding:22px 20px; }\n    h1 { font-size:21px; }\n  }\n</style>\n</head>\n<body>\n<div class=\"email\" role=\"article\" aria-label=\"GreenNext welcome email\">\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-header.png\" alt=\"GreenNext – AI Infrastructure. Sustainable Progress.\" width=\"680\" height=\"152\">\n  <div class=\"body\">\n    <div class=\"eyebrow\">Thank you for connecting with us</div>\n    <h1>Hello Priya,</h1>\n    <p>Thank you for your interest in GreenNext and for submitting our <strong>Partner &amp; Collaboration</strong> form.</p>\n    <p>We are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start.</p>\n    <div class=\"resource\">\n      <h2>Technology &amp; Regional Ecosystem Collaboration</h2>\n      <p>Explore co-development, technology integration, and deployment partnership opportunities with GreenNext across sustainable compute and clean energy grids.</p>\n    </div>\n    <p>Explore our website to learn more about the technologies and solutions relevant to your goals.</p>\n    <div class=\"button-wrap\">\n      <a class=\"button\" href=\"https://greennext.internal/about/what-we-are\" target=\"_blank\" rel=\"noopener noreferrer\">Explore GreenNext</a>\n    </div>\n    <p>If you have any questions, you can contact our team using the details on our website.</p>\n    <div class=\"signoff\">Best regards,<br><strong>GreenNext Team</strong></div>\n  </div>\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-footer.png\" alt=\"GreenNext – Sustainable Regional Digital Infrastructure\" width=\"680\" height=\"152\">\n  <div class=\"footer-links\">\n    <a href=\"https://greennext.internal\">Website</a> &nbsp;|&nbsp;\n    <a href=\"https://www.linkedin.com/company/greennext\">LinkedIn</a> &nbsp;|&nbsp;\n    <a href=\"https://greennext.internal/contact\">Contact</a>\n  </div>\n  <div style=\"padding:0 18px 18px;text-align:center\">\n    <p class=\"smallprint\">You are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.</p>\n  </div>\n</div>\n</body>\n</html>","plainText":"Hello Priya,\n\nThank you for your interest in GreenNext and for submitting our Partner & Collaboration form.\n\nWe are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start:\n\nTechnology & Regional Ecosystem Collaboration\nExplore co-development, technology integration, and deployment partnership opportunities with GreenNext across sustainable compute and clean energy grids.\n\nExplore relevant technologies and infrastructure solutions:\nhttps://greennext.internal/about/what-we-are\n\nIf you have any questions, you can contact our team at https://greennext.internal/contact.\n\nBest regards,\nGreenNext Team\n\n---\nWebsite: https://greennext.internal\nLinkedIn: https://www.linkedin.com/company/greennext\nContact: https://greennext.internal/contact\n\nYou are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.","serviceContent":{"title":"Technology & Regional Ecosystem Collaboration","description":"Explore co-development, technology integration, and deployment partnership opportunities with GreenNext across sustainable compute and clean energy grids.","url":"https://greennext.internal/about/what-we-are"},"firstName":"Priya","formName":"Partner & Collaboration"}},{"id":"career","tabLabel":"Career & Talent","badge":"Career Inquiry","recipientName":"Siddharth Menon","recipientEmail":"siddharth.menon@research.example","formType":"lead_inquiry","leadType":"Career Inquiry","categoryOrTopic":"AI infrastructure","requestId":"gn_req_8d9c0b1a2f3e4d5c6b7a8f9e0d1c2b3a","rendered":{"subject":"Thank you for contacting GreenNext – Engineering & Infrastructure Innovation at GreenNext","html":"<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>GreenNext – Thank You for Connecting</title>\n<style>\n  body { margin:0; padding:24px 12px; background:#eef2f5; font-family:Arial,Helvetica,sans-serif; color:#172536; }\n  .email { max-width:680px; margin:0 auto; background:#ffffff; border:1px solid #dce4eb; border-radius:6px; overflow:hidden; }\n  .banner { display:block; width:100%; height:auto; border:0; }\n  .body { padding:30px 34px; font-size:15px; line-height:1.7; }\n  .eyebrow { color:#07815e; font-size:11px; font-weight:bold; letter-spacing:1.1px; text-transform:uppercase; }\n  h1 { margin:8px 0 18px; font-size:24px; line-height:1.25; color:#102238; }\n  h2 { margin:0 0 8px; font-size:17px; color:#102b42; }\n  p { margin:0 0 16px; }\n  .resource { margin:22px 0; padding:18px 20px; border:1px solid #dce8e4; border-left:4px solid #07815e; background:#f6faf8; border-radius:4px; }\n  .resource p { margin:0; color:#435365; }\n  .button-wrap { margin:24px 0 18px; }\n  .button { display:inline-block; background:#087b60; color:#ffffff !important; text-decoration:none; font-weight:bold; padding:12px 20px; border-radius:4px; }\n  .signoff { margin-top:22px; color:#172536; }\n  .footer-links { text-align:center; padding:14px 10px; color:#415568; font-size:12px; }\n  .footer-links a { color:#087b60; text-decoration:underline; }\n  .smallprint { margin:0; font-size:11px; color:#68798a; line-height:1.5; }\n  @media (max-width:520px) {\n    body { padding:0; }\n    .email { border:0; border-radius:0; }\n    .body { padding:22px 20px; }\n    h1 { font-size:21px; }\n  }\n</style>\n</head>\n<body>\n<div class=\"email\" role=\"article\" aria-label=\"GreenNext welcome email\">\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-header.png\" alt=\"GreenNext – AI Infrastructure. Sustainable Progress.\" width=\"680\" height=\"152\">\n  <div class=\"body\">\n    <div class=\"eyebrow\">Thank you for connecting with us</div>\n    <h1>Hello Siddharth,</h1>\n    <p>Thank you for your interest in GreenNext and for submitting our <strong>Career &amp; Talent Inquiry</strong> form.</p>\n    <p>We are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start.</p>\n    <div class=\"resource\">\n      <h2>Engineering &amp; Infrastructure Innovation at GreenNext</h2>\n      <p>Discover our multidisciplinary research into thermal dynamics, distributed edge topologies, and renewable-powered digital infrastructure.</p>\n    </div>\n    <p>Explore our website to learn more about the technologies and solutions relevant to your goals.</p>\n    <div class=\"button-wrap\">\n      <a class=\"button\" href=\"https://greennext.internal/about/what-we-are\" target=\"_blank\" rel=\"noopener noreferrer\">Explore GreenNext</a>\n    </div>\n    <p>If you have any questions, you can contact our team using the details on our website.</p>\n    <div class=\"signoff\">Best regards,<br><strong>GreenNext Team</strong></div>\n  </div>\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-footer.png\" alt=\"GreenNext – Sustainable Regional Digital Infrastructure\" width=\"680\" height=\"152\">\n  <div class=\"footer-links\">\n    <a href=\"https://greennext.internal\">Website</a> &nbsp;|&nbsp;\n    <a href=\"https://www.linkedin.com/company/greennext\">LinkedIn</a> &nbsp;|&nbsp;\n    <a href=\"https://greennext.internal/contact\">Contact</a>\n  </div>\n  <div style=\"padding:0 18px 18px;text-align:center\">\n    <p class=\"smallprint\">You are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.</p>\n  </div>\n</div>\n</body>\n</html>","plainText":"Hello Siddharth,\n\nThank you for your interest in GreenNext and for submitting our Career & Talent Inquiry form.\n\nWe are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start:\n\nEngineering & Infrastructure Innovation at GreenNext\nDiscover our multidisciplinary research into thermal dynamics, distributed edge topologies, and renewable-powered digital infrastructure.\n\nExplore relevant technologies and infrastructure solutions:\nhttps://greennext.internal/about/what-we-are\n\nIf you have any questions, you can contact our team at https://greennext.internal/contact.\n\nBest regards,\nGreenNext Team\n\n---\nWebsite: https://greennext.internal\nLinkedIn: https://www.linkedin.com/company/greennext\nContact: https://greennext.internal/contact\n\nYou are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.","serviceContent":{"title":"Engineering & Infrastructure Innovation at GreenNext","description":"Discover our multidisciplinary research into thermal dynamics, distributed edge topologies, and renewable-powered digital infrastructure.","url":"https://greennext.internal/about/what-we-are"},"firstName":"Siddharth","formName":"Career & Talent Inquiry"}},{"id":"fallback-unknown","tabLabel":"Fallback (Unknown Topic)","badge":"General Fallback","recipientName":"Alex Morgan","recipientEmail":"alex.morgan@general.example","formType":"quick_inquiry","categoryOrTopic":"Custom Specialized Requirement","requestId":"gn_req_9c0b1a2f3e4d5c6b7a8f9e0d1c2b3a4b","rendered":{"subject":"Thank you for contacting GreenNext – GreenNext Digital Infrastructure Solutions","html":"<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>GreenNext – Thank You for Connecting</title>\n<style>\n  body { margin:0; padding:24px 12px; background:#eef2f5; font-family:Arial,Helvetica,sans-serif; color:#172536; }\n  .email { max-width:680px; margin:0 auto; background:#ffffff; border:1px solid #dce4eb; border-radius:6px; overflow:hidden; }\n  .banner { display:block; width:100%; height:auto; border:0; }\n  .body { padding:30px 34px; font-size:15px; line-height:1.7; }\n  .eyebrow { color:#07815e; font-size:11px; font-weight:bold; letter-spacing:1.1px; text-transform:uppercase; }\n  h1 { margin:8px 0 18px; font-size:24px; line-height:1.25; color:#102238; }\n  h2 { margin:0 0 8px; font-size:17px; color:#102b42; }\n  p { margin:0 0 16px; }\n  .resource { margin:22px 0; padding:18px 20px; border:1px solid #dce8e4; border-left:4px solid #07815e; background:#f6faf8; border-radius:4px; }\n  .resource p { margin:0; color:#435365; }\n  .button-wrap { margin:24px 0 18px; }\n  .button { display:inline-block; background:#087b60; color:#ffffff !important; text-decoration:none; font-weight:bold; padding:12px 20px; border-radius:4px; }\n  .signoff { margin-top:22px; color:#172536; }\n  .footer-links { text-align:center; padding:14px 10px; color:#415568; font-size:12px; }\n  .footer-links a { color:#087b60; text-decoration:underline; }\n  .smallprint { margin:0; font-size:11px; color:#68798a; line-height:1.5; }\n  @media (max-width:520px) {\n    body { padding:0; }\n    .email { border:0; border-radius:0; }\n    .body { padding:22px 20px; }\n    h1 { font-size:21px; }\n  }\n</style>\n</head>\n<body>\n<div class=\"email\" role=\"article\" aria-label=\"GreenNext welcome email\">\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-header.png\" alt=\"GreenNext – AI Infrastructure. Sustainable Progress.\" width=\"680\" height=\"152\">\n  <div class=\"body\">\n    <div class=\"eyebrow\">Thank you for connecting with us</div>\n    <h1>Hello Alex,</h1>\n    <p>Thank you for your interest in GreenNext and for submitting our <strong>Quick Inquiry</strong> form.</p>\n    <p>We are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start.</p>\n    <div class=\"resource\">\n      <h2>GreenNext Digital Infrastructure Solutions</h2>\n      <p>Explore how GreenNext unites AI compute acceleration, intelligent automation, and sustainable energy architectures for regional digital transformation.</p>\n    </div>\n    <p>Explore our website to learn more about the technologies and solutions relevant to your goals.</p>\n    <div class=\"button-wrap\">\n      <a class=\"button\" href=\"https://greennext.internal/solutions\" target=\"_blank\" rel=\"noopener noreferrer\">Explore GreenNext</a>\n    </div>\n    <p>If you have any questions, you can contact our team using the details on our website.</p>\n    <div class=\"signoff\">Best regards,<br><strong>GreenNext Team</strong></div>\n  </div>\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-footer.png\" alt=\"GreenNext – Sustainable Regional Digital Infrastructure\" width=\"680\" height=\"152\">\n  <div class=\"footer-links\">\n    <a href=\"https://greennext.internal\">Website</a> &nbsp;|&nbsp;\n    <a href=\"https://www.linkedin.com/company/greennext\">LinkedIn</a> &nbsp;|&nbsp;\n    <a href=\"https://greennext.internal/contact\">Contact</a>\n  </div>\n  <div style=\"padding:0 18px 18px;text-align:center\">\n    <p class=\"smallprint\">You are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.</p>\n  </div>\n</div>\n</body>\n</html>","plainText":"Hello Alex,\n\nThank you for your interest in GreenNext and for submitting our Quick Inquiry form.\n\nWe are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start:\n\nGreenNext Digital Infrastructure Solutions\nExplore how GreenNext unites AI compute acceleration, intelligent automation, and sustainable energy architectures for regional digital transformation.\n\nExplore relevant technologies and infrastructure solutions:\nhttps://greennext.internal/solutions\n\nIf you have any questions, you can contact our team at https://greennext.internal/contact.\n\nBest regards,\nGreenNext Team\n\n---\nWebsite: https://greennext.internal\nLinkedIn: https://www.linkedin.com/company/greennext\nContact: https://greennext.internal/contact\n\nYou are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.","serviceContent":{"title":"GreenNext Digital Infrastructure Solutions","description":"Explore how GreenNext unites AI compute acceleration, intelligent automation, and sustainable energy architectures for regional digital transformation.","url":"https://greennext.internal/solutions"},"firstName":"Alex","formName":"Quick Inquiry"}},{"id":"xss-escaping","tabLabel":"Security & XSS Escaping","badge":"Security Validation","recipientName":"<script>alert('xss')</script> Jane","recipientEmail":"jane.test@safe.example","formType":"quick_inquiry","categoryOrTopic":"AI Infrastructure","requestId":"gn_req_0b1a2f3e4d5c6b7a8f9e0d1c2b3a4b5c","rendered":{"subject":"Thank you for contacting GreenNext – AI-Ready Infrastructure & High-Density Topology","html":"<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>GreenNext – Thank You for Connecting</title>\n<style>\n  body { margin:0; padding:24px 12px; background:#eef2f5; font-family:Arial,Helvetica,sans-serif; color:#172536; }\n  .email { max-width:680px; margin:0 auto; background:#ffffff; border:1px solid #dce4eb; border-radius:6px; overflow:hidden; }\n  .banner { display:block; width:100%; height:auto; border:0; }\n  .body { padding:30px 34px; font-size:15px; line-height:1.7; }\n  .eyebrow { color:#07815e; font-size:11px; font-weight:bold; letter-spacing:1.1px; text-transform:uppercase; }\n  h1 { margin:8px 0 18px; font-size:24px; line-height:1.25; color:#102238; }\n  h2 { margin:0 0 8px; font-size:17px; color:#102b42; }\n  p { margin:0 0 16px; }\n  .resource { margin:22px 0; padding:18px 20px; border:1px solid #dce8e4; border-left:4px solid #07815e; background:#f6faf8; border-radius:4px; }\n  .resource p { margin:0; color:#435365; }\n  .button-wrap { margin:24px 0 18px; }\n  .button { display:inline-block; background:#087b60; color:#ffffff !important; text-decoration:none; font-weight:bold; padding:12px 20px; border-radius:4px; }\n  .signoff { margin-top:22px; color:#172536; }\n  .footer-links { text-align:center; padding:14px 10px; color:#415568; font-size:12px; }\n  .footer-links a { color:#087b60; text-decoration:underline; }\n  .smallprint { margin:0; font-size:11px; color:#68798a; line-height:1.5; }\n  @media (max-width:520px) {\n    body { padding:0; }\n    .email { border:0; border-radius:0; }\n    .body { padding:22px 20px; }\n    h1 { font-size:21px; }\n  }\n</style>\n</head>\n<body>\n<div class=\"email\" role=\"article\" aria-label=\"GreenNext welcome email\">\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-header.png\" alt=\"GreenNext – AI Infrastructure. Sustainable Progress.\" width=\"680\" height=\"152\">\n  <div class=\"body\">\n    <div class=\"eyebrow\">Thank you for connecting with us</div>\n    <h1>Hello &lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;,</h1>\n    <p>Thank you for your interest in GreenNext and for submitting our <strong>Quick Inquiry</strong> form.</p>\n    <p>We are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start.</p>\n    <div class=\"resource\">\n      <h2>AI-Ready Infrastructure &amp; High-Density Topology</h2>\n      <p>Explore how GreenNext provisions dedicated high-density computing clusters, accelerated GPU topologies, and low-latency interconnects optimized for demanding AI workloads.</p>\n    </div>\n    <p>Explore our website to learn more about the technologies and solutions relevant to your goals.</p>\n    <div class=\"button-wrap\">\n      <a class=\"button\" href=\"https://greennext.internal/infrastructure/ai-ready\" target=\"_blank\" rel=\"noopener noreferrer\">Explore GreenNext</a>\n    </div>\n    <p>If you have any questions, you can contact our team using the details on our website.</p>\n    <div class=\"signoff\">Best regards,<br><strong>GreenNext Team</strong></div>\n  </div>\n  <img class=\"banner\" src=\"https://greennext.internal/images/email/greennext-email-footer.png\" alt=\"GreenNext – Sustainable Regional Digital Infrastructure\" width=\"680\" height=\"152\">\n  <div class=\"footer-links\">\n    <a href=\"https://greennext.internal\">Website</a> &nbsp;|&nbsp;\n    <a href=\"https://www.linkedin.com/company/greennext\">LinkedIn</a> &nbsp;|&nbsp;\n    <a href=\"https://greennext.internal/contact\">Contact</a>\n  </div>\n  <div style=\"padding:0 18px 18px;text-align:center\">\n    <p class=\"smallprint\">You are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.</p>\n  </div>\n</div>\n</body>\n</html>","plainText":"Hello <script>alert('xss')</script>,\n\nThank you for your interest in GreenNext and for submitting our Quick Inquiry form.\n\nWe are pleased to help you explore information relevant to your interests. Based on your submission, here is a good place to start:\n\nAI-Ready Infrastructure & High-Density Topology\nExplore how GreenNext provisions dedicated high-density computing clusters, accelerated GPU topologies, and low-latency interconnects optimized for demanding AI workloads.\n\nExplore relevant technologies and infrastructure solutions:\nhttps://greennext.internal/infrastructure/ai-ready\n\nIf you have any questions, you can contact our team at https://greennext.internal/contact.\n\nBest regards,\nGreenNext Team\n\n---\nWebsite: https://greennext.internal\nLinkedIn: https://www.linkedin.com/company/greennext\nContact: https://greennext.internal/contact\n\nYou are receiving this email because you submitted a GreenNext form. If you did not submit this form, you can disregard this message.","serviceContent":{"title":"AI-Ready Infrastructure & High-Density Topology","description":"Explore how GreenNext provisions dedicated high-density computing clusters, accelerated GPU topologies, and low-latency interconnects optimized for demanding AI workloads.","url":"https://greennext.internal/infrastructure/ai-ready"},"firstName":"<script>alert('xss')</script>","formName":"Quick Inquiry"}}];
+
+let currentId = "ai-compute";
+let currentMode = "html";
+let currentViewport = "desktop";
+
+function selectScenario(id) {
+  currentId = id;
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('onclick').includes("'" + id + "'"));
+  });
+  renderCurrent();
+}
+
+function setViewport(vp) {
+  currentViewport = vp;
+  const stage = document.getElementById('stage');
+  stage.classList.toggle('mobile-view', vp === 'mobile');
+  document.getElementById('btn-desktop').classList.toggle('active', vp === 'desktop');
+  document.getElementById('btn-mobile').classList.toggle('active', vp === 'mobile');
+}
+
+function setViewMode(mode) {
+  currentMode = mode;
+  document.getElementById('stage').style.display = mode === 'html' ? 'block' : 'none';
+  document.getElementById('plaintext-view').style.display = mode === 'plain' ? 'block' : 'none';
+  document.getElementById('btn-html').classList.toggle('active', mode === 'html');
+  document.getElementById('btn-plain').classList.toggle('active', mode === 'plain');
+}
+
+function renderCurrent() {
+  const sc = SCENARIOS.find(s => s.id === currentId);
+  if (!sc) return;
+
+  // 1. Sidebar Metadata
+  const sidebar = document.getElementById('sidebar-meta');
+  sidebar.innerHTML = `
+    <h3>Transmission Metadata</h3>
+    <div class="meta-group">
+      <div class="meta-label">Subject Line</div>
+      <div class="meta-val">${sc.rendered.subject}</div>
+    </div>
+    <div class="meta-group">
+      <div class="meta-label">Recipient</div>
+      <div class="meta-val">${sc.recipientName.replace(/</g, '&lt;').replace(/>/g, '&gt;')} &lt;${sc.recipientEmail}&gt;</div>
+    </div>
+    <div class="meta-group">
+      <div class="meta-label">Form & Flow</div>
+      <div class="meta-val">${sc.rendered.formName} (${sc.formType})</div>
+    </div>
+    <div class="meta-group">
+      <div class="meta-label">Selected Inquiry Topic</div>
+      <div class="meta-val">${sc.categoryOrTopic}</div>
+    </div>
+    <div class="meta-group">
+      <div class="meta-label">Mapped GreenNext Destination</div>
+      <div class="meta-val">
+        <a href="${sc.rendered.serviceContent.url}" target="_blank">${sc.rendered.serviceContent.title}</a>
+      </div>
+    </div>
+    <div class="meta-group">
+      <div class="meta-label">Idempotency Request ID</div>
+      <div class="meta-val" style="font-family: monospace; font-size: 10px;">${sc.requestId}</div>
+    </div>
+    <div class="meta-group">
+      <div class="meta-label">Brand Assets Included</div>
+      <div class="meta-val" style="font-size: 11px; color: #10B981;">
+        &#10003; Header: greennext-email-header.png<br>
+        &#10003; Footer: greennext-email-footer.png<br>
+        &#10003; Logo: greennext-logo-original.png
+      </div>
+    </div>
+    <div class="prod-notice">
+      <strong>Production Setup Notice</strong>
+      Before enabling live delivery in production, set <code>PUBLIC_WEBSITE_URL</code> to your public HTTPS domain (e.g. <code>https://greennext.internal</code> or custom domain) and configure your transactional provider API key.
+    </div>
+  `;
+
+  // 2. HTML Iframe
+  const iframe = document.getElementById('email-frame');
+  iframe.srcdoc = sc.rendered.html;
+
+  // 3. Plain Text View
+  document.getElementById('plaintext-view').textContent = sc.rendered.plainText;
+}
+
+// Initial render
+window.addEventListener('DOMContentLoaded', () => {
+  renderCurrent();
+});
+</script>
+
+</body>
+</html>

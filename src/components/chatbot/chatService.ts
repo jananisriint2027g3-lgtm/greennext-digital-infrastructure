@@ -20,6 +20,7 @@ const CONTEXT_LABELS: Record<string, string> = {
   solutions: "GreenNext solutions",
   sustainability: "sustainability planning",
   about: "GreenNext",
+  contact: "a technical conversation",
 };
 
 const CONTEXT_HREFS: Record<string, string> = {
@@ -30,17 +31,23 @@ const CONTEXT_HREFS: Record<string, string> = {
   solutions: "/solutions",
   sustainability: "/sustainability",
   about: "/about/what-we-are",
+  contact: "/contact",
 };
 
-export function getAssistantOpening(context?: VisitorActionContext, pageContext?: ChatPageContext): string {
+export function getAssistantOpening(
+  context?: VisitorActionContext,
+  pageContext?: ChatPageContext,
+): string {
   const page = pageContext || getChatPageContext(context?.currentPage || "/");
   if (!context?.returningVisitor) {
     return `${page.welcomeMessage} Ask me a question about ${page.topic}.`;
   }
   const behaviorInterest = CONTEXT_LABELS[context.dominantInterest || ""];
-  const behaviorNote = behaviorInterest && !page.topic.toLowerCase().includes(behaviorInterest.toLowerCase().split(" ")[0] || "")
-    ? ` Your recent journey also shows interest in ${behaviorInterest}.`
-    : "";
+  const behaviorNote =
+    behaviorInterest &&
+    !page.topic.toLowerCase().includes(behaviorInterest.toLowerCase().split(" ")[0] || "")
+      ? ` Your recent journey also shows interest in ${behaviorInterest}.`
+      : "";
   return `Welcome back. ${page.returningMessage}${behaviorNote} Would you like to explore a specific area?`;
 }
 
@@ -62,7 +69,11 @@ function regionResponse(id: (typeof REGION_IDS)[number]): AssistantResponse {
   };
 }
 
-export function getAssistantResponse(message: string, context?: VisitorActionContext, pageContext?: ChatPageContext): AssistantResponse {
+export function getAssistantResponse(
+  message: string,
+  context?: VisitorActionContext,
+  pageContext?: ChatPageContext,
+): AssistantResponse {
   const page = pageContext || getChatPageContext(context?.currentPage || "/");
   const query = message.toLowerCase().trim();
 
@@ -72,13 +83,24 @@ export function getAssistantResponse(message: string, context?: VisitorActionCon
     };
   }
 
-  if ((query.includes("continue") || query.includes("what next") || query.includes("recommend")) && context?.returningVisitor) {
-    const focus = page.key === "general"
+  if (
+    (query.includes("continue") || query.includes("what next") || query.includes("recommend")) &&
+    context?.returningVisitor
+  ) {
+    const isOverviewPage = page.key === "general" || page.key === "home";
+    const focus = isOverviewPage
       ? CONTEXT_LABELS[context.dominantInterest] || "GreenNext capabilities"
       : page.topic;
     return {
       text: `Based on your current page and recent journey, ${focus} may be the most useful place to continue. I can also help compare the areas you have explored or take you to a related capability.`,
-      links: [{ label: `Continue with ${focus}`, href: page.key === "general" ? CONTEXT_HREFS[context.dominantInterest] || CONTEXT_HREFS["infrastructure"]! : page.primaryHref }],
+      links: [
+        {
+          label: `Continue with ${focus}`,
+          href: isOverviewPage
+            ? CONTEXT_HREFS[context.dominantInterest] || CONTEXT_HREFS["infrastructure"]!
+            : page.primaryHref,
+        },
+      ],
     };
   }
 

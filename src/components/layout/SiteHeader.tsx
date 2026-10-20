@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Leaf, ChevronDown, Menu, X, ArrowRight, MessageCircle, ExternalLink } from "../icons";
+import { ChevronDown, Menu, X, ArrowRight, MessageCircle, ExternalLink } from "../icons";
 import { NAVIGATION_STRUCTURE } from "../../data/navigation";
 import { WHATSAPP_CONFIG } from "../../data/whatsapp";
 import { WhatsAppDemoModal, openQuickInquiry } from "../common/FloatingContact";
@@ -93,16 +93,19 @@ export function SiteHeader() {
         {/* Brand Logo */}
         <Link
           to="/"
-          className="flex items-center gap-2.5 text-white font-bold text-lg tracking-tight group focus:outline-none"
+          className="flex items-center gap-2 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981] rounded-lg py-1"
           aria-label="GreenNext Home"
         >
-          <div className="w-8 h-8 rounded-lg bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981] group-hover:bg-[#10B981] group-hover:text-[#070A0E] transition-colors duration-200">
-            <Leaf size={18} className="transition-transform group-hover:scale-110" />
-          </div>
-          <span className="text-white text-lg font-semibold tracking-tight">
-            Green<span className="text-[#10B981]">Next</span>
-          </span>
-          <span className="hidden sm:inline-block text-[10px] uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-[#1E293B] text-[#94A3B8] ml-1">
+          <img
+            src="/images/greennext-logo.png"
+            alt="GreenNext - Digital Infrastructure"
+            width={160}
+            height={36}
+            className="h-8 sm:h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-[1.02]"
+            loading="eager"
+            decoding="async"
+          />
+          <span className="hidden sm:inline-block text-[10px] uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-[#1E293B] text-[#94A3B8] ml-1 self-center border border-[#334155]/50">
             Infrastructure
           </span>
         </Link>
@@ -111,7 +114,14 @@ export function SiteHeader() {
         <nav className="hidden xl:flex items-center gap-1.5" aria-label="Main Navigation">
           {NAVIGATION_STRUCTURE.map((cat) => {
             const isCurrent =
-              currentPath === cat.path || (cat.path !== "/" && currentPath.startsWith(cat.path));
+              currentPath === cat.path ||
+              (cat.path !== "/" && currentPath.startsWith(cat.path)) ||
+              (cat.items &&
+                cat.items.some(
+                  (item) =>
+                    currentPath === item.path ||
+                    (item.path !== "/" && currentPath.startsWith(item.path)),
+                ));
             const hasSubmenu = cat.items && cat.items.length > 0;
 
             if (!hasSubmenu) {
@@ -343,7 +353,14 @@ export function SiteHeader() {
               const hasSubmenu = cat.items && cat.items.length > 0;
               const isExpanded = expandedMobileCategory === cat.id;
               const isCurrent =
-                currentPath === cat.path || (cat.path !== "/" && currentPath.startsWith(cat.path));
+                currentPath === cat.path ||
+                (cat.path !== "/" && currentPath.startsWith(cat.path)) ||
+                (cat.items &&
+                  cat.items.some(
+                    (item) =>
+                      currentPath === item.path ||
+                      (item.path !== "/" && currentPath.startsWith(item.path)),
+                  ));
 
               if (!hasSubmenu) {
                 return (
