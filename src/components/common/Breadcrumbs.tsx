@@ -8,7 +8,7 @@ export interface BreadcrumbItem {
 
 export function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
   return (
-    <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-1.5 text-xs text-[#94A3B8]">
+    <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-1.5 text-xs text-[#94A3B8]">
       <Link
         to="/"
         className="flex items-center gap-1 hover:text-white transition-colors"

@@ -171,48 +171,50 @@ export function HeroSlider() {
                   <button
                     key={slide.id}
                     onClick={() => goToSlide(idx)}
-                    className="flex-1 h-1.5 rounded-full overflow-hidden bg-[#1E293B] relative hover:opacity-80 transition-opacity"
+                    className="flex-1 py-3 -my-3 relative hover:opacity-80 transition-opacity"
                     aria-label={`Go to slide ${idx + 1}: ${slide.theme}`}
                   >
-                    <div
-                      className="absolute inset-y-0 left-0 bg-[#10B981] transition-all duration-75"
-                      style={{
-                        width:
-                          idx === currentSlideIndex
-                            ? `${progress}%`
-                            : idx < currentSlideIndex
-                              ? "100%"
-                              : "0%",
-                      }}
-                    />
+                    <div className="h-1.5 rounded-full overflow-hidden bg-[#1E293B] relative w-full">
+                      <div
+                        className="absolute inset-y-0 left-0 bg-[#10B981] transition-all duration-75"
+                        style={{
+                          width:
+                            idx === currentSlideIndex
+                              ? `${progress}%`
+                              : idx < currentSlideIndex
+                                ? "100%"
+                                : "0%",
+                        }}
+                      />
+                    </div>
                   </button>
                 ))}
               </div>
 
               {/* Prev / Next & Pause Controls */}
-              <div className="flex items-center gap-1.5 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={prevSlide}
-                  className="p-1.5 rounded border border-[#1E293B] text-[#94A3B8] hover:text-white hover:bg-[#121824] transition-colors"
+                  className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-white hover:bg-[#121824] transition-colors"
                   aria-label="Previous slide"
                 >
-                  <ChevronLeft size={16} />
+                  <ChevronLeft size={18} />
                 </button>
 
                 <button
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className="p-1.5 rounded border border-[#1E293B] text-[#94A3B8] hover:text-white hover:bg-[#121824] transition-colors"
+                  className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-white hover:bg-[#121824] transition-colors"
                   aria-label={isPlaying ? "Pause auto-slide" : "Play auto-slide"}
                 >
-                  {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+                  {isPlaying ? <Pause size={16} /> : <Play size={16} />}
                 </button>
 
                 <button
                   onClick={nextSlide}
-                  className="p-1.5 rounded border border-[#1E293B] text-[#94A3B8] hover:text-white hover:bg-[#121824] transition-colors"
+                  className="min-w-[40px] min-h-[40px] flex items-center justify-center p-2 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-white hover:bg-[#121824] transition-colors"
                   aria-label="Next slide"
                 >
-                  <ChevronRight size={16} />
+                  <ChevronRight size={18} />
                 </button>
               </div>
             </div>

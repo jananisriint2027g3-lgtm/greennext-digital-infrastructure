@@ -153,7 +153,7 @@ export function CapacityUtilizationModel() {
             constraints, and maximize rack footprint ROI.
           </p>
         </div>
-        <div className="px-3 py-1.5 rounded-lg border border-[#1E293B] bg-[#121824] text-xs font-mono text-[#F59E0B] flex items-center gap-1.5">
+        <div className="px-3 py-1.5 rounded-lg border border-[#1E293B] bg-[#121824] text-xs font-mono text-[#F59E0B] flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
           <AlertCircle size={14} />
           <span>
             Active Limiting Factor: {bottleneck?.label ?? "Compute"} ({bottleneck?.pct ?? 0}%)
@@ -182,7 +182,7 @@ export function CapacityUtilizationModel() {
               step="25"
               value={powerUsed}
               onChange={(e) => setPowerUsed(Number(e.target.value))}
-              className="w-full accent-[#F59E0B]"
+              className="w-full h-6 py-1 cursor-pointer touch-none accent-[#F59E0B]"
             />
             <div className="flex justify-between text-[11px] font-mono text-[#94A3B8]">
               <span>Utilized: {powerMetrics.utilizationPct}%</span>
@@ -208,7 +208,7 @@ export function CapacityUtilizationModel() {
               step="1"
               value={rackUsed}
               onChange={(e) => setRackUsed(Number(e.target.value))}
-              className="w-full accent-[#06B6D4]"
+              className="w-full h-6 py-1 cursor-pointer touch-none accent-[#06B6D4]"
             />
             <div className="flex justify-between text-[11px] font-mono text-[#94A3B8]">
               <span>Utilized: {rackMetrics.utilizationPct}%</span>
@@ -234,7 +234,7 @@ export function CapacityUtilizationModel() {
               step="20"
               value={coolingUsed}
               onChange={(e) => setCoolingUsed(Number(e.target.value))}
-              className="w-full accent-[#38BDF8]"
+              className="w-full h-6 py-1 cursor-pointer touch-none accent-[#38BDF8]"
             />
             <div className="flex justify-between text-[11px] font-mono text-[#94A3B8]">
               <span>Utilized: {coolingMetrics.utilizationPct}%</span>
@@ -260,7 +260,7 @@ export function CapacityUtilizationModel() {
               step="8"
               value={gpuUsed}
               onChange={(e) => setGpuUsed(Number(e.target.value))}
-              className="w-full accent-[#10B981]"
+              className="w-full h-6 py-1 cursor-pointer touch-none accent-[#10B981]"
             />
             <div className="flex justify-between text-[11px] font-mono text-[#94A3B8]">
               <span>Utilized: {gpuMetrics.utilizationPct}%</span>
@@ -286,7 +286,7 @@ export function CapacityUtilizationModel() {
               step="25"
               value={storageUsed}
               onChange={(e) => setStorageUsed(Number(e.target.value))}
-              className="w-full accent-[#8B5CF6]"
+              className="w-full h-6 py-1 cursor-pointer touch-none accent-[#8B5CF6]"
             />
             <div className="flex justify-between text-[11px] font-mono text-[#94A3B8]">
               <span>Utilized: {storageMetrics.utilizationPct}%</span>

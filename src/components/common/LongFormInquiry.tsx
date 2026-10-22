@@ -206,7 +206,7 @@ export function LongFormInquiry({
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g. Ramesh Kumar"
-                className={`w-full px-3.5 py-2.5 rounded-lg border bg-[#121824] text-white text-sm focus:outline-none focus:border-[#10B981] transition-colors ${
+                className={`w-full px-3.5 py-2.5 rounded-lg border bg-[#121824] text-white text-base sm:text-sm focus:outline-none focus:border-[#10B981] transition-colors ${
                   errors.name ? "border-red-500/70" : "border-[#1E293B]"
                 }`}
               />
@@ -225,7 +225,7 @@ export function LongFormInquiry({
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="e.g. ramesh@organization.com"
-                className={`w-full px-3.5 py-2.5 rounded-lg border bg-[#121824] text-white text-sm focus:outline-none focus:border-[#10B981] transition-colors ${
+                className={`w-full px-3.5 py-2.5 rounded-lg border bg-[#121824] text-white text-base sm:text-sm focus:outline-none focus:border-[#10B981] transition-colors ${
                   errors.email ? "border-red-500/70" : "border-[#1E293B]"
                 }`}
               />
@@ -244,7 +244,7 @@ export function LongFormInquiry({
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="+91 00000 00000"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-[#1E293B] bg-[#121824] text-white text-sm focus:outline-none focus:border-[#10B981] transition-colors"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-[#1E293B] bg-[#121824] text-white text-base sm:text-sm focus:outline-none focus:border-[#10B981] transition-colors"
               />
             </div>
 
@@ -258,7 +258,7 @@ export function LongFormInquiry({
                 value={formData.organization}
                 onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
                 placeholder="e.g. Tech Enterprise Ltd"
-                className="w-full px-3.5 py-2.5 rounded-lg border border-[#1E293B] bg-[#121824] text-white text-sm focus:outline-none focus:border-[#10B981] transition-colors"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-[#1E293B] bg-[#121824] text-white text-base sm:text-sm focus:outline-none focus:border-[#10B981] transition-colors"
               />
             </div>
           </div>
@@ -272,7 +272,7 @@ export function LongFormInquiry({
                 id="long-category"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-[#1E293B] bg-[#121824] text-white text-sm focus:outline-none focus:border-[#10B981] transition-colors"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-[#1E293B] bg-[#121824] text-white text-base sm:text-sm focus:outline-none focus:border-[#10B981] transition-colors"
               >
                 <option value="Regional Infrastructure">Regional Infrastructure</option>
                 <option value="AI & High-Density Compute">AI & High-Density Compute</option>
@@ -290,7 +290,7 @@ export function LongFormInquiry({
                 id="long-region"
                 value={formData.region}
                 onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-[#1E293B] bg-[#121824] text-white text-sm focus:outline-none focus:border-[#10B981] transition-colors"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-[#1E293B] bg-[#121824] text-white text-base sm:text-sm focus:outline-none focus:border-[#10B981] transition-colors"
               >
                 <option value="All Regions">All South India Regions</option>
                 <option value="Madurai (MDU)">Madurai (MDU)</option>
@@ -313,7 +313,7 @@ export function LongFormInquiry({
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               placeholder="Describe compute workload profiles, power considerations, or regional planning questions..."
-              className={`w-full px-3.5 py-2.5 rounded-lg border bg-[#121824] text-white text-sm focus:outline-none focus:border-[#10B981] transition-colors resize-none ${
+              className={`w-full px-3.5 py-2.5 rounded-lg border bg-[#121824] text-white text-base sm:text-sm focus:outline-none focus:border-[#10B981] transition-colors resize-none ${
                 errors.message ? "border-red-500/70" : "border-[#1E293B]"
               }`}
             />
@@ -354,7 +354,7 @@ export function LongFormInquiry({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 rounded-lg bg-[#10B981] hover:bg-[#34D399] disabled:opacity-60 text-[#070A0E] text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#10B981]/20 hover:shadow-[#10B981]/30 cursor-pointer"
+              className="w-full min-h-[44px] py-3 rounded-lg bg-[#10B981] hover:bg-[#34D399] disabled:opacity-60 text-[#070A0E] text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#10B981]/20 hover:shadow-[#10B981]/30 cursor-pointer"
             >
               <Send size={15} />
               <span>{isSubmitting ? "Transmitting Requirements..." : "Submit Technical Inquiry"}</span>

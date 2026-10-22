@@ -156,11 +156,11 @@ export function EnergyImpactCalculator() {
               <label htmlFor="tariff-input" className="text-xs font-semibold text-white">
                 Commercial Electricity Tariff
               </label>
-              <div className="flex gap-1">
+              <div className="flex gap-1.5">
                 <button
                   type="button"
                   onClick={() => handleCurrencyChange("INR")}
-                  className={`rounded px-2 py-0.5 font-mono text-[10px] font-semibold transition ${
+                  className={`rounded px-3 py-1.5 min-h-[36px] font-mono text-xs font-semibold transition ${
                     currency === "INR" ? "bg-[#10B981] text-black" : "bg-[#1E293B] text-[#94A3B8]"
                   }`}
                 >
@@ -169,7 +169,7 @@ export function EnergyImpactCalculator() {
                 <button
                   type="button"
                   onClick={() => handleCurrencyChange("USD")}
-                  className={`rounded px-2 py-0.5 font-mono text-[10px] font-semibold transition ${
+                  className={`rounded px-3 py-1.5 min-h-[36px] font-mono text-xs font-semibold transition ${
                     currency === "USD" ? "bg-[#10B981] text-black" : "bg-[#1E293B] text-[#94A3B8]"
                   }`}
                 >
@@ -186,6 +186,7 @@ export function EnergyImpactCalculator() {
                 type="number"
                 step="0.05"
                 min="0"
+                inputMode="decimal"
                 value={tariff}
                 onChange={(e) => setTariff(Math.max(0, parseFloat(e.target.value) || 0))}
                 className="w-full rounded border border-[#334155] bg-[#0B0F17] px-2.5 py-1 font-mono text-sm text-white focus:border-[#10B981] focus:outline-none"
@@ -330,7 +331,7 @@ function RangeField({
         step={step}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="w-full accent-[#10B981]"
+        className="w-full h-6 py-1 cursor-pointer touch-none accent-[#10B981]"
       />
     </div>
   );

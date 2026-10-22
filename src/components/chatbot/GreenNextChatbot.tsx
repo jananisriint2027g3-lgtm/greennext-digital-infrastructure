@@ -131,7 +131,7 @@ export function GreenNextChatbot() {
           role="dialog"
           aria-modal="false"
           aria-labelledby="greennext-assistant-title"
-          className="absolute bottom-16 right-0 flex h-[min(600px,calc(100vh-100px))] w-[calc(100vw-24px)] max-w-[380px] flex-col overflow-hidden rounded-2xl border border-[#1E293B] bg-[#0B0F17] shadow-[0_18px_60px_rgba(0,0,0,0.45)] animate-in fade-in slide-in-from-bottom-3"
+          className="fixed inset-x-3 bottom-20 z-[120] sm:absolute sm:inset-auto sm:bottom-16 sm:right-0 sm:w-[380px] flex h-[min(600px,calc(100vh-100px))] max-w-[380px] mx-auto sm:mx-0 flex-col overflow-hidden rounded-2xl border border-[#1E293B] bg-[#0B0F17] shadow-[0_18px_60px_rgba(0,0,0,0.45)] animate-in fade-in slide-in-from-bottom-3"
         >
           <header className="flex items-center justify-between border-b border-[#1E293B] bg-[#0D1520] px-4 py-3">
             <div className="flex min-w-0 items-center gap-2.5">
@@ -162,7 +162,7 @@ export function GreenNextChatbot() {
                 onClick={resetConversation}
                 aria-label="Clear conversation"
                 title="Clear conversation"
-                className="rounded-md p-1.5 text-[#64748B] transition-colors hover:bg-[#1E293B] hover:text-[#CBD5E1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]"
+                className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-md p-2 text-[#64748B] transition-colors hover:bg-[#1E293B] hover:text-[#CBD5E1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]"
               >
                 <RotateCcw size={15} aria-hidden="true" />
               </button>
@@ -171,7 +171,7 @@ export function GreenNextChatbot() {
                 onClick={() => setIsOpen(false)}
                 aria-label="Close GreenNext AI Assistant"
                 title="Close assistant"
-                className="rounded-md p-1.5 text-[#64748B] transition-colors hover:bg-[#1E293B] hover:text-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]"
+                className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-md p-2 text-[#64748B] transition-colors hover:bg-[#1E293B] hover:text-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]"
               >
                 <X size={17} aria-hidden="true" />
               </button>

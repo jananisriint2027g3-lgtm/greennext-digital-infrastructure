@@ -197,6 +197,7 @@ export function EnvironmentalComplianceWidget() {
             id={minTempInputId}
             type="number"
             step="0.5"
+            inputMode="decimal"
             value={customLimits.minTempC}
             onChange={(e) =>
               setCustomLimits({ ...customLimits, minTempC: parseFloat(e.target.value) || 0 })
@@ -212,6 +213,7 @@ export function EnvironmentalComplianceWidget() {
             id={maxTempInputId}
             type="number"
             step="0.5"
+            inputMode="decimal"
             value={customLimits.maxTempC}
             onChange={(e) =>
               setCustomLimits({ ...customLimits, maxTempC: parseFloat(e.target.value) || 0 })
@@ -227,6 +229,7 @@ export function EnvironmentalComplianceWidget() {
             id={minRhInputId}
             type="number"
             step="1"
+            inputMode="numeric"
             value={customLimits.minRhPct}
             onChange={(e) =>
               setCustomLimits({ ...customLimits, minRhPct: parseFloat(e.target.value) || 0 })
@@ -242,6 +245,7 @@ export function EnvironmentalComplianceWidget() {
             id={maxRhInputId}
             type="number"
             step="1"
+            inputMode="numeric"
             value={customLimits.maxRhPct}
             onChange={(e) =>
               setCustomLimits({ ...customLimits, maxRhPct: parseFloat(e.target.value) || 0 })
@@ -253,10 +257,10 @@ export function EnvironmentalComplianceWidget() {
 
       {/* Live Single Sensor Diagnostic */}
       <div className="mt-6 rounded-lg border border-border/80 bg-background/80 p-4">
-        <h4 className="text-sm font-semibold text-foreground flex items-center justify-between">
+        <h4 className="text-sm font-semibold text-foreground flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <span>Interactive Sensor Probe Diagnostic</span>
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium self-start sm:self-auto ${
               isSingleCompliant
                 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                 : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
@@ -278,6 +282,7 @@ export function EnvironmentalComplianceWidget() {
               id={testTempInputId}
               type="number"
               step="0.1"
+              inputMode="decimal"
               value={testTempC}
               onChange={(e) => setTestTempC(parseFloat(e.target.value) || 0)}
               className="mt-1 w-full rounded border border-border bg-background px-3 py-1.5 text-sm font-mono text-foreground"
@@ -302,6 +307,7 @@ export function EnvironmentalComplianceWidget() {
               step="1"
               min="0"
               max="100"
+              inputMode="numeric"
               value={testRhPct}
               onChange={(e) => setTestRhPct(parseFloat(e.target.value) || 0)}
               className="mt-1 w-full rounded border border-border bg-background px-3 py-1.5 text-sm font-mono text-foreground"
@@ -328,11 +334,11 @@ export function EnvironmentalComplianceWidget() {
 
       {/* Fleet Sensor Array Sample Table */}
       <div className="mt-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h4 className="text-sm font-semibold text-foreground">
             Illustrative Inlet Sensor Array Sample ({DEFAULT_SAMPLE_READINGS.length} probes)
           </h4>
-          <div className="text-right">
+          <div className="text-left sm:text-right">
             <span className="text-xs text-muted-foreground">Array Compliance: </span>
             <span className="text-base font-bold font-mono text-emerald-400">
               {complianceSummary.compliancePct !== null
@@ -346,7 +352,7 @@ export function EnvironmentalComplianceWidget() {
         </div>
 
         <div className="mt-3 overflow-x-auto rounded-lg border border-border/60">
-          <table className="w-full text-left text-xs">
+          <table className="w-full min-w-[560px] text-left text-xs">
             <thead className="bg-muted/50 text-muted-foreground border-b border-border/60">
               <tr>
                 <th className="px-3 py-2">Time</th>

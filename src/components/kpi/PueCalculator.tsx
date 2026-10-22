@@ -140,7 +140,7 @@ export function PueCalculator() {
           {/* Form Inputs */}
           <div className="space-y-4">
             <div>
-              <div className="flex justify-between items-center mb-1.5">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 mb-1.5">
                 <label
                   htmlFor="pue-facility-input"
                   className="text-xs font-semibold text-white flex items-center gap-1.5"
@@ -155,6 +155,7 @@ export function PueCalculator() {
               <input
                 id="pue-facility-input"
                 type="number"
+                inputMode="decimal"
                 min="0"
                 step="100"
                 value={facilityEnergy}
@@ -164,7 +165,7 @@ export function PueCalculator() {
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-1.5">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 mb-1.5">
                 <label
                   htmlFor="pue-it-input"
                   className="text-xs font-semibold text-white flex items-center gap-1.5"
@@ -179,6 +180,7 @@ export function PueCalculator() {
               <input
                 id="pue-it-input"
                 type="number"
+                inputMode="decimal"
                 min="1"
                 step="100"
                 value={itEnergy}

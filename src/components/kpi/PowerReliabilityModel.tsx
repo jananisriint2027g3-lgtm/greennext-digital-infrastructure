@@ -149,7 +149,7 @@ export function PowerReliabilityModel() {
           </div>
 
           <div className="space-y-3 font-mono text-xs">
-            <div className="flex items-center justify-between p-2.5 rounded bg-[#0B0F17] border border-[#1E293B]">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 p-2.5 rounded bg-[#0B0F17] border border-[#1E293B]">
               <span className="text-[#94A3B8]">Incoming Grid Utility:</span>
               <span
                 className={
@@ -162,7 +162,7 @@ export function PowerReliabilityModel() {
               </span>
             </div>
 
-            <div className="flex items-center justify-between p-2.5 rounded bg-[#0B0F17] border border-[#1E293B]">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 p-2.5 rounded bg-[#0B0F17] border border-[#1E293B]">
               <span className="text-[#94A3B8]">UPS Double-Conversion:</span>
               <span className="text-[#10B981] font-bold">
                 {simState === "utility_fail"
@@ -171,7 +171,7 @@ export function PowerReliabilityModel() {
               </span>
             </div>
 
-            <div className="flex items-center justify-between p-2.5 rounded bg-[#0B0F17] border border-[#1E293B]">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 p-2.5 rounded bg-[#0B0F17] border border-[#1E293B]">
               <span className="text-[#94A3B8]">Diesel Generator Plant:</span>
               <span
                 className={
@@ -192,7 +192,7 @@ export function PowerReliabilityModel() {
               <button
                 type="button"
                 onClick={runSimulation}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#F59E0B] text-[#070A0E] text-xs font-bold hover:bg-[#F59E0B]/90 transition-colors"
+                className="w-full flex items-center justify-center gap-2 min-h-[44px] py-3 rounded-lg bg-[#F59E0B] text-[#070A0E] text-xs font-bold hover:bg-[#F59E0B]/90 transition-colors"
               >
                 <Play size={14} />
                 Simulate Grid Drop
@@ -201,7 +201,7 @@ export function PowerReliabilityModel() {
               <button
                 type="button"
                 onClick={resetSim}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#1E293B] text-white text-xs font-semibold hover:bg-[#334155] transition-colors"
+                className="w-full flex items-center justify-center gap-2 min-h-[44px] py-3 rounded-lg bg-[#1E293B] text-white text-xs font-semibold hover:bg-[#334155] transition-colors"
               >
                 <RefreshCw size={14} />
                 Restore Grid Utility

@@ -85,6 +85,7 @@ export function ReliabilityMetricsModel() {
                 type="number"
                 min="1"
                 step="1"
+                inputMode="numeric"
                 value={unitCount}
                 onChange={(e) => setUnitCount(Math.max(1, parseInt(e.target.value) || 1))}
                 className="mt-1 w-full rounded border border-border bg-background px-3 py-1.5 text-sm font-mono text-foreground"
@@ -103,6 +104,7 @@ export function ReliabilityMetricsModel() {
                 type="number"
                 min="1"
                 step="24"
+                inputMode="decimal"
                 value={periodHours}
                 onChange={(e) => setPeriodHours(Math.max(1, parseFloat(e.target.value) || 1))}
                 className="mt-1 w-full rounded border border-border bg-background px-3 py-1.5 text-sm font-mono text-foreground"
@@ -121,6 +123,7 @@ export function ReliabilityMetricsModel() {
                 type="number"
                 min="0"
                 step="1"
+                inputMode="numeric"
                 value={failures}
                 onChange={(e) => setFailures(Math.max(0, parseInt(e.target.value) || 0))}
                 className="mt-1 w-full rounded border border-border bg-background px-3 py-1.5 text-sm font-mono text-foreground"
@@ -230,6 +233,7 @@ export function ReliabilityMetricsModel() {
                 type="number"
                 min="0"
                 step="10"
+                inputMode="decimal"
                 value={repairMinutes}
                 onChange={(e) => setRepairMinutes(Math.max(0, parseFloat(e.target.value) || 0))}
                 className="mt-1 w-full rounded border border-border bg-background px-3 py-1.5 text-sm font-mono text-foreground"
@@ -244,6 +248,7 @@ export function ReliabilityMetricsModel() {
                 type="number"
                 min="1"
                 step="1"
+                inputMode="numeric"
                 value={incidents}
                 onChange={(e) => setIncidents(Math.max(1, parseInt(e.target.value) || 1))}
                 className="mt-1 w-full rounded border border-border bg-background px-3 py-1.5 text-sm font-mono text-foreground"
@@ -279,7 +284,7 @@ export function ReliabilityMetricsModel() {
               </span>
             </h4>
 
-            <div className="grid grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
                 <label htmlFor={detectionInputId} className="text-muted-foreground">
                   1. MTTD (Detection):
@@ -289,6 +294,7 @@ export function ReliabilityMetricsModel() {
                     id={detectionInputId}
                     type="number"
                     min="0"
+                    inputMode="decimal"
                     value={lifecycle.detectionMin}
                     onChange={(e) =>
                       setLifecycle({ ...lifecycle, detectionMin: parseFloat(e.target.value) || 0 })
@@ -307,6 +313,7 @@ export function ReliabilityMetricsModel() {
                     id={triageInputId}
                     type="number"
                     min="0"
+                    inputMode="decimal"
                     value={lifecycle.triageMin}
                     onChange={(e) =>
                       setLifecycle({ ...lifecycle, triageMin: parseFloat(e.target.value) || 0 })
@@ -325,6 +332,7 @@ export function ReliabilityMetricsModel() {
                     id={dispatchInputId}
                     type="number"
                     min="0"
+                    inputMode="decimal"
                     value={lifecycle.dispatchMin}
                     onChange={(e) =>
                       setLifecycle({ ...lifecycle, dispatchMin: parseFloat(e.target.value) || 0 })
@@ -343,6 +351,7 @@ export function ReliabilityMetricsModel() {
                     id={activeRepairInputId}
                     type="number"
                     min="0"
+                    inputMode="decimal"
                     value={lifecycle.activeRepairMin}
                     onChange={(e) =>
                       setLifecycle({
@@ -355,7 +364,7 @@ export function ReliabilityMetricsModel() {
                   <span className="text-muted-foreground text-[10px]">m</span>
                 </div>
               </div>
-              <div className="col-span-2">
+              <div className="col-span-1 sm:col-span-2">
                 <label htmlFor={verificationInputId} className="text-muted-foreground">
                   5. Return-to-Service Verification:
                 </label>
@@ -364,6 +373,7 @@ export function ReliabilityMetricsModel() {
                     id={verificationInputId}
                     type="number"
                     min="0"
+                    inputMode="decimal"
                     value={lifecycle.verificationMin}
                     onChange={(e) =>
                       setLifecycle({

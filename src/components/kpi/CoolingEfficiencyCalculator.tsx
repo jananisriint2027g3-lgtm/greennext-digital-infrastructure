@@ -38,11 +38,11 @@ export function CoolingEfficiencyCalculator() {
             (kW/ton), and secondary loop sensible heat dissipation.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setActiveTab("cop")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+            className={`min-h-[40px] px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
               activeTab === "cop"
                 ? "bg-[#10B981] text-[#070A0E] font-bold"
                 : "bg-[#121824] border border-[#1E293B] text-[#94A3B8] hover:text-white"
@@ -53,7 +53,7 @@ export function CoolingEfficiencyCalculator() {
           <button
             type="button"
             onClick={() => setActiveTab("liquid")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+            className={`min-h-[40px] px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
               activeTab === "liquid"
                 ? "bg-[#10B981] text-[#070A0E] font-bold"
                 : "bg-[#121824] border border-[#1E293B] text-[#94A3B8] hover:text-white"
@@ -94,6 +94,7 @@ export function CoolingEfficiencyCalculator() {
                 <input
                   id="cooling-thermal-output"
                   type="number"
+                  inputMode="decimal"
                   min="1"
                   step="25"
                   value={coolingOutputKw}
@@ -116,6 +117,7 @@ export function CoolingEfficiencyCalculator() {
                 <input
                   id="cooling-elec-input"
                   type="number"
+                  inputMode="decimal"
                   min="1"
                   step="5"
                   value={electricalInputKw}
@@ -215,6 +217,7 @@ export function CoolingEfficiencyCalculator() {
                 <input
                   id="flow-rate-input"
                   type="number"
+                  inputMode="decimal"
                   min="1"
                   step="10"
                   value={flowRateLpm}
@@ -234,6 +237,7 @@ export function CoolingEfficiencyCalculator() {
                   <input
                     id="supply-temp-input"
                     type="number"
+                    inputMode="decimal"
                     step="0.5"
                     value={supplyTempC}
                     onChange={(e) => setSupplyTempC(Number(e.target.value))}
@@ -253,6 +257,7 @@ export function CoolingEfficiencyCalculator() {
                   <input
                     id="return-temp-input"
                     type="number"
+                    inputMode="decimal"
                     step="0.5"
                     value={returnTempC}
                     onChange={(e) => setReturnTempC(Number(e.target.value))}

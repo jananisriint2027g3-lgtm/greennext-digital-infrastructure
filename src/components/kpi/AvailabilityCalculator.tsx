@@ -172,6 +172,7 @@ export function AvailabilityCalculator() {
               <input
                 id="avail-custom-hours"
                 type="number"
+                inputMode="numeric"
                 min="1"
                 step="1"
                 value={measurementHours}
@@ -194,6 +195,7 @@ export function AvailabilityCalculator() {
             <input
               id="avail-downtime-minutes"
               type="number"
+              inputMode="numeric"
               min="0"
               step="1"
               value={downtimeMinutes}
@@ -300,8 +302,8 @@ export function AvailabilityCalculator() {
           <ShieldCheck size={16} className="text-[#10B981]" />
           Industry Benchmark: The "Nines of Availability" Budget Table
         </h4>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs font-mono">
+        <div className="overflow-x-auto pb-2">
+          <table className="w-full text-left text-xs font-mono min-w-[560px]">
             <thead>
               <tr className="border-b border-[#1E293B] text-[#94A3B8]">
                 <th className="py-2.5 pr-4 font-semibold">Availability %</th>

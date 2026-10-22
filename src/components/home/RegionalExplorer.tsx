@@ -167,6 +167,33 @@ export function RegionalExplorer() {
         </div>
       </div>
 
+      {/* Quick Region Selector Pills for mobile / touch accessibility */}
+      <div className="flex flex-wrap items-center gap-2 mb-6 lg:hidden">
+        {Object.entries(MAP_LOCATIONS).map(([id, loc]) => {
+          const isSelected = selectedRegionId === id;
+          return (
+            <button
+              key={id}
+              onClick={() => {
+                setSelectedRegionId(id);
+                trackEvent({
+                  tab: "Regions",
+                  event: "region_tab_select",
+                  value: `${loc.label} (${loc.code})`,
+                });
+              }}
+              className={`px-3.5 py-2 min-h-[40px] rounded-lg text-xs font-mono font-medium transition-colors ${
+                isSelected
+                  ? "bg-[#10B981] text-[#070A0E] font-bold shadow-md"
+                  : "bg-[#0B0F17] text-[#94A3B8] border border-[#1E293B] hover:text-white"
+              }`}
+            >
+              {loc.label} ({loc.code})
+            </button>
+          );
+        })}
+      </div>
+
       {/* Main Split Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-8">
 
@@ -398,6 +425,8 @@ export function RegionalExplorer() {
                       }
                     }}
                   >
+                    {/* Generous touch target for mobile fingertips */}
+                    <circle cx={mx} cy={my} r="26" fill="transparent" />
                     {isActive ? (
                       <>
                         {/* Outer animated pulse ring */}

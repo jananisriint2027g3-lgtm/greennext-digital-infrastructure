@@ -149,7 +149,7 @@ export function InfrastructureDataExplorer() {
               <button
                 key={tab.id}
                 onClick={() => setSelectedCategory(tab.id as typeof selectedCategory)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                className={`px-3 py-2 min-h-[38px] rounded-lg text-xs font-medium transition-colors ${
                   isActive
                     ? "bg-[#10B981] text-[#070A0E] font-semibold"
                     : "bg-[#121824] text-[#94A3B8] hover:text-white hover:bg-[#1A2234]"
@@ -162,13 +162,13 @@ export function InfrastructureDataExplorer() {
         </div>
 
         {/* State Filter & Search */}
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
+          <div className="relative w-full sm:w-auto">
             <select
               value={selectedState}
               onChange={(e) => setSelectedState(e.target.value)}
               aria-label="Filter by State"
-              className="appearance-none bg-[#121824] border border-[#1E293B] text-white text-xs rounded-lg px-3 py-1.5 pr-8 hover:border-[#334155] focus:outline-none focus:border-[#10B981]"
+              className="w-full sm:w-auto appearance-none bg-[#121824] border border-[#1E293B] text-white text-xs rounded-lg px-3 py-2 min-h-[38px] pr-8 hover:border-[#334155] focus:outline-none focus:border-[#10B981]"
             >
               <option value="all">All States</option>
               {states.map((st) => (
@@ -179,18 +179,18 @@ export function InfrastructureDataExplorer() {
             </select>
             <Filter
               size={12}
-              className="absolute right-2.5 top-2.5 text-[#64748B] pointer-events-none"
+              className="absolute right-2.5 top-3.5 text-[#64748B] pointer-events-none"
             />
           </div>
 
           <div className="relative w-full sm:w-64">
-            <Search size={14} className="absolute left-3 top-2.5 text-[#64748B]" />
+            <Search size={14} className="absolute left-3 top-3 text-[#64748B]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search node, hub, or source..."
-              className="w-full bg-[#121824] border border-[#1E293B] text-white text-xs rounded-lg pl-8 pr-3 py-1.5 placeholder-[#64748B] hover:border-[#334155] focus:outline-none focus:border-[#10B981]"
+              className="w-full bg-[#121824] border border-[#1E293B] text-white text-xs rounded-lg pl-8 pr-3 py-2 min-h-[38px] placeholder-[#64748B] hover:border-[#334155] focus:outline-none focus:border-[#10B981]"
             />
           </div>
         </div>
@@ -199,7 +199,7 @@ export function InfrastructureDataExplorer() {
       {/* Structured Screener Table */}
       <div className="rounded-2xl border border-[#1E293B] bg-[#0B0F17] overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full min-w-[760px] text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-[#1E293B] bg-[#0E1522] text-[#94A3B8] font-mono uppercase text-[11px]">
                 <th className="p-3.5 pl-5">
@@ -345,7 +345,7 @@ export function InfrastructureDataExplorer() {
       {/* Provenance & Compliance Modal / Drawer */}
       {selectedRecord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="w-full max-w-lg rounded-2xl border border-[#1E293B] bg-[#0E1522] p-6 shadow-2xl flex flex-col gap-5">
+          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-[#1E293B] bg-[#0E1522] p-6 shadow-2xl flex flex-col gap-5">
             <div className="flex items-start justify-between pb-4 border-b border-[#1E293B]">
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-wider text-[#10B981] px-2 py-0.5 rounded bg-[#10B981]/10">
@@ -358,7 +358,8 @@ export function InfrastructureDataExplorer() {
               </div>
               <button
                 onClick={() => setSelectedRecord(null)}
-                className="text-[#64748B] hover:text-white text-lg font-bold p-1 rounded-md"
+                className="text-[#64748B] hover:text-white text-lg font-bold min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md"
+                aria-label="Close dialog"
               >
                 ✕
               </button>

@@ -154,7 +154,7 @@ export function MaintenanceComplianceWidget() {
             Preventive Maintenance Schedule Compliance
           </h4>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label htmlFor={tasksDueInputId} className="text-xs text-muted-foreground">
                 Tasks Due in Window
@@ -163,6 +163,7 @@ export function MaintenanceComplianceWidget() {
                 id={tasksDueInputId}
                 type="number"
                 min="0"
+                inputMode="numeric"
                 value={tasksDue}
                 onChange={(e) => setTasksDue(Math.max(0, parseInt(e.target.value) || 0))}
                 className="mt-1 w-full rounded border border-border bg-background px-2.5 py-1 text-sm font-mono text-foreground"
@@ -177,6 +178,7 @@ export function MaintenanceComplianceWidget() {
                 type="number"
                 min="0"
                 max={tasksDue}
+                inputMode="numeric"
                 value={completedOnTime}
                 onChange={(e) => setCompletedOnTime(Math.max(0, parseInt(e.target.value) || 0))}
                 className="mt-1 w-full rounded border border-border bg-background px-2.5 py-1 text-sm font-mono text-foreground"
@@ -190,6 +192,7 @@ export function MaintenanceComplianceWidget() {
                 id={tasksOverdueInputId}
                 type="number"
                 min="0"
+                inputMode="numeric"
                 value={tasksOverdue}
                 onChange={(e) => setTasksOverdue(Math.max(0, parseInt(e.target.value) || 0))}
                 className="mt-1 w-full rounded border border-border bg-background px-2.5 py-1 text-sm font-mono text-foreground"
@@ -218,7 +221,7 @@ export function MaintenanceComplianceWidget() {
             Planned vs Reactive Labor Ratio (PMP)
           </h4>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label htmlFor={plannedHoursInputId} className="text-xs text-muted-foreground">
                 Planned PM Hours
@@ -227,6 +230,7 @@ export function MaintenanceComplianceWidget() {
                 id={plannedHoursInputId}
                 type="number"
                 min="0"
+                inputMode="decimal"
                 value={plannedHours}
                 onChange={(e) => setPlannedHours(Math.max(0, parseFloat(e.target.value) || 0))}
                 className="mt-1 w-full rounded border border-border bg-background px-2.5 py-1 text-sm font-mono text-foreground"
@@ -240,6 +244,7 @@ export function MaintenanceComplianceWidget() {
                 id={unplannedHoursInputId}
                 type="number"
                 min="0"
+                inputMode="decimal"
                 value={unplannedHours}
                 onChange={(e) => setUnplannedHours(Math.max(0, parseFloat(e.target.value) || 0))}
                 className="mt-1 w-full rounded border border-border bg-background px-2.5 py-1 text-sm font-mono text-foreground"
@@ -269,7 +274,7 @@ export function MaintenanceComplianceWidget() {
         </h4>
 
         <div className="mt-3 overflow-x-auto rounded-lg border border-border/60">
-          <table className="w-full text-left text-xs">
+          <table className="w-full min-w-[640px] text-left text-xs">
             <thead className="bg-muted/50 text-muted-foreground border-b border-border/60">
               <tr>
                 <th className="px-3 py-2">WO #</th>

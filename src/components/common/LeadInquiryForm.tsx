@@ -512,7 +512,7 @@ export function LeadInquiryForm({ leadType, onLeadTypeChange }: LeadFormProps) {
       <button
         disabled={status === "loading"}
         type="submit"
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#10B981] py-3 text-sm font-semibold text-[#070A0E] transition-colors hover:bg-[#34D399] disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-lg bg-[#10B981] py-3 text-sm font-semibold text-[#070A0E] transition-colors hover:bg-[#34D399] disabled:cursor-not-allowed disabled:opacity-60"
       >
         <Send size={15} />
         {status === "loading" ? "Submitting..." : "Submit inquiry"}
@@ -532,7 +532,7 @@ export function LeadInquiryForm({ leadType, onLeadTypeChange }: LeadFormProps) {
                   onLeadTypeChange(type);
                   setStatus("idle");
                 }}
-                className={`rounded-full border px-3 py-1.5 text-[11px] transition-colors ${type === leadType ? "border-[#10B981] text-[#10B981]" : "border-[#334155] text-[#94A3B8] hover:border-[#64748B]"}`}
+                className={`rounded-full border px-3.5 py-2 min-h-[38px] text-xs transition-colors ${type === leadType ? "border-[#10B981] text-[#10B981]" : "border-[#334155] text-[#94A3B8] hover:border-[#64748B]"}`}
               >
                 {type}
               </button>

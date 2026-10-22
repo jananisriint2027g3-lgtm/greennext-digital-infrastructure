@@ -4,8 +4,19 @@
 
 @layer components {
   .label { @apply mb-1.5 block text-[11px] font-mono uppercase tracking-wider text-[#94A3B8]; }
-  .input { @apply w-full rounded-lg border border-[#1E293B] bg-[#121824] px-3.5 py-2.5 text-sm text-white transition-colors focus:border-[#10B981] focus:outline-none; }
+  .input { @apply w-full rounded-lg border border-[#1E293B] bg-[#121824] px-3.5 py-2.5 text-base sm:text-sm text-white transition-colors focus:border-[#10B981] focus:outline-none; }
 }
+
+/* Optimize touch responsiveness and prevent 300ms mobile tap delay */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"] {
+  touch-action: manipulation;
+}
+
 
 @custom-variant dark (&:is(.dark *));
 

@@ -238,7 +238,7 @@ export function PageTemplate({
               </div>
               <Link
                 to={data.cta.path}
-                className="px-5 py-2.5 rounded-lg bg-[#10B981] text-[#070A0E] text-xs font-semibold hover:bg-[#34D399] transition-all flex items-center gap-2 flex-shrink-0"
+                className="px-5 py-2.5 min-h-[44px] rounded-lg bg-[#10B981] text-[#070A0E] text-xs font-semibold hover:bg-[#34D399] transition-all flex items-center justify-center sm:justify-start gap-2 flex-shrink-0"
               >
                 <span>{data.cta.label}</span>
               </Link>
@@ -261,7 +261,7 @@ export function PageTemplate({
                   <Link
                     key={rel.title}
                     to={rel.path}
-                    className="p-3 rounded-lg border border-[#1E293B] bg-[#121824] hover:bg-[#1A2234] hover:border-[#334155] text-xs font-medium text-white transition-all flex items-center justify-between group"
+                    className="p-3 min-h-[44px] rounded-lg border border-[#1E293B] bg-[#121824] hover:bg-[#1A2234] hover:border-[#334155] text-xs font-medium text-white transition-all flex items-center justify-between group"
                   >
                     <span className="group-hover:text-[#10B981] transition-colors">
                       {rel.title}

@@ -655,7 +655,7 @@ export function SiteFooter() {
               </p>
             </div>
 
-            <div className="flex items-center gap-4 flex-shrink-0 font-mono text-[11px]">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 flex-shrink-0 font-mono text-[11px]">
               <span>© {new Date().getFullYear()} GreenNext Initiative</span>
               <span>South India</span>
               <span className="text-[#334155]">•</span>

@@ -330,13 +330,14 @@ export function SiteHeader() {
         <div className="flex items-center gap-2 xl:hidden">
           <Link
             to="/contact"
-            className="px-3 py-1 rounded bg-[#10B981] text-[#070A0E] text-xs font-semibold sm:hidden"
+            className="min-h-[40px] px-3.5 py-2 rounded-lg bg-[#10B981] text-[#070A0E] text-xs font-semibold sm:hidden flex items-center justify-center shadow-sm"
           >
             Connect
           </Link>
           <button
+            ref={hamburgerRef}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-white hover:bg-[#121824] transition-colors focus:outline-none"
+            className="min-w-[44px] min-h-[44px] p-2.5 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-white hover:bg-[#121824] transition-colors focus:outline-none flex items-center justify-center"
             aria-label="Toggle navigation menu"
             aria-expanded={mobileMenuOpen}
           >
@@ -347,7 +348,7 @@ export function SiteHeader() {
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="xl:hidden fixed inset-x-0 top-[61px] bottom-0 bg-[#070A0E] border-t border-[#1E293B] z-50 overflow-y-auto p-4 sm:p-6 animate-in slide-in-from-top-4 duration-200">
+        <div className="xl:hidden fixed inset-x-0 top-[60px] sm:top-[68px] bottom-0 bg-[#070A0E] border-t border-[#1E293B] z-50 overflow-y-auto p-4 sm:p-6 pb-[calc(4rem+env(safe-area-inset-bottom))] animate-in slide-in-from-top-4 duration-200">
           <div className="flex flex-col gap-2 max-w-lg mx-auto pb-12">
             {NAVIGATION_STRUCTURE.map((cat) => {
               const hasSubmenu = cat.items && cat.items.length > 0;
@@ -368,7 +369,7 @@ export function SiteHeader() {
                     key={cat.id}
                     to={cat.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
+                    className={`min-h-[44px] flex items-center p-3 rounded-lg border text-sm font-medium transition-colors ${
                       isCurrent
                         ? "bg-[#10B981]/15 border-[#10B981]/40 text-[#10B981]"
                         : "bg-[#0B0F17] border-[#1E293B] text-white hover:border-[#334155]"
@@ -384,11 +385,11 @@ export function SiteHeader() {
                   key={cat.id}
                   className="rounded-lg border border-[#1E293B] bg-[#0B0F17] overflow-hidden"
                 >
-                  <div className="flex items-center justify-between p-3">
+                  <div className="flex items-center justify-between p-2 pl-3">
                     <Link
                       to={cat.path}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`text-sm font-medium ${
+                      className={`min-h-[44px] flex items-center flex-1 text-sm font-medium ${
                         isCurrent ? "text-[#10B981]" : "text-white"
                       }`}
                     >
@@ -396,11 +397,12 @@ export function SiteHeader() {
                     </Link>
                     <button
                       onClick={() => toggleMobileCategory(cat.id)}
-                      className="p-1 rounded text-[#94A3B8] hover:text-white"
+                      className="min-w-[44px] min-h-[44px] rounded-lg text-[#94A3B8] hover:text-white hover:bg-[#121824] flex items-center justify-center transition-colors"
                       aria-label={`Toggle ${cat.label} submenu`}
+                      aria-expanded={isExpanded}
                     >
                       <ChevronDown
-                        size={16}
+                        size={18}
                         className={`transition-transform duration-200 ${
                           isExpanded ? "rotate-180 text-[#10B981]" : ""
                         }`}
@@ -417,7 +419,7 @@ export function SiteHeader() {
                             key={sub.id}
                             to={sub.path}
                             onClick={() => setMobileMenuOpen(false)}
-                            className={`p-2 rounded text-xs transition-colors flex items-center justify-between ${
+                            className={`min-h-[40px] px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between ${
                               isSubCurrent
                                 ? "bg-[#10B981]/20 text-[#10B981] font-semibold"
                                 : "text-[#94A3B8] hover:text-white hover:bg-[#1A2234]"

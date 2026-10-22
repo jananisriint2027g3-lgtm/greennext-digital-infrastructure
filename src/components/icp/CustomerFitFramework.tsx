@@ -526,7 +526,7 @@ export function CustomerFitFramework() {
                       page: "/icp",
                     })
                   }
-                  className="w-full py-2.5 px-4 rounded-lg bg-[#10B981] text-[#070A0E] text-xs font-semibold hover:bg-[#34D399] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#10B981]/20"
+                  className="w-full min-h-[44px] py-2.5 px-4 rounded-lg bg-[#10B981] text-[#070A0E] text-xs font-semibold hover:bg-[#34D399] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#10B981]/20"
                 >
                   <span>Connect with Engineering Planning</span>
                   <ArrowRight size={14} />
@@ -534,7 +534,7 @@ export function CustomerFitFramework() {
 
                 <Link
                   to="/solutions/energy-calculator"
-                  className="w-full py-2 px-4 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-white hover:bg-[#1A2234] text-xs font-medium transition-colors flex items-center justify-center gap-2"
+                  className="w-full min-h-[44px] py-2 px-4 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-white hover:bg-[#1A2234] text-xs font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   <span>Explore Energy Calculator</span>
                 </Link>
@@ -584,7 +584,7 @@ export function CustomerFitFramework() {
                     page: "/icp",
                   });
                 }}
-                className={`p-3 rounded-lg border text-left transition-all flex items-center gap-2.5 ${
+                className={`p-3 min-h-[44px] rounded-lg border text-left transition-all flex items-center gap-2.5 ${
                   isActive
                     ? "bg-[#1A2234] border-[#10B981] text-white"
                     : "bg-[#121824] border-[#1E293B] text-[#94A3B8] hover:border-[#334155] hover:text-white"
