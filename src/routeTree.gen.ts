@@ -11,12 +11,15 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as RedisDemoRouteImport } from './routes/redis-demo'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as AboutSlugRouteImport } from './routes/about/$slug'
 import { Route as AutomationIndexRouteImport } from './routes/automation/index'
 import { Route as AutomationSlugRouteImport } from './routes/automation/$slug'
 import { Route as EnergyIndexRouteImport } from './routes/energy/index'
 import { Route as EnergySlugRouteImport } from './routes/energy/$slug'
+import { Route as IcpIndexRouteImport } from './routes/icp/index'
+import { Route as IcpSlugRouteImport } from './routes/icp/$slug'
 import { Route as InfrastructureIndexRouteImport } from './routes/infrastructure/index'
 import { Route as InfrastructureSlugRouteImport } from './routes/infrastructure/$slug'
 import { Route as RegionsIndexRouteImport } from './routes/regions/index'
@@ -38,6 +41,11 @@ const IndexRoute = IndexRouteImport.update({
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RedisDemoRoute = RedisDemoRouteImport.update({
+  id: '/redis-demo',
+  path: '/redis-demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutIndexRoute = AboutIndexRouteImport.update({
@@ -68,6 +76,16 @@ const EnergyIndexRoute = EnergyIndexRouteImport.update({
 const EnergySlugRoute = EnergySlugRouteImport.update({
   id: '/energy/$slug',
   path: '/energy/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IcpIndexRoute = IcpIndexRouteImport.update({
+  id: '/icp/',
+  path: '/icp/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IcpSlugRoute = IcpSlugRouteImport.update({
+  id: '/icp/$slug',
+  path: '/icp/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InfrastructureIndexRoute = InfrastructureIndexRouteImport.update({
@@ -137,9 +155,11 @@ const SustainabilitySlugRoute = SustainabilitySlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
+  '/redis-demo': typeof RedisDemoRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
   '/energy/$slug': typeof EnergySlugRoute
+  '/icp/$slug': typeof IcpSlugRoute
   '/infrastructure/$slug': typeof InfrastructureSlugRoute
   '/regions/$slug': typeof RegionsSlugRoute
   '/solutions/$slug': typeof SolutionsSlugRoute
@@ -151,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/about/': typeof AboutIndexRoute
   '/automation/': typeof AutomationIndexRoute
   '/energy/': typeof EnergyIndexRoute
+  '/icp/': typeof IcpIndexRoute
   '/infrastructure/': typeof InfrastructureIndexRoute
   '/regions/': typeof RegionsIndexRoute
   '/solutions/': typeof SolutionsIndexRoute
@@ -159,9 +180,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
+  '/redis-demo': typeof RedisDemoRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
   '/energy/$slug': typeof EnergySlugRoute
+  '/icp/$slug': typeof IcpSlugRoute
   '/infrastructure/$slug': typeof InfrastructureSlugRoute
   '/regions/$slug': typeof RegionsSlugRoute
   '/solutions/$slug': typeof SolutionsSlugRoute
@@ -173,6 +196,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutIndexRoute
   '/automation': typeof AutomationIndexRoute
   '/energy': typeof EnergyIndexRoute
+  '/icp': typeof IcpIndexRoute
   '/infrastructure': typeof InfrastructureIndexRoute
   '/regions': typeof RegionsIndexRoute
   '/solutions': typeof SolutionsIndexRoute
@@ -182,9 +206,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
+  '/redis-demo': typeof RedisDemoRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
   '/energy/$slug': typeof EnergySlugRoute
+  '/icp/$slug': typeof IcpSlugRoute
   '/infrastructure/$slug': typeof InfrastructureSlugRoute
   '/regions/$slug': typeof RegionsSlugRoute
   '/solutions/$slug': typeof SolutionsSlugRoute
@@ -196,6 +222,7 @@ export interface FileRoutesById {
   '/about/': typeof AboutIndexRoute
   '/automation/': typeof AutomationIndexRoute
   '/energy/': typeof EnergyIndexRoute
+  '/icp/': typeof IcpIndexRoute
   '/infrastructure/': typeof InfrastructureIndexRoute
   '/regions/': typeof RegionsIndexRoute
   '/solutions/': typeof SolutionsIndexRoute
@@ -206,9 +233,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/contact'
+    | '/redis-demo'
     | '/about/$slug'
     | '/automation/$slug'
     | '/energy/$slug'
+    | '/icp/$slug'
     | '/infrastructure/$slug'
     | '/regions/$slug'
     | '/solutions/$slug'
@@ -220,6 +249,7 @@ export interface FileRouteTypes {
     | '/about/'
     | '/automation/'
     | '/energy/'
+    | '/icp/'
     | '/infrastructure/'
     | '/regions/'
     | '/solutions/'
@@ -228,9 +258,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/contact'
+    | '/redis-demo'
     | '/about/$slug'
     | '/automation/$slug'
     | '/energy/$slug'
+    | '/icp/$slug'
     | '/infrastructure/$slug'
     | '/regions/$slug'
     | '/solutions/$slug'
@@ -242,6 +274,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/automation'
     | '/energy'
+    | '/icp'
     | '/infrastructure'
     | '/regions'
     | '/solutions'
@@ -250,9 +283,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/contact'
+    | '/redis-demo'
     | '/about/$slug'
     | '/automation/$slug'
     | '/energy/$slug'
+    | '/icp/$slug'
     | '/infrastructure/$slug'
     | '/regions/$slug'
     | '/solutions/$slug'
@@ -264,6 +299,7 @@ export interface FileRouteTypes {
     | '/about/'
     | '/automation/'
     | '/energy/'
+    | '/icp/'
     | '/infrastructure/'
     | '/regions/'
     | '/solutions/'
@@ -273,9 +309,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ContactRoute: typeof ContactRoute
+  RedisDemoRoute: typeof RedisDemoRoute
   AboutSlugRoute: typeof AboutSlugRoute
   AutomationSlugRoute: typeof AutomationSlugRoute
   EnergySlugRoute: typeof EnergySlugRoute
+  IcpSlugRoute: typeof IcpSlugRoute
   InfrastructureSlugRoute: typeof InfrastructureSlugRoute
   RegionsSlugRoute: typeof RegionsSlugRoute
   SolutionsSlugRoute: typeof SolutionsSlugRoute
@@ -287,6 +325,7 @@ export interface RootRouteChildren {
   AboutIndexRoute: typeof AboutIndexRoute
   AutomationIndexRoute: typeof AutomationIndexRoute
   EnergyIndexRoute: typeof EnergyIndexRoute
+  IcpIndexRoute: typeof IcpIndexRoute
   InfrastructureIndexRoute: typeof InfrastructureIndexRoute
   RegionsIndexRoute: typeof RegionsIndexRoute
   SolutionsIndexRoute: typeof SolutionsIndexRoute
@@ -307,6 +346,13 @@ declare module '@tanstack/react-router' {
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/redis-demo': {
+      id: '/redis-demo'
+      path: '/redis-demo'
+      fullPath: '/redis-demo'
+      preLoaderRoute: typeof RedisDemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about/': {
@@ -349,6 +395,20 @@ declare module '@tanstack/react-router' {
       path: '/energy/$slug'
       fullPath: '/energy/$slug'
       preLoaderRoute: typeof EnergySlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/icp/': {
+      id: '/icp/'
+      path: '/icp'
+      fullPath: '/icp/'
+      preLoaderRoute: typeof IcpIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/icp/$slug': {
+      id: '/icp/$slug'
+      path: '/icp/$slug'
+      fullPath: '/icp/$slug'
+      preLoaderRoute: typeof IcpSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/infrastructure/': {
@@ -441,9 +501,11 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ContactRoute: ContactRoute,
+  RedisDemoRoute: RedisDemoRoute,
   AboutSlugRoute: AboutSlugRoute,
   AutomationSlugRoute: AutomationSlugRoute,
   EnergySlugRoute: EnergySlugRoute,
+  IcpSlugRoute: IcpSlugRoute,
   InfrastructureSlugRoute: InfrastructureSlugRoute,
   RegionsSlugRoute: RegionsSlugRoute,
   SolutionsSlugRoute: SolutionsSlugRoute,
@@ -455,6 +517,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutIndexRoute: AboutIndexRoute,
   AutomationIndexRoute: AutomationIndexRoute,
   EnergyIndexRoute: EnergyIndexRoute,
+  IcpIndexRoute: IcpIndexRoute,
   InfrastructureIndexRoute: InfrastructureIndexRoute,
   RegionsIndexRoute: RegionsIndexRoute,
   SolutionsIndexRoute: SolutionsIndexRoute,

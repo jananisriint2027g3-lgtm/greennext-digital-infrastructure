@@ -118,6 +118,7 @@ test("WebMining: Sorting and Aggregate Analytics", () => {
   assert.ok(summary.monitoredNodesCount > 0);
   assert.ok(summary.averageCleanEnergyPct > 0);
   assert.ok(summary.averagePue !== null && summary.averagePue >= 1.0 && summary.averagePue <= 2.0);
+  assert.ok(summary.capacityWeightedPue !== null && summary.capacityWeightedPue >= 1.0 && summary.capacityWeightedPue <= 2.0);
   assert.ok(summary.statesCovered.includes("Tamil Nadu"));
   assert.ok(summary.statesCovered.includes("Karnataka"));
 });

@@ -79,21 +79,30 @@ export function InfrastructureDataExplorer() {
             </span>
             <span className="text-xs font-mono text-[#10B981]">MW</span>
           </div>
-          <span className="text-[10px] text-[#64748B] mt-1">Across monitored South India nodes</span>
+          <span className="text-[10px] text-[#64748B] mt-1">
+            Across monitored South India nodes
+          </span>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl border border-[#1E293B] bg-[#0B0F17] flex flex-col justify-between">
           <span className="text-[11px] font-mono uppercase tracking-wider text-[#94A3B8] flex items-center gap-1.5">
             <Server size={14} className="text-[#38BDF8]" />
-            Average Facility PUE
+            Fleet Aggregate PUE
           </span>
           <div className="flex items-baseline gap-1 mt-2">
             <span className="text-2xl sm:text-3xl font-bold font-mono text-white">
-              {summary.averagePue !== null ? summary.averagePue.toFixed(2) : "1.23"}
+              {summary.capacityWeightedPue !== null
+                ? summary.capacityWeightedPue.toFixed(2)
+                : summary.averagePue !== null
+                  ? summary.averagePue.toFixed(2)
+                  : "1.23"}
             </span>
             <span className="text-xs font-mono text-[#38BDF8]">Ratio</span>
           </div>
-          <span className="text-[10px] text-[#64748B] mt-1">Sustained operational efficiency</span>
+          <span className="text-[10px] text-[#64748B] mt-1">
+            Capacity-weighted aggregate (Mean:{" "}
+            {summary.averagePue !== null ? summary.averagePue.toFixed(2) : "—"})
+          </span>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl border border-[#1E293B] bg-[#0B0F17] flex flex-col justify-between">
@@ -168,7 +177,10 @@ export function InfrastructureDataExplorer() {
                 </option>
               ))}
             </select>
-            <Filter size={12} className="absolute right-2.5 top-2.5 text-[#64748B] pointer-events-none" />
+            <Filter
+              size={12}
+              className="absolute right-2.5 top-2.5 text-[#64748B] pointer-events-none"
+            />
           </div>
 
           <div className="relative w-full sm:w-64">
@@ -354,13 +366,17 @@ export function InfrastructureDataExplorer() {
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 rounded-xl border border-[#1E293B] bg-[#070A0E]">
-                <span className="text-[10px] text-[#64748B] font-mono uppercase">Capacity & Tier</span>
+                <span className="text-[10px] text-[#64748B] font-mono uppercase">
+                  Capacity & Tier
+                </span>
                 <p className="text-sm font-bold text-white font-mono mt-0.5">
                   {selectedRecord.capacityMw} MW · {selectedRecord.tierClassification}
                 </p>
               </div>
               <div className="p-3 rounded-xl border border-[#1E293B] bg-[#070A0E]">
-                <span className="text-[10px] text-[#64748B] font-mono uppercase">Efficiency Metrics</span>
+                <span className="text-[10px] text-[#64748B] font-mono uppercase">
+                  Efficiency Metrics
+                </span>
                 <p className="text-sm font-bold text-white font-mono mt-0.5">
                   PUE: {selectedRecord.pue ?? "N/A"} · Clean: {selectedRecord.cleanEnergySharePct}%
                 </p>
@@ -383,14 +399,18 @@ export function InfrastructureDataExplorer() {
                 <ExternalLink size={12} />
               </a>
               <span className="text-[10px] text-[#64748B] font-mono">
-                Audit Date: {new Date(selectedRecord.lastCollectedAt).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}
+                Audit Date:{" "}
+                {new Date(selectedRecord.lastCollectedAt).toLocaleDateString("en-IN", {
+                  timeZone: "Asia/Kolkata",
+                })}
               </span>
             </div>
 
             <div className="p-3 rounded-xl border border-[#1E293B] bg-[#121824] flex items-start gap-2.5 text-xs text-[#94A3B8]">
               <ShieldCheck size={16} className="text-[#10B981] shrink-0 mt-0.5" />
               <p className="leading-relaxed">
-                <strong className="text-white">Robots.txt & Compliance:</strong> {selectedRecord.complianceNote}
+                <strong className="text-white">Robots.txt & Compliance:</strong>{" "}
+                {selectedRecord.complianceNote}
               </p>
             </div>
 

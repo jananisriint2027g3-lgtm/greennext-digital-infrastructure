@@ -12,13 +12,15 @@ export interface MiningFilterOptions {
   maxPue?: number;
 }
 
-export type SortField = "name" | "capacityMw" | "pue" | "cleanEnergySharePct" | "carbonIntensityGco2" | "lastCollectedAt";
+export type SortField =
+  "name" | "capacityMw" | "pue" | "cleanEnergySharePct" | "carbonIntensityGco2" | "lastCollectedAt";
 export type SortDirection = "asc" | "desc";
 
 export interface AggregateSummary {
   totalTrackedCapacityMw: number;
   monitoredNodesCount: number;
-  averagePue: number | null;
+  averagePue: number | null; // Arithmetic mean of reported facility PUE values
+  capacityWeightedPue: number | null; // Energy/capacity-weighted aggregate fleet PUE: Sum(Facility MW) / Sum(IT MW)
   averageCleanEnergyPct: number;
   averageCarbonIntensityGco2: number;
   statesCovered: string[];
@@ -28,10 +30,16 @@ export interface AggregateSummary {
  * Validates, cleans, and normalizes a candidate data record mined from authorized public registries.
  * Ensures numbers are within physical bounds and strings are sanitized.
  */
-export function validateAndCleanRecord(candidate: Partial<InfrastructureDataRecord>): InfrastructureDataRecord | null {
+export function validateAndCleanRecord(
+  candidate: Partial<InfrastructureDataRecord>,
+): InfrastructureDataRecord | null {
   if (!candidate.id || typeof candidate.id !== "string") return null;
   if (!candidate.name || typeof candidate.name !== "string") return null;
-  if (!candidate.category || !["datacenter", "renewable_grid", "ai_compute"].includes(candidate.category)) return null;
+  if (
+    !candidate.category ||
+    !["datacenter", "renewable_grid", "ai_compute"].includes(candidate.category)
+  )
+    return null;
 
   const capacityMw = Number(candidate.capacityMw);
   if (isNaN(capacityMw) || capacityMw <= 0 || capacityMw > 100000) return null;
@@ -44,7 +52,10 @@ export function validateAndCleanRecord(candidate: Partial<InfrastructureDataReco
     }
   }
 
-  const cleanEnergySharePct = Math.min(100, Math.max(0, Number(candidate.cleanEnergySharePct) || 0));
+  const cleanEnergySharePct = Math.min(
+    100,
+    Math.max(0, Number(candidate.cleanEnergySharePct) || 0),
+  );
   const carbonIntensityGco2 = Math.max(0, Number(candidate.carbonIntensityGco2) || 0);
 
   return {
@@ -59,14 +70,19 @@ export function validateAndCleanRecord(candidate: Partial<InfrastructureDataReco
     carbonIntensityGco2: Math.round(carbonIntensityGco2),
     latencyChennaiMs: Math.max(0, Number(candidate.latencyChennaiMs) || 0),
     latencyBangaloreMs: Math.max(0, Number(candidate.latencyBangaloreMs) || 0),
-    coolingType: candidate.coolingType ? String(candidate.coolingType).trim() : "Standard Air Cooling",
+    coolingType: candidate.coolingType
+      ? String(candidate.coolingType).trim()
+      : "Standard Air Cooling",
     tierClassification: candidate.tierClassification || "Tier III+",
     status: candidate.status || "Operational",
     dataFreshness: candidate.dataFreshness || "Public Filing",
     lastCollectedAt: candidate.lastCollectedAt || new Date().toISOString(),
-    sourceName: candidate.sourceName ? String(candidate.sourceName).trim() : "State Public Discom Disclosure",
+    sourceName: candidate.sourceName
+      ? String(candidate.sourceName).trim()
+      : "State Public Discom Disclosure",
     sourceUrl: candidate.sourceUrl ? String(candidate.sourceUrl).trim() : "https://cea.nic.in",
-    complianceNote: candidate.complianceNote || "Authorized public sector information; open data terms verified.",
+    complianceNote:
+      candidate.complianceNote || "Authorized public sector information; open data terms verified.",
   };
 }
 
@@ -74,7 +90,10 @@ export function validateAndCleanRecord(candidate: Partial<InfrastructureDataReco
  * Evaluates simulated robots.txt rules for an authorized target URL to ensure ethical data extraction.
  * Strictly adheres to Disallow directives and rate limits.
  */
-export function checkRobotsCompliance(targetUrl: string, robotsTxtContent?: string): {
+export function checkRobotsCompliance(
+  targetUrl: string,
+  robotsTxtContent?: string,
+): {
   isAllowed: boolean;
   userAgent: string;
   crawlDelaySeconds: number;
@@ -89,13 +108,14 @@ export function checkRobotsCompliance(targetUrl: string, robotsTxtContent?: stri
         isAllowed: true,
         userAgent: "GreenNext-Research-Crawler/2.0",
         crawlDelaySeconds: 5,
-        reason: "No robots.txt disallow rules detected; adhering to default 5s polite request rate limit.",
+        reason:
+          "No robots.txt disallow rules detected; adhering to default 5s polite request rate limit.",
       };
     }
 
     const lines = robotsTxtContent.split("\n");
     let inWildcardAgent = false;
-    let disallowedPaths: string[] = [];
+    const disallowedPaths: string[] = [];
     let crawlDelay = 5;
 
     for (const rawLine of lines) {
@@ -115,7 +135,9 @@ export function checkRobotsCompliance(targetUrl: string, robotsTxtContent?: stri
       }
     }
 
-    const isExplicitlyDisallowed = disallowedPaths.some((disallowed) => path.startsWith(disallowed));
+    const isExplicitlyDisallowed = disallowedPaths.some((disallowed) =>
+      path.startsWith(disallowed),
+    );
 
     return {
       isAllowed: !isExplicitlyDisallowed,
@@ -173,8 +195,8 @@ export function sortInfrastructureData(
   direction: SortDirection = "desc",
 ): InfrastructureDataRecord[] {
   return [...dataset].sort((a, b) => {
-    let aVal = a[sortBy];
-    let bVal = b[sortBy];
+    const aVal = a[sortBy];
+    const bVal = b[sortBy];
 
     // Handle nulls gracefully (e.g. unverified PUE)
     if (aVal === null && bVal === null) return 0;
@@ -201,6 +223,7 @@ export function calculateAggregateSummary(dataset: InfrastructureDataRecord[]): 
       totalTrackedCapacityMw: 0,
       monitoredNodesCount: 0,
       averagePue: null,
+      capacityWeightedPue: null,
       averageCleanEnergyPct: 0,
       averageCarbonIntensityGco2: 0,
       statesCovered: [],
@@ -212,6 +235,8 @@ export function calculateAggregateSummary(dataset: InfrastructureDataRecord[]): 
   let totalCarbonWeighted = 0;
   let pueSum = 0;
   let pueCount = 0;
+  let facilityMwWithPue = 0;
+  let itMwWithPue = 0;
   const statesSet = new Set<string>();
 
   for (const item of dataset) {
@@ -220,18 +245,26 @@ export function calculateAggregateSummary(dataset: InfrastructureDataRecord[]): 
     totalCarbonWeighted += item.carbonIntensityGco2 * item.capacityMw;
     statesSet.add(item.state);
 
-    if (item.pue !== null) {
+    if (item.pue !== null && item.pue >= 1.0) {
       pueSum += item.pue;
       pueCount += 1;
+      facilityMwWithPue += item.capacityMw;
+      itMwWithPue += item.capacityMw / item.pue;
     }
   }
+
+  const capacityWeightedPue =
+    itMwWithPue > 0 ? Math.round((facilityMwWithPue / itMwWithPue) * 100) / 100 : null;
 
   return {
     totalTrackedCapacityMw: Math.round(totalCapacity * 10) / 10,
     monitoredNodesCount: dataset.length,
     averagePue: pueCount > 0 ? Math.round((pueSum / pueCount) * 100) / 100 : null,
-    averageCleanEnergyPct: totalCapacity > 0 ? Math.round(totalCleanEnergyWeighted / totalCapacity) : 0,
-    averageCarbonIntensityGco2: totalCapacity > 0 ? Math.round(totalCarbonWeighted / totalCapacity) : 0,
+    capacityWeightedPue,
+    averageCleanEnergyPct:
+      totalCapacity > 0 ? Math.round(totalCleanEnergyWeighted / totalCapacity) : 0,
+    averageCarbonIntensityGco2:
+      totalCapacity > 0 ? Math.round(totalCarbonWeighted / totalCapacity) : 0,
     statesCovered: Array.from(statesSet).sort(),
   };
 }

@@ -409,3 +409,56 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Redis & Secure Session Management
+
+GreenNext features a reusable, server-only Redis infrastructure for high-performance session caching and state management.
+
+### Architecture
+- **Server-Only Isolation**: Implemented in `src/lib/redis.server.ts` and `src/lib/session.server.ts`, following TanStack Start server conventions. Redis credentials and socket logic are strictly excluded from client-side bundles.
+- **Connection Singleton & Resilience**: Utilizes the official `redis` Node.js client with connection pooling, exponential backoff reconnection strategies, and safe error trapping without credential leaks.
+- **Session Lifecycle & Expiration**:
+  - Session tokens are cryptographically strong 256-bit hexadecimal strings (`crypto.randomBytes(32)`).
+  - Stored under the dedicated namespace prefix: `greennext:session:<token>`.
+  - Expiration defaults to exactly **3,600 seconds (1 hour)**, enforced automatically in Redis via the `EX` parameter.
+  - HTTP-only, `SameSite=Lax`, `Secure` (production) cookie management with zero trust for client-supplied identifiers.
+
+### Environment Configuration
+Configure via unified `REDIS_URL` or individual parameters in your environment (or Vercel project settings):
+
+```env
+# Option 1: Unified connection string
+REDIS_URL=rediss://default:your-password@your-host.db.redis.io:6380
+
+# Option 2: Component variables
+REDIS_HOST=cow-hospitable-cactus-89507.db.redis.io
+REDIS_PORT=13687
+REDIS_USERNAME=default
+REDIS_PASSWORD=your_redis_password_here
+REDIS_TLS=false
+
+# Session TTL (seconds)
+REDIS_SESSION_TTL_SECONDS=3600
+```
+
+See `.env.redis.example` for placeholder templates.
+
+### Running Verification & Tests
+1. **Automated Unit & E2E Test Suite**:
+   ```sh
+   # Run all tests (Redis lifecycle skipped safely if credentials not present)
+   npm test
+
+   # Run with configured Redis credentials
+   node --env-file=.env --test tests/redis-session.test.mjs
+   ```
+
+2. **Synthetic 10-User Session Verification Script**:
+   Creates 10 synthetic sessions (`redis-test-user-01` through `redis-test-user-10`), stores them with a 1-hour expiration, validates retrieval and TTLs, and prints a verified summary table:
+   ```sh
+   node --env-file=.env scripts/seed-redis-test-sessions.mjs
+   ```
+   To automatically clean up the test keys after verification, pass `--cleanup`:
+   ```sh
+   node --env-file=.env scripts/seed-redis-test-sessions.mjs --cleanup
+   ```

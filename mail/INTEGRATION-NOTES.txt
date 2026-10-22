@@ -1,0 +1,16 @@
+GreenNext email design handoff
+
+Files:
+- greennext-email-preview.html: local preview with embedded header/footer images
+- assets/greennext-email-header.png: approved header banner
+- assets/greennext-email-footer.png: approved footer banner
+- assets/greennext-logo-original.png: original logo asset
+
+Before production sending:
+1. Host header/footer/logo at stable public HTTPS URLs or use an email-provider-supported inline CID attachment approach. Do not rely on data: URLs for email clients.
+2. Replace template placeholders with escaped values from validated form data.
+3. Validate all CTA and footer URLs against the actual GreenNext website.
+4. Add a plain-text alternative and test rendering in major email clients.
+5. Send only to the address supplied by the visitor and record idempotent send status.
+
+Placeholders: FirstName, FormName, RelevantServiceTitle, RelevantServiceDescription, RelevantPageUrl, WebsiteUrl, LinkedInUrl, ContactUrl.

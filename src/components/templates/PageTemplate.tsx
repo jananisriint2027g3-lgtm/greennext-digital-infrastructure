@@ -52,6 +52,38 @@ function getPageFeaturedImage(data: DedicatedPageData) {
       tag: "NOC OPERATIONS",
     };
   }
+  if (data.route?.startsWith("/icp") || data.category === "ICP") {
+    if (data.slug === "ai-hyperscale") {
+      return {
+        src: aiComputeImg,
+        alt: "High-density enterprise server racks with organized structured cabling in data center",
+        caption: "HIGH-DENSITY ACCELERATOR COMPUTE CLUSTERS (ILLUSTRATIVE)",
+        tag: "AI INFRASTRUCTURE",
+      };
+    }
+    if (data.slug === "data-center-operators") {
+      return {
+        src: powerImg,
+        alt: "Industrial data center electrical power distribution room with switchgear and busways",
+        caption: "MISSION-CRITICAL POWER DISTRIBUTION & SUBSTATION YARD (ILLUSTRATIVE)",
+        tag: "COLOCATION ARCHITECTURE",
+      };
+    }
+    if (data.slug === "sustainability-energy") {
+      return {
+        src: coolingImg,
+        alt: "Industrial data center mechanical chiller plant with heavy insulated piping and pumps",
+        caption: "THERMODYNAMIC CHILLED WATER & ENERGY OPTIMIZATION (ILLUSTRATIVE)",
+        tag: "ENERGY & SUSTAINABILITY",
+      };
+    }
+    return {
+      src: datacenterExteriorImg,
+      alt: "Contemporary enterprise data center facility exterior with sustainable landscaping",
+      caption: "ENTERPRISE DIGITAL INFRASTRUCTURE FACILITY (ILLUSTRATIVE)",
+      tag: "QUALIFIED ARCHITECTURE",
+    };
+  }
   return null;
 }
 
@@ -74,6 +106,13 @@ export function PageTemplate({
       trackEvent({
         tab: "Energy",
         event: "energy_topic_view",
+        value: data.slug || data.title,
+        page: data.route,
+      });
+    } else if (data.route?.startsWith("/icp") || data.category === "ICP") {
+      trackEvent({
+        tab: "Industries",
+        event: "icp_segment_view",
         value: data.slug || data.title,
         page: data.route,
       });

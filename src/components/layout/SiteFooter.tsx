@@ -77,7 +77,7 @@ export function SiteFooter() {
             </div>
 
             {/* Sitemap Multi-Column (8 Cols) */}
-            <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8">
+            <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 sm:gap-8">
               {/* Column 1: About & Sustainability */}
               <div className="flex flex-col gap-3">
                 <span className="text-xs font-mono uppercase tracking-wider text-[#10B981]">
@@ -275,6 +275,62 @@ export function SiteFooter() {
                   >
                     Cybersecurity & Protection
                   </Link>
+                  <Link
+                    to="/infrastructure/facility-engineering"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/infrastructure/facility-engineering",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
+                    Facility Engineering
+                  </Link>
+                  <Link
+                    to="/infrastructure/fire-safety"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/infrastructure/fire-safety",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
+                    Fire Protection & Safety
+                  </Link>
+                  <Link
+                    to="/infrastructure/commissioning"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/infrastructure/commissioning",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
+                    Commissioning & Testing
+                  </Link>
+                  <Link
+                    to="/infrastructure/environmental-monitoring"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/infrastructure/environmental-monitoring",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
+                    Environmental Monitoring
+                  </Link>
                 </div>
               </div>
 
@@ -381,6 +437,20 @@ export function SiteFooter() {
                     className="hover:text-white transition-colors"
                   >
                     Automated Alerts
+                  </Link>
+                  <Link
+                    to="/automation/operations"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/automation/operations",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
+                    Operations & Maintenance
                   </Link>
                 </div>
               </div>
@@ -491,6 +561,85 @@ export function SiteFooter() {
                   </Link>
                 </div>
               </div>
+
+              {/* Column 5: Ideal Customer Profile (ICP) */}
+              <div className="flex flex-col gap-3">
+                <span className="text-xs font-mono uppercase tracking-wider text-[#10B981]">
+                  Customer Profiles
+                </span>
+                <div className="flex flex-col gap-2 text-xs text-[#94A3B8]">
+                  <Link
+                    to="/icp"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/icp",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors font-medium text-white"
+                  >
+                    ICP Overview
+                  </Link>
+                  <Link
+                    to="/icp/data-center-operators"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/icp/data-center-operators",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
+                    Data Center Operators
+                  </Link>
+                  <Link
+                    to="/icp/ai-hyperscale"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/icp/ai-hyperscale",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
+                    AI & Hyperscale
+                  </Link>
+                  <Link
+                    to="/icp/enterprise-edge"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/icp/enterprise-edge",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
+                    Enterprise & Edge
+                  </Link>
+                  <Link
+                    to="/icp/sustainability-energy"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/icp/sustainability-energy",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
+                    Sustainability & ESG
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -509,6 +658,11 @@ export function SiteFooter() {
             <div className="flex items-center gap-4 flex-shrink-0 font-mono text-[11px]">
               <span>© {new Date().getFullYear()} GreenNext Initiative</span>
               <span>South India</span>
+              <span className="text-[#334155]">•</span>
+              <Link to="/redis-demo" className="text-[#64748B] hover:text-[#10B981] transition-colors flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                <span>Redis Demo</span>
+              </Link>
             </div>
           </div>
         </div>

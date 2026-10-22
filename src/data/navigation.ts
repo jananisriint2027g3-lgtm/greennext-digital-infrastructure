@@ -96,6 +96,34 @@ export const NAVIGATION_STRUCTURE: NavigationCategory[] = [
         description: "Zero Trust access, confidential compute, and defense-in-depth.",
         isConceptual: true,
       },
+      {
+        id: "facility-engineering",
+        label: "Facility Engineering",
+        path: "/infrastructure/facility-engineering",
+        description: "Civil, structural slab loading, envelopes, and substation yards.",
+        isConceptual: true,
+      },
+      {
+        id: "fire-safety",
+        label: "Fire Protection & Safety",
+        path: "/infrastructure/fire-safety",
+        description: "Aspirating smoke detection, clean-agent gas, and BESS safeguards.",
+        isConceptual: true,
+      },
+      {
+        id: "commissioning",
+        label: "Commissioning & Testing",
+        path: "/infrastructure/commissioning",
+        description: "The 5-level commissioning lifecycle, load banking, and IST.",
+        isConceptual: true,
+      },
+      {
+        id: "environmental-monitoring",
+        label: "Environmental Monitoring",
+        path: "/infrastructure/environmental-monitoring",
+        description: "Inlet temperature, relative humidity, and ASHRAE TC 9.9 compliance.",
+        isConceptual: true,
+      },
     ],
   },
   {
@@ -182,13 +210,21 @@ export const NAVIGATION_STRUCTURE: NavigationCategory[] = [
         description: "Automated, structured reports for institutional consistency.",
         isConceptual: true,
       },
+      {
+        id: "operations",
+        label: "Operations & Maintenance",
+        path: "/automation/operations",
+        description: "24/7 staffing models, MOP/SOP change governance, and field safety.",
+        isConceptual: true,
+      },
     ],
   },
   {
     id: "regions-sustainability",
     label: "Regions & Sustainability",
     path: "/regions",
-    description: "Distributed regional digital infrastructure and sustainable operational practices across South India.",
+    description:
+      "Distributed regional digital infrastructure and sustainable operational practices across South India.",
     items: [
       {
         id: "regional-overview",
@@ -340,6 +376,47 @@ export const NAVIGATION_STRUCTURE: NavigationCategory[] = [
         path: "/solutions/infrastructure-index",
         description: "Mined and structured data tracking PUE, capacity, and clean grid mix.",
         isConceptual: false,
+      },
+    ],
+  },
+
+  {
+    id: "icp",
+    label: "ICP",
+    path: "/icp",
+    description:
+      "Ideal Customer Profiles, operational qualification frameworks, and alignment matrix.",
+    items: [
+      {
+        id: "data-center-operators",
+        label: "Data Center Operators & Colocation",
+        path: "/icp/data-center-operators",
+        description:
+          "Wholesale & colocation facility expansion, 2N power distribution, and PUE transparency.",
+        isConceptual: true,
+      },
+      {
+        id: "ai-hyperscale",
+        label: "AI & Hyperscale Infrastructure",
+        path: "/icp/ai-hyperscale",
+        description: "High-density GPU racks, direct-to-chip cooling, and dynamic load scheduling.",
+        isConceptual: true,
+      },
+      {
+        id: "enterprise-edge",
+        label: "Enterprise & Edge Infrastructure",
+        path: "/icp/enterprise-edge",
+        description:
+          "Brownfield facility modernization and distributed regional nodes across South India.",
+        isConceptual: true,
+      },
+      {
+        id: "sustainability-energy",
+        label: "Sustainability & Energy Stakeholders",
+        path: "/icp/sustainability-energy",
+        description:
+          "PUE/WUE measurement integrity, Scope 1-3 carbon accounting, and clean energy PPAs.",
+        isConceptual: true,
       },
     ],
   },

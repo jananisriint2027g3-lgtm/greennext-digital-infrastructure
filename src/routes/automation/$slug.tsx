@@ -2,6 +2,10 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { PAGES_CONTENT } from "../../data/pagesContent";
 import { PageTemplate } from "../../components/templates/PageTemplate";
 import { AutomationWorkflow } from "../../components/home/AutomationWorkflow";
+import { CapacityUtilizationModel } from "../../components/kpi/CapacityUtilizationModel";
+import { AvailabilityCalculator } from "../../components/kpi/AvailabilityCalculator";
+import { ReliabilityMetricsModel } from "../../components/kpi/ReliabilityMetricsModel";
+import { MaintenanceComplianceWidget } from "../../components/kpi/MaintenanceComplianceWidget";
 
 export const Route = createFileRoute("/automation/$slug")({
   head: ({ params }) => {
@@ -27,27 +31,32 @@ function AutomationSubmenuPage() {
 
   if (!page) {
     throw notFound();
-    /* return (
-      <div className="min-h-[60vh] flex items-center justify-center bg-[#070A0E] text-white p-6">
-        <div className="text-center max-w-md">
-          <h2 className="text-xl font-bold mb-2">Page Not Found</h2>
-          <p className="text-sm text-[#94A3B8] mb-6">
-            The requested automation page could not be located.
-          </p>
-          <a
-            href="/automation"
-            className="px-4 py-2 rounded bg-[#10B981] text-[#070A0E] text-xs font-semibold"
-          >
-            Return to Automation Overview
-          </a>
-        </div>
-      </div>
-    ); */
   }
 
   return (
     <div>
       <PageTemplate data={page} />
+      {slug === "capacity" && (
+        <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+          <CapacityUtilizationModel />
+        </section>
+      )}
+      {slug === "reporting" && (
+        <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+          <AvailabilityCalculator />
+        </section>
+      )}
+      {slug === "operations" && (
+        <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-8">
+          <MaintenanceComplianceWidget />
+          <ReliabilityMetricsModel />
+        </section>
+      )}
+      {slug === "alerts" && (
+        <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+          <ReliabilityMetricsModel />
+        </section>
+      )}
       {slug === "monitoring" && (
         <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           <AutomationWorkflow />

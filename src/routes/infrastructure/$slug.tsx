@@ -3,6 +3,8 @@ import { PAGES_CONTENT } from "../../data/pagesContent";
 import { PageTemplate } from "../../components/templates/PageTemplate";
 import { SevenLayerStack } from "../../components/home/SevenLayerStack";
 import { CybersecurityFramework } from "../../components/infrastructure/CybersecurityFramework";
+import { PowerReliabilityModel } from "../../components/kpi/PowerReliabilityModel";
+import { EnvironmentalComplianceWidget } from "../../components/kpi/EnvironmentalComplianceWidget";
 
 export const Route = createFileRoute("/infrastructure/$slug")({
   head: ({ params }) => {
@@ -33,6 +35,16 @@ function InfrastructureSubmenuPage() {
   return (
     <div>
       <PageTemplate data={page} />
+      {slug === "facility-engineering" && (
+        <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+          <PowerReliabilityModel />
+        </section>
+      )}
+      {slug === "environmental-monitoring" && (
+        <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+          <EnvironmentalComplianceWidget />
+        </section>
+      )}
       {slug === "architecture" && (
         <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           <div className="rounded-2xl border border-[#1E293B] bg-[#0B0F17] p-6 sm:p-8 lg:p-10 shadow-2xl">
@@ -59,7 +71,8 @@ function InfrastructureSubmenuPage() {
                 Zero-Trust Defense-in-Depth Visual Inspector
               </h3>
               <p className="text-xs text-[#94A3B8] mt-1">
-                Select a domain to inspect enforced security controls, mitigated threats, and operational benchmarks.
+                Select a domain to inspect enforced security controls, mitigated threats, and
+                operational benchmarks.
               </p>
             </div>
             <CybersecurityFramework />
