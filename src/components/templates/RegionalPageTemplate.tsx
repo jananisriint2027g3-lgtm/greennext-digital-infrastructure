@@ -62,10 +62,6 @@ export function RegionalPageTemplate({ region }: { region: RegionInfo }) {
         h1={`${region.name} — ${region.tagline}`}
         intro={region.intro}
         isConceptual={true}
-        cta={{
-          label: "View in Regional Dashboard →",
-          path: "/regions/overview#dashboard",
-        }}
       />
 
       <main className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 py-16">

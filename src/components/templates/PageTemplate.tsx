@@ -52,7 +52,7 @@ function getPageFeaturedImage(data: DedicatedPageData) {
       tag: "NOC OPERATIONS",
     };
   }
-  if (data.route?.startsWith("/icp") || data.category === "ICP") {
+  if (data.route?.startsWith("/icp") || data.category === "ICP" || data.category === "Industries") {
     if (data.slug === "ai-hyperscale") {
       return {
         src: aiComputeImg,
@@ -109,7 +109,11 @@ export function PageTemplate({
         value: data.slug || data.title,
         page: data.route,
       });
-    } else if (data.route?.startsWith("/icp") || data.category === "ICP") {
+    } else if (
+      data.route?.startsWith("/icp") ||
+      data.category === "ICP" ||
+      data.category === "Industries"
+    ) {
       trackEvent({
         tab: "Industries",
         event: "icp_segment_view",

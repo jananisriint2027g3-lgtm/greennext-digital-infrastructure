@@ -11,7 +11,7 @@ test("ICP Navigation Structure: Top-level category and 4 segment items", () => {
   // Verify category exists
   assert.ok(navFile.includes('id: "icp"'), "Navigation must include 'icp' category id");
   assert.ok(navFile.includes('path: "/icp"'), "Navigation must link to '/icp'");
-  assert.ok(navFile.includes('label: "ICP"'), "Navigation must have label 'ICP'");
+  assert.ok(navFile.includes('label: "Industries"'), "Navigation must have label 'Industries'");
 
   // Verify all 4 segment items
   const expectedItems = [

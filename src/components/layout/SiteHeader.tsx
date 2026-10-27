@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ChevronDown, Menu, X, ArrowRight, MessageCircle, ExternalLink } from "../icons";
+import { ChevronDown, Menu, X, ArrowRight } from "../icons";
 import { NAVIGATION_STRUCTURE } from "../../data/navigation";
-import { WHATSAPP_CONFIG } from "../../data/whatsapp";
-import { WhatsAppDemoModal, openQuickInquiry } from "../common/FloatingContact";
 import { trackEvent } from "../../lib/analytics";
 
 export function SiteHeader() {
@@ -14,7 +12,6 @@ export function SiteHeader() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
-  const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
@@ -268,46 +265,6 @@ export function SiteHeader() {
 
         {/* Right CTA Actions */}
         <div className="hidden sm:flex items-center gap-2.5">
-          {/* WhatsApp Quick Link */}
-          {WHATSAPP_CONFIG.isConfigured() ? (
-            <a
-              href={WHATSAPP_CONFIG.getUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() =>
-                trackEvent({
-                  tab: "CTA Interactions",
-                  event: "whatsapp_modal_trigger",
-                  value: "Header WhatsApp Link",
-                  page: currentPath,
-                })
-              }
-              className="p-2 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-[#10B981] hover:border-[#10B981]/40 hover:bg-[#10B981]/5 transition-colors"
-              title="Discuss Infrastructure on WhatsApp"
-              aria-label="Discuss Infrastructure on WhatsApp"
-            >
-              <MessageCircle size={17} />
-            </a>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                trackEvent({
-                  tab: "CTA Interactions",
-                  event: "whatsapp_modal_trigger",
-                  value: "Header WhatsApp Button",
-                  page: currentPath,
-                })
-                setWhatsAppModalOpen(true);
-              }}
-              className="p-2 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-[#10B981] hover:border-[#10B981]/40 hover:bg-[#10B981]/5 transition-colors"
-              title="WhatsApp Inquiry"
-              aria-label="WhatsApp Inquiry"
-            >
-              <MessageCircle size={17} />
-            </button>
-          )}
-
           {/* Primary Contact CTA */}
           <Link
             to="/contact"
@@ -440,7 +397,7 @@ export function SiteHeader() {
               );
             })}
 
-            {/* Mobile Footer CTAs */}
+            {/* Mobile Connect CTA */}
             <div className="mt-4 pt-4 border-t border-[#1E293B] flex flex-col gap-3">
               <Link
                 to="/contact"
@@ -449,40 +406,10 @@ export function SiteHeader() {
               >
                 Connect With GreenNext
               </Link>
-              {WHATSAPP_CONFIG.isConfigured() ? (
-                <a
-                  href={WHATSAPP_CONFIG.getUrl()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-white text-center font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#121824] transition-colors"
-                >
-                  <MessageCircle size={16} className="text-[#10B981]" />
-                  <span>Discuss on WhatsApp</span>
-                  <ExternalLink size={13} />
-                </a>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setWhatsAppModalOpen(true);
-                  }}
-                  className="w-full py-3 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-white text-center font-medium text-sm flex items-center justify-center gap-2 hover:bg-[#121824] transition-colors"
-                >
-                  <MessageCircle size={16} className="text-[#10B981]" />
-                  <span>WhatsApp Inquiry</span>
-                </button>
-              )}
             </div>
           </div>
         </div>
       )}
-
-      <WhatsAppDemoModal
-        isOpen={whatsAppModalOpen}
-        onClose={() => setWhatsAppModalOpen(false)}
-        onOpenQuickInquiry={() => openQuickInquiry()}
-      />
     </header>
   );
 }

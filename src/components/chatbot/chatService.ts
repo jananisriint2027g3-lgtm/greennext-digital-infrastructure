@@ -14,6 +14,8 @@ export interface AssistantResponse {
 
 const CONTEXT_LABELS: Record<string, string> = {
   infrastructure: "AI-ready infrastructure",
+  industries: "industry fit and qualification",
+  cybersecurity: "cybersecurity and infrastructure protection",
   automation: "automation capabilities",
   energy: "energy and cooling",
   regions: "regional infrastructure",
@@ -25,6 +27,8 @@ const CONTEXT_LABELS: Record<string, string> = {
 
 const CONTEXT_HREFS: Record<string, string> = {
   infrastructure: "/infrastructure/ai-ready",
+  industries: "/icp",
+  cybersecurity: "/infrastructure/cybersecurity",
   automation: "/automation/monitoring",
   energy: "/energy/monitoring",
   regions: "/regions/overview",
@@ -140,6 +144,32 @@ export function getAssistantResponse(
     return {
       text: "GreenNext explores AI-driven digital infrastructure for the next generation of compute, connectivity, energy, monitoring, and automation. The website presents infrastructure concepts, solutions, and regional planning focus areas for AI-ready operations.",
       links: [{ label: "Explore infrastructure", href: "/infrastructure" }],
+    };
+  }
+
+  if (
+    query.includes("cyber") ||
+    query.includes("security") ||
+    query.includes("zero trust") ||
+    query.includes("confidential compute") ||
+    query.includes("root of trust")
+  ) {
+    return {
+      text: "GreenNext's cybersecurity content describes defense-in-depth for AI-ready infrastructure, including hardware root-of-trust, confidential GPU execution, isolated management networks, and encrypted transit. These are engineering reference concepts, not a claim of certified audits or managed security services.",
+      links: [{ label: "Explore cybersecurity", href: "/infrastructure/cybersecurity" }],
+    };
+  }
+
+  if (
+    query.includes("industry") ||
+    query.includes("industries") ||
+    query.includes("qualification") ||
+    query.includes("who does greennext serve") ||
+    query.includes("customer fit")
+  ) {
+    return {
+      text: "GreenNext's industries and qualification framework focuses on data center operators, AI and hyperscale infrastructure planners, enterprise and edge infrastructure teams, and sustainability or energy stakeholders. Qualification considers infrastructure footprint, compute density, power and cooling constraints, telemetry maturity, and project readiness.",
+      links: [{ label: "Explore industries", href: "/icp" }],
     };
   }
 

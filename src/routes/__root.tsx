@@ -133,7 +133,6 @@ import { trackEvent } from "../lib/analytics";
 import { trackPageView } from "../lib/analytics";
 import { usePageBehaviorTracking } from "../hooks/usePageBehaviorTracking";
 import { VisitorWelcomeBanner } from "../components/personalization/VisitorWelcomeBanner";
-import { PersonalizationBanner } from "../components/personalization/PersonalizationBanner";
 import { ExitIntentPopup } from "../components/personalization/ExitIntentPopup";
 
 function RootComponent() {
@@ -158,7 +157,6 @@ function RootComponent() {
       <div className="min-h-screen flex flex-col bg-[#070A0E] text-white selection:bg-[#10B981] selection:text-[#070A0E]">
         <SiteHeader />
         <VisitorWelcomeBanner />
-        <PersonalizationBanner />
         <ExitIntentPopup />
         <div className="flex-1">
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}

@@ -1,4 +1,4 @@
-import { ArrowRight, Bot, RotateCcw, Send, X } from "../icons";
+import { ArrowRight, RotateCcw, Send, X } from "../icons";
 import { useEffect, useRef, useState } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { ChatSuggestions } from "./ChatSuggestions";
@@ -10,6 +10,12 @@ import {
 import { getChatPageContext } from "../../lib/chat-page-context";
 import { trackEvent, sanitizeChatTopic, getCurrentPage, getSessionId } from "../../lib/analytics";
 import { getChatGreeting } from "../../lib/visitor-greetings";
+import {
+  clearChatConversation,
+  loadChatConversation,
+  saveChatConversation,
+  type PersistedChatMessage,
+} from "../../lib/chat-persistence";
 import { useRouterState } from "@tanstack/react-router";
 
 interface ChatEntry {
@@ -19,20 +25,26 @@ interface ChatEntry {
   links?: AssistantResponse["links"];
 }
 
+const RESUME_GREETING = "Welcome back! What questions can I help you answer today?";
+const RESUME_PROMPT =
+  "Continue exploring a technical conversation based on your recent GreenNext journey.";
+
 export function GreenNextChatbot() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const pageContext = getChatPageContext(pathname);
   const recommendation = getPersonalizationRecommendation(pathname, getSessionId());
   const [isOpen, setIsOpen] = useState(false);
+  const [isContactMenuOpen, setIsContactMenuOpen] = useState(false);
+  const [isQuickInquiryOpen, setIsQuickInquiryOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [messages, setMessages] = useState<ChatEntry[]>(() => [
-    {
-      id: 1,
-      role: "assistant",
-      text: getChatGreeting(),
-    },
-  ]);
+  const [restoredConversation] = useState(() => loadChatConversation());
+  const [showResumePrompt, setShowResumePrompt] = useState(() => Boolean(restoredConversation));
+  const [messages, setMessages] = useState<ChatEntry[]>(() =>
+    restoredConversation?.messages.length
+      ? restoredConversation.messages
+      : [{ id: 1, role: "assistant", text: getChatGreeting() }],
+  );
   const nextId = useRef(2);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -43,11 +55,29 @@ export function GreenNextChatbot() {
   }, []);
 
   useEffect(() => {
+    const handleContactMenuVisibility = (event: Event) => {
+      const open = (event as CustomEvent<{ open?: unknown }>).detail?.open === true;
+      setIsContactMenuOpen(open);
+      if (open) setIsOpen(false);
+    };
+
+    window.addEventListener("floating-contact-visibility", handleContactMenuVisibility);
+    return () =>
+      window.removeEventListener("floating-contact-visibility", handleContactMenuVisibility);
+  }, []);
+
+  useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       inputRef.current?.focus();
     }
   }, [isOpen, messages, isTyping]);
+
+  useEffect(() => {
+    if (messages.length > 1) {
+      saveChatConversation(messages as PersistedChatMessage[]);
+    }
+  }, [messages]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -58,11 +88,25 @@ export function GreenNextChatbot() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
+  useEffect(() => {
+    const handleQuickInquiryVisibility = (event: Event) => {
+      const isOpen = (event as CustomEvent<{ open?: unknown }>).detail?.open === true;
+      setIsQuickInquiryOpen(isOpen);
+      if (isOpen) setIsOpen(false);
+    };
+
+    window.addEventListener("quick-inquiry-visibility", handleQuickInquiryVisibility);
+    return () =>
+      window.removeEventListener("quick-inquiry-visibility", handleQuickInquiryVisibility);
+  }, []);
+
   const resetConversation = () => {
     timersRef.current.forEach((timer) => clearTimeout(timer));
     timersRef.current = [];
     setInput("");
     setIsTyping(false);
+    setShowResumePrompt(false);
+    clearChatConversation();
     setMessages([
       {
         id: nextId.current++,
@@ -136,7 +180,20 @@ export function GreenNextChatbot() {
           <header className="flex items-center justify-between border-b border-[#1E293B] bg-[#0D1520] px-4 py-3">
             <div className="flex min-w-0 items-center gap-2.5">
               <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#245044] bg-[#10B981]/10 text-[#34D399]">
-                <Bot size={17} aria-hidden="true" />
+                <span
+                  className="h-6 w-6 bg-[#34D399]"
+                  style={{
+                    maskImage: "url('/chatbot-icon.png')",
+                    WebkitMaskImage: "url('/chatbot-icon.png')",
+                    maskPosition: "center",
+                    WebkitMaskPosition: "center",
+                    maskRepeat: "no-repeat",
+                    WebkitMaskRepeat: "no-repeat",
+                    maskSize: "contain",
+                    WebkitMaskSize: "contain",
+                  }}
+                  aria-hidden="true"
+                />
                 <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-[#0D1520] bg-[#10B981]" />
               </span>
               <div className="min-w-0">
@@ -179,6 +236,22 @@ export function GreenNextChatbot() {
           </header>
 
           <div className="flex-1 space-y-3 overflow-y-auto px-3.5 py-4" aria-live="polite">
+            {showResumePrompt && (
+              <div className="rounded-xl border border-[#10B981]/30 bg-[#0E1A26] p-3 text-left">
+                <p className="text-[13px] font-medium leading-relaxed text-[#F8FAFC]">
+                  {RESUME_GREETING}
+                </p>
+                <p className="mt-1.5 text-[12px] leading-relaxed text-[#CBD5E1]">{RESUME_PROMPT}</p>
+                <button
+                  type="button"
+                  onClick={() => setShowResumePrompt(false)}
+                  className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-[#10B981] px-2.5 py-1.5 text-[11px] font-semibold text-[#06110D] transition-colors hover:bg-[#34D399] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]"
+                >
+                  <span>Continue exploring a technical conversation</span>
+                  <ArrowRight size={12} aria-hidden="true" />
+                </button>
+              </div>
+            )}
             {messages.map((message) => (
               <ChatMessage
                 key={message.id}
@@ -221,7 +294,7 @@ export function GreenNextChatbot() {
                   {[0, 1, 2].map((dot) => (
                     <span
                       key={dot}
-                      className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#38BDF8]"
+                      className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#10B981]"
                       style={{ animationDelay: `${dot * 140}ms` }}
                     />
                   ))}
@@ -269,27 +342,46 @@ export function GreenNextChatbot() {
         </section>
       )}
 
-      <button
-        type="button"
-        onClick={() => {
-          const opening = !isOpen;
-          setIsOpen((open) => !open);
-          if (opening) {
-            trackEvent({
-              tab: "AI Assistant",
-              event: "chatbot_open",
-              value: "GreenNext AI Assistant",
-              page: getCurrentPage(),
-            });
-          }
-        }}
-        aria-label={isOpen ? "Close GreenNext AI Assistant" : "Open GreenNext AI Assistant"}
-        aria-expanded={isOpen}
-        title="GreenNext AI Assistant"
-        className="flex h-12 w-12 items-center justify-center rounded-full border border-[#34D399]/60 bg-[#10B981] text-[#06110D] shadow-[0_0_24px_rgba(16,185,129,0.28)] transition-all hover:scale-105 hover:bg-[#34D399] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981] focus-visible:ring-offset-2 focus-visible:ring-offset-[#070A0E]"
-      >
-        {isOpen ? <X size={20} aria-hidden="true" /> : <Bot size={20} aria-hidden="true" />}
-      </button>
+      {!isQuickInquiryOpen && !isContactMenuOpen && (
+        <button
+          type="button"
+          onClick={() => {
+            const opening = !isOpen;
+            setIsOpen((open) => !open);
+            if (opening) {
+              trackEvent({
+                tab: "AI Assistant",
+                event: "chatbot_open",
+                value: "GreenNext AI Assistant",
+                page: getCurrentPage(),
+              });
+            }
+          }}
+          aria-label={isOpen ? "Close GreenNext AI Assistant" : "Open GreenNext AI Assistant"}
+          aria-expanded={isOpen}
+          title="GreenNext AI Assistant"
+          className="flex h-12 w-12 items-center justify-center rounded-full border border-[#34D399]/60 bg-[#10B981] text-[#06110D] shadow-[0_0_24px_rgba(16,185,129,0.28)] transition-all hover:scale-105 hover:bg-[#34D399] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981] focus-visible:ring-offset-2 focus-visible:ring-offset-[#070A0E]"
+        >
+          {isOpen ? (
+            <X size={20} aria-hidden="true" />
+          ) : (
+            <span
+              className="h-7 w-7 bg-[#06110D]"
+              style={{
+                maskImage: "url('/chatbot-icon.png')",
+                WebkitMaskImage: "url('/chatbot-icon.png')",
+                maskPosition: "center",
+                WebkitMaskPosition: "center",
+                maskRepeat: "no-repeat",
+                WebkitMaskRepeat: "no-repeat",
+                maskSize: "contain",
+                WebkitMaskSize: "contain",
+              }}
+              aria-hidden="true"
+            />
+          )}
+        </button>
+      )}
     </div>
   );
 }

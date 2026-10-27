@@ -25,6 +25,8 @@ export function PageHero({
   cta,
   secondaryAction,
 }: PageHeroProps) {
+  const ctaHasTextArrow = cta?.label.trimEnd().endsWith("→") ?? false;
+
   return (
     <div className="relative pt-12 pb-16 border-b border-[#1E293B] bg-gradient-to-b from-[#0B0F17] to-[#070A0E] overflow-hidden">
       {/* Subtle Background Grid */}
@@ -70,7 +72,7 @@ export function PageHero({
                   className="px-5 py-2.5 rounded-lg bg-[#10B981] text-[#070A0E] text-sm font-semibold hover:bg-[#34D399] transition-all flex items-center gap-2 shadow-lg shadow-[#10B981]/20 hover:shadow-[#10B981]/30"
                 >
                   <span>{cta.label}</span>
-                  <ArrowRight size={15} />
+                  {!ctaHasTextArrow && <ArrowRight size={15} />}
                 </Link>
               )}
               {secondaryAction}

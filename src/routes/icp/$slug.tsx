@@ -8,7 +8,7 @@ export const Route = createFileRoute("/icp/$slug")({
     const page = PAGES_CONTENT[key];
     return {
       meta: [
-        { title: `${page?.title || "Ideal Customer Profile"} | GreenNext` },
+        { title: `${page?.title || "Industries"} | GreenNext` },
         {
           name: "description",
           content: page?.intro || "GreenNext customer profile and infrastructure qualification.",

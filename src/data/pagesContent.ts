@@ -2441,8 +2441,8 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
       },
     ],
     cta: {
-      label: "Review Enterprise Solutions →",
-      path: "/solutions",
+      label: "View in Regional Dashboard →",
+      path: "/regions/overview#dashboard",
     },
     relatedPages: [
       {
@@ -2959,12 +2959,12 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
   },
   icp: {
     slug: "icp",
-    category: "ICP",
+    category: "Industries",
     parentPath: "/",
     route: "/icp",
-    title: "Ideal Customer Profile & Qualification Framework",
+    title: "Industries & Qualification Framework",
     eyebrow: "Enterprise Engagement & Alignment",
-    h1: "Ideal Customer Profile",
+    h1: "Industries GreenNext Serves",
     intro:
       "GreenNext provides engineering blueprints, operational telemetry frameworks, and infrastructure advisory for organizations navigating the convergence of high-density AI compute, escalating power demand, thermodynamic dissipation boundaries, and regional capacity expansion. Explore our qualification criteria, buying triggers, and alignment matrix.",
     sections: [
@@ -3184,11 +3184,11 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
 
   "icp/data-center-operators": {
     slug: "data-center-operators",
-    category: "ICP",
+    category: "Industries",
     parentPath: "/icp",
     route: "/icp/data-center-operators",
     title: "Data Center Operators & Colocation Providers",
-    eyebrow: "ICP Segment 01",
+    eyebrow: "Industry Segment 01",
     h1: "Colocation Operators & Wholesale Data Center Providers",
     intro:
       "Engineering blueprints, facility modernization frameworks, and operational telemetry for multi-tenant wholesale and retail colocation providers retrofitting white space, managing high-density tenant power distribution, and delivering transparent PUE metrics.",
@@ -3334,11 +3334,11 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
 
   "icp/ai-hyperscale": {
     slug: "ai-hyperscale",
-    category: "ICP",
+    category: "Industries",
     parentPath: "/icp",
     route: "/icp/ai-hyperscale",
     title: "AI & Hyperscale Infrastructure",
-    eyebrow: "ICP Segment 02",
+    eyebrow: "Industry Segment 02",
     h1: "AI Foundation Labs & Hyperscale Infrastructure Planners",
     intro:
       "Architectural blueprints, thermodynamic dissipation modeling, and power alignment for engineering teams architecting multi-megawatt AI clusters, high-bandwidth accelerator fabrics, and advanced liquid cooling topologies.",
@@ -3478,11 +3478,11 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
 
   "icp/enterprise-edge": {
     slug: "enterprise-edge",
-    category: "ICP",
+    category: "Industries",
     parentPath: "/icp",
     route: "/icp/enterprise-edge",
     title: "Enterprise & Edge Infrastructure",
-    eyebrow: "ICP Segment 03",
+    eyebrow: "Industry Segment 03",
     h1: "Enterprise Data Center & Distributed Edge Teams",
     intro:
       "Modernization strategies, edge topology blueprints, and centralized telemetry for distributed enterprises operating hybrid on-premises server rooms, private clouds, and regional edge nodes across South India.",
@@ -3602,11 +3602,11 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
 
   "icp/sustainability-energy": {
     slug: "sustainability-energy",
-    category: "ICP",
+    category: "Industries",
     parentPath: "/icp",
     route: "/icp/sustainability-energy",
     title: "Sustainability & Energy Stakeholders",
-    eyebrow: "ICP Segment 04",
+    eyebrow: "Industry Segment 04",
     h1: "Sustainability Directors, Energy Officers & ESG Leaders",
     intro:
       "Measurement frameworks, carbon accounting boundaries, and energy modeling for enterprise ESG leadership, corporate sustainability officers, and energy managers overseeing mission-critical digital infrastructure.",

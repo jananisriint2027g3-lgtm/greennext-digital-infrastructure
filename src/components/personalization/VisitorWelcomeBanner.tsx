@@ -1,7 +1,12 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, Sparkles, X } from "../icons";
-import { getCurrentPage, trackEvent } from "../../lib/analytics";
+import leafEmblemUrl from "../../../Tech-Eco Network Leaf Emblem.png";
+import { ArrowRight, X } from "../icons";
+import { getCurrentPage, getSessionId, trackEvent } from "../../lib/analytics";
+import {
+  getPersonalizationRecommendation,
+  type PersonalizationRecommendation,
+} from "../../lib/action-layer";
 import {
   getWebsiteGreeting,
   dismissWebsiteGreeting,
@@ -9,11 +14,16 @@ import {
 } from "../../lib/visitor-greetings";
 
 export function VisitorWelcomeBanner() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [greeting, setGreeting] = useState<WebsiteGreetingResult | null>(null);
+  const [recommendation, setRecommendation] = useState<PersonalizationRecommendation | null>(null);
 
   useEffect(() => {
     const result = getWebsiteGreeting();
     setGreeting(result);
+    setRecommendation(
+      result.isReturning ? getPersonalizationRecommendation(pathname, getSessionId()) : null,
+    );
 
     if (!result.isDismissed) {
       trackEvent({
@@ -25,7 +35,7 @@ export function VisitorWelcomeBanner() {
         page: getCurrentPage(),
       });
     }
-  }, []);
+  }, [pathname]);
 
   if (!greeting || greeting.isDismissed) {
     return null;
@@ -42,8 +52,16 @@ export function VisitorWelcomeBanner() {
     });
   };
 
-  const actionHref = greeting.isReturning ? "/infrastructure" : "/solutions";
-  const actionLabel = greeting.isReturning ? "Explore Smarter Infrastructure" : "Explore Solutions";
+  const actionHref = recommendation?.show
+    ? recommendation.primaryHref
+    : greeting.isReturning
+      ? "/infrastructure"
+      : "/solutions";
+  const actionLabel = recommendation?.show
+    ? recommendation.primaryLabel
+    : greeting.isReturning
+      ? "Explore Smarter Infrastructure"
+      : "Explore Solutions";
 
   return (
     <aside
@@ -55,28 +73,42 @@ export function VisitorWelcomeBanner() {
           <span
             className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${
               greeting.isReturning
-                ? "border-[#38BDF8]/40 bg-[#38BDF8]/10 text-[#38BDF8]"
-                : "border-[#10B981]/40 bg-[#10B981]/10 text-[#34D399]"
+                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                : "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
             }`}
             aria-hidden="true"
           >
-            <Sparkles size={15} />
+            <img
+              src={leafEmblemUrl}
+              alt=""
+              className="h-5 w-5 object-contain"
+              width={20}
+              height={20}
+              aria-hidden="true"
+            />
           </span>
 
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <span
               className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
                 greeting.isReturning
-                  ? "border border-[#38BDF8]/30 bg-[#38BDF8]/15 text-[#38BDF8]"
-                  : "border border-[#10B981]/30 bg-[#10B981]/15 text-[#34D399]"
+                  ? "border border-emerald-500/30 bg-emerald-500/15 text-emerald-400"
+                  : "border border-emerald-500/30 bg-emerald-500/15 text-emerald-400"
               }`}
             >
               {greeting.isReturning ? "Welcome Back" : "Welcome"}
             </span>
 
-            <p className="truncate text-xs font-normal text-[#E2E8F0] sm:text-sm">
-              {greeting.text}
-            </p>
+            <div className="min-w-0">
+              <p className="truncate text-xs font-normal text-[#E2E8F0] sm:text-sm">
+                {greeting.text}
+              </p>
+              {recommendation?.show && (
+                <p className="truncate text-[11px] text-[#94A3B8] sm:text-xs">
+                  {recommendation.body}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -91,18 +123,35 @@ export function VisitorWelcomeBanner() {
                 page: getCurrentPage(),
               });
             }}
-            className="inline-flex items-center gap-1.5 rounded-md border border-[#10B981]/50 bg-[#10B981]/10 px-3 py-1.5 text-xs font-medium text-[#34D399] transition-colors hover:bg-[#10B981]/20 hover:text-[#6EE7B7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]"
+            className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/50 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400 transition-colors hover:bg-emerald-500/20 hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
           >
             <span>{actionLabel}</span>
             <ArrowRight size={13} aria-hidden="true" />
           </Link>
+
+          {recommendation?.show && (
+            <Link
+              to={recommendation.secondaryHref}
+              onClick={() => {
+                trackEvent({
+                  tab: "CTA Interactions",
+                  event: "personalized_recommendation_alt_click",
+                  value: recommendation.secondaryHref,
+                  page: getCurrentPage(),
+                });
+              }}
+              className="hidden rounded-md px-2 py-1.5 text-[11px] font-medium text-emerald-400 transition-colors hover:bg-emerald-500/10 hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 sm:inline-flex"
+            >
+              Explore Another Area
+            </Link>
+          )}
 
           <button
             type="button"
             onClick={handleDismiss}
             aria-label="Dismiss welcome message"
             title="Dismiss welcome message"
-            className="rounded-md p-1.5 text-[#94A3B8] transition-colors hover:bg-[#1E293B] hover:text-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]"
+            className="rounded-md p-1.5 text-[#94A3B8] transition-colors hover:bg-[#1E293B] hover:text-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
           >
             <X size={15} aria-hidden="true" />
           </button>

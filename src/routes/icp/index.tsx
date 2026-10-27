@@ -7,7 +7,7 @@ import { LongFormCta } from "../../components/common/CtaBlock";
 export const Route = createFileRoute("/icp/")({
   head: () => ({
     meta: [
-      { title: "Ideal Customer Profile & Qualification | GreenNext" },
+      { title: "Industries & Qualification Framework | GreenNext" },
       {
         name: "description",
         content:

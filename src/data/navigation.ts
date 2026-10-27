@@ -15,7 +15,7 @@ export interface NavigationCategory {
   isDirectLink?: boolean;
 }
 
-export const NAVIGATION_STRUCTURE: NavigationCategory[] = [
+const NAVIGATION_CATALOG: NavigationCategory[] = [
   {
     id: "about",
     label: "About",
@@ -428,4 +428,59 @@ export const NAVIGATION_STRUCTURE: NavigationCategory[] = [
     description: "Connect with the GreenNext infrastructure planning team.",
     isDirectLink: true,
   },
+];
+
+const navigationById = (id: string) => {
+  const category = NAVIGATION_CATALOG.find((item) => item.id === id);
+  if (!category) throw new Error(`Missing navigation category: ${id}`);
+  return category;
+};
+
+const regionsAndSustainability = navigationById("regions-sustainability");
+const industries = navigationById("icp");
+
+/**
+ * Public navigation order. Keep the catalog above intact so existing routes and
+ * submenu definitions remain available while the header presents visitor-friendly
+ * top-level categories.
+ */
+export const NAVIGATION_STRUCTURE: NavigationCategory[] = [
+  {
+    id: "home",
+    label: "Home",
+    path: "/",
+    description: "Return to the GreenNext digital infrastructure overview.",
+    isDirectLink: true,
+  },
+  navigationById("infrastructure"),
+  navigationById("energy"),
+  navigationById("automation"),
+  navigationById("solutions"),
+  {
+    ...industries,
+    id: "industries",
+    label: "Industries",
+    description:
+      "Industry and infrastructure stakeholder profiles, qualification frameworks, and alignment criteria.",
+  },
+  {
+    ...regionsAndSustainability,
+    id: "sustainability",
+    label: "Sustainability",
+    path: "/sustainability",
+    description: "Sustainable digital infrastructure and energy-aware operating practices.",
+    items: regionsAndSustainability.items!.filter((item) =>
+      item.path.startsWith("/sustainability"),
+    ),
+  },
+  {
+    ...regionsAndSustainability,
+    id: "region",
+    label: "Region",
+    path: "/regions",
+    description:
+      "Regional digital infrastructure planning and network topology across South India.",
+    items: regionsAndSustainability.items!.filter((item) => item.path.startsWith("/regions")),
+  },
+  navigationById("about"),
 ];

@@ -462,12 +462,23 @@ export function FloatingContact() {
   const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
   const [activeInterest, setActiveInterest] = useState<string | undefined>(undefined);
 
+  const setQuickInquiryOpen = (open: boolean) => {
+    window.dispatchEvent(new CustomEvent("quick-inquiry-visibility", { detail: { open } }));
+    setModalOpen(open);
+  };
+
+  const setContactMenuOpen = (open: boolean) => {
+    window.dispatchEvent(new CustomEvent("floating-contact-visibility", { detail: { open } }));
+    setExpanded(open);
+  };
+
   // Global event listener to allow any button on any page to open Quick Inquiry
   useEffect(() => {
     const handleGlobalTrigger = (e: Event) => {
       const customEvent = e as CustomEvent<{ interest?: string }>;
       setActiveInterest(customEvent.detail?.interest);
-      setModalOpen(true);
+      setContactMenuOpen(false);
+      setQuickInquiryOpen(true);
     };
     window.addEventListener("open-quick-inquiry", handleGlobalTrigger);
     return () => {
@@ -475,11 +486,14 @@ export function FloatingContact() {
     };
   }, []);
 
-  const toggle = () => setExpanded((v) => !v);
+  const toggle = () => {
+    const open = !expanded;
+    setContactMenuOpen(open);
+  };
 
   const openInquiryModal = () => {
-    setExpanded(false);
-    setModalOpen(true);
+    setContactMenuOpen(false);
+    setQuickInquiryOpen(true);
     trackEvent({
       tab: "CTA Interactions",
       event: "quick_inquiry_open",
@@ -491,7 +505,7 @@ export function FloatingContact() {
   const handleWhatsAppAction = (e: React.MouseEvent) => {
     if (!WHATSAPP_CONFIG.isConfigured()) {
       e.preventDefault();
-      setExpanded(false);
+      setContactMenuOpen(false);
       setWhatsAppModalOpen(true);
       trackEvent({
         tab: "CTA Interactions",
@@ -506,14 +520,14 @@ export function FloatingContact() {
     <>
       <QuickInquiryModal
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => setQuickInquiryOpen(false)}
         initialInterest={activeInterest}
       />
 
       <WhatsAppDemoModal
         isOpen={whatsAppModalOpen}
         onClose={() => setWhatsAppModalOpen(false)}
-        onOpenQuickInquiry={() => setModalOpen(true)}
+        onOpenQuickInquiry={() => setQuickInquiryOpen(true)}
       />
 
       {/* Floating Widget — bottom-right, above mobile navigation */}
@@ -530,7 +544,20 @@ export function FloatingContact() {
               className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-[#0B0F17] border border-[#334155] text-white text-xs font-semibold shadow-xl hover:border-[#10B981] hover:text-[#10B981] transition-all whitespace-nowrap backdrop-blur-sm"
               id="floating-quick-inquiry-btn"
             >
-              <Send size={13} className="text-[#10B981]" />
+              <span
+                className="h-4 w-4 shrink-0 bg-[#10B981]"
+                style={{
+                  maskImage: "url('/quick-inquiry-form-icon.png')",
+                  WebkitMaskImage: "url('/quick-inquiry-form-icon.png')",
+                  maskPosition: "center",
+                  WebkitMaskPosition: "center",
+                  maskRepeat: "no-repeat",
+                  WebkitMaskRepeat: "no-repeat",
+                  maskSize: "contain",
+                  WebkitMaskSize: "contain",
+                }}
+                aria-hidden="true"
+              />
               <span>Quick Inquiry</span>
             </button>
 
@@ -562,7 +589,7 @@ export function FloatingContact() {
             {/* Full Contact Page */}
             <Link
               to="/contact"
-              onClick={() => setExpanded(false)}
+              onClick={() => setContactMenuOpen(false)}
               className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-[#0B0F17] border border-[#1E293B] text-[#94A3B8] text-xs font-semibold shadow-xl hover:border-[#334155] hover:text-white transition-all whitespace-nowrap backdrop-blur-sm"
               id="floating-contact-page-btn"
             >
