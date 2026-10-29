@@ -402,6 +402,7 @@ export interface EnvironmentalLimits {
   maxTempC: number;
   minRhPct: number;
   maxRhPct: number;
+  maxDewPointC: number;
 }
 
 export const ASHRAE_A1_RECOMMENDED: EnvironmentalLimits = {
@@ -409,6 +410,7 @@ export const ASHRAE_A1_RECOMMENDED: EnvironmentalLimits = {
   maxTempC: 27.0,
   minRhPct: 50.0, // or dew point min -9°C
   maxRhPct: 60.0, // non-condensing
+  maxDewPointC: 15.0,
 };
 
 export const ASHRAE_A1_ALLOWABLE: EnvironmentalLimits = {
@@ -416,6 +418,7 @@ export const ASHRAE_A1_ALLOWABLE: EnvironmentalLimits = {
   maxTempC: 32.0,
   minRhPct: 20.0,
   maxRhPct: 80.0,
+  maxDewPointC: 17.0,
 };
 
 /**
@@ -478,8 +481,9 @@ export function calculateEnvironmentalCompliance(
 
     const isTempCompliant = r.tempC >= limits.minTempC && r.tempC <= limits.maxTempC;
     const isRhCompliant = r.rhPct >= limits.minRhPct && r.rhPct <= limits.maxRhPct;
+    const isDewPointCompliant = calculateDewPoint(r.tempC, r.rhPct) <= limits.maxDewPointC;
 
-    if (isTempCompliant && isRhCompliant) {
+    if (isTempCompliant && isRhCompliant && isDewPointCompliant) {
       compliantCount += 1;
     }
   }

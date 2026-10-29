@@ -104,7 +104,7 @@ export function PowerReliabilityModel() {
               <span
                 className={`font-semibold font-mono mt-1 block ${profile.singlePointOfFailure ? "text-[#F43F5E]" : "text-[#10B981]"}`}
               >
-                {profile.singlePointOfFailure ? "YES (Vulnerable)" : "NO (Eliminated)"}
+                {profile.singlePointOfFailure ? "YES (Modelled Vulnerability)" : "NO (Modelled)"}
               </span>
             </div>
             <div className="p-3 rounded-lg bg-[#0B0F17] border border-[#1E293B]">
@@ -114,7 +114,7 @@ export function PowerReliabilityModel() {
               <span
                 className={`font-semibold font-mono mt-1 block ${profile.concurrentMaintainable ? "text-[#10B981]" : "text-[#F59E0B]"}`}
               >
-                {profile.concurrentMaintainable ? "YES (Serviceable Live)" : "NO (Requires Outage)"}
+                {profile.concurrentMaintainable ? "YES (Modelled Serviceability)" : "NO (Requires Outage)"}
               </span>
             </div>
             <div className="p-3 rounded-lg bg-[#0B0F17] border border-[#1E293B]">
@@ -122,7 +122,7 @@ export function PowerReliabilityModel() {
               <span
                 className={`font-semibold font-mono mt-1 block ${profile.faultTolerant ? "text-[#10B981]" : "text-[#94A3B8]"}`}
               >
-                {profile.faultTolerant ? "YES (Autonomous Isolation)" : "Manual Intervention"}
+                {profile.faultTolerant ? "YES (Modelled Isolation)" : "Manual Intervention"}
               </span>
             </div>
           </div>
@@ -141,7 +141,7 @@ export function PowerReliabilityModel() {
         <div className="lg:col-span-5 rounded-xl border border-[#1E293B] bg-[#121824] p-6 space-y-5">
           <div className="flex items-center justify-between border-b border-[#1E293B] pb-3">
             <span className="text-xs font-mono uppercase text-[#94A3B8]">
-              Live Failover Simulation
+              Interactive Failover Simulation
             </span>
             <span className="text-[10px] font-mono text-[#F59E0B] px-2 py-0.5 rounded bg-[#F59E0B]/10">
               Interactive Test
@@ -157,7 +157,7 @@ export function PowerReliabilityModel() {
                 }
               >
                 {simState === "normal"
-                  ? "ONLINE (33 kV TANTRANSCO)"
+                  ? "MODEL STATE: UTILITY AVAILABLE"
                   : "TRIPPED (Blackout Simulated)"}
               </span>
             </div>
@@ -166,8 +166,8 @@ export function PowerReliabilityModel() {
               <span className="text-[#94A3B8]">UPS Double-Conversion:</span>
               <span className="text-[#10B981] font-bold">
                 {simState === "utility_fail"
-                  ? "DISCHARGING BATTERIES (0ms transfer)"
-                  : "ONLINE (Floating)"}
+                  ? "SIMULATED: DISCHARGING BATTERIES (0ms transfer)"
+                  : "MODEL STATE: UPS AVAILABLE"}
               </span>
             </div>
 
@@ -179,7 +179,7 @@ export function PowerReliabilityModel() {
                 }
               >
                 {simState === "generator_running"
-                  ? "RUNNING & SYNCHRONIZED (Load Accepted)"
+                  ? "SIMULATED: RUNNING & SYNCHRONIZED (Load Accepted)"
                   : simState === "utility_fail"
                     ? "CRANKING... (~8s sync)"
                     : "STANDBY"}

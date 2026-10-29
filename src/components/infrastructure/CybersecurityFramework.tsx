@@ -47,8 +47,8 @@ const SECURITY_DOMAINS: SecurityDomain[] = [
       },
     ],
     operationalMetrics: [
-      { label: "Firmware Signature Coverage", value: "100%" },
-      { label: "Hardware Attestation Interval", value: "Every Boot / 6h" },
+      { label: "Firmware Signature Coverage (Illustrative Example)", value: "100%" },
+      { label: "Hardware Attestation Interval (Illustrative Example)", value: "Every Boot / 6h" },
     ],
   },
   {
@@ -80,7 +80,7 @@ const SECURITY_DOMAINS: SecurityDomain[] = [
     ],
     operationalMetrics: [
       { label: "Max Token Lifetime", value: "15 min" },
-      { label: "MFA Enforcement", value: "100% Hardware FIDO2" },
+      { label: "MFA Enforcement (Illustrative Example)", value: "100% Hardware FIDO2" },
     ],
   },
   {
@@ -236,7 +236,7 @@ export function CybersecurityFramework() {
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#10B981]/10 border border-[#10B981]/30 text-[11px] font-mono text-[#10B981]">
               <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-              Active Defense Model
+              Illustrative Defense Model
             </span>
           </div>
         </div>
@@ -247,7 +247,7 @@ export function CybersecurityFramework() {
           <div className="lg:col-span-5 rounded-xl border border-[#1E293B] bg-[#070A0E] p-4 sm:p-5 flex flex-col gap-3">
             <span className="text-xs font-mono uppercase tracking-wider text-[#F59E0B] flex items-center gap-1.5">
               <AlertTriangle size={14} />
-              Threat Vectors Mitigated
+              Threat Vectors Addressed in Model
             </span>
             <ul className="space-y-2 mt-1">
               {activeDomain.threatsMitigated.map((threat, idx) => (
@@ -272,7 +272,7 @@ export function CybersecurityFramework() {
           <div className="lg:col-span-7 flex flex-col gap-3">
             <span className="text-xs font-mono uppercase tracking-wider text-[#10B981] flex items-center gap-1.5">
               <Terminal size={14} />
-              Enforced Technical Controls & Standards
+              Reference Technical Controls & Standards
             </span>
             <div className="grid grid-cols-1 gap-3">
               {activeDomain.controls.map((ctrl, idx) => (

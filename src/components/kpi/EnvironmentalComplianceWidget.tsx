@@ -80,6 +80,7 @@ export function EnvironmentalComplianceWidget() {
     maxTempC: ASHRAE_A1_RECOMMENDED.maxTempC,
     minRhPct: ASHRAE_A1_RECOMMENDED.minRhPct,
     maxRhPct: ASHRAE_A1_RECOMMENDED.maxRhPct,
+    maxDewPointC: ASHRAE_A1_RECOMMENDED.maxDewPointC,
   });
 
   // Single test sensor
@@ -103,6 +104,7 @@ export function EnvironmentalComplianceWidget() {
         maxTempC: ASHRAE_A1_RECOMMENDED.maxTempC,
         minRhPct: ASHRAE_A1_RECOMMENDED.minRhPct,
         maxRhPct: ASHRAE_A1_RECOMMENDED.maxRhPct,
+        maxDewPointC: ASHRAE_A1_RECOMMENDED.maxDewPointC,
       });
     } else {
       setCustomLimits({
@@ -110,6 +112,7 @@ export function EnvironmentalComplianceWidget() {
         maxTempC: ASHRAE_A1_ALLOWABLE.maxTempC,
         minRhPct: ASHRAE_A1_ALLOWABLE.minRhPct,
         maxRhPct: ASHRAE_A1_ALLOWABLE.maxRhPct,
+        maxDewPointC: ASHRAE_A1_ALLOWABLE.maxDewPointC,
       });
     }
   };
@@ -117,7 +120,8 @@ export function EnvironmentalComplianceWidget() {
   const singleSensorDewPoint = calculateDewPoint(testTempC, testRhPct);
   const isTempCompliant = testTempC >= customLimits.minTempC && testTempC <= customLimits.maxTempC;
   const isRhCompliant = testRhPct >= customLimits.minRhPct && testRhPct <= customLimits.maxRhPct;
-  const isSingleCompliant = isTempCompliant && isRhCompliant;
+  const isDewPointCompliant = singleSensorDewPoint <= customLimits.maxDewPointC;
+  const isSingleCompliant = isTempCompliant && isRhCompliant && isDewPointCompliant;
 
   // Multi-sensor sample calculation
   const complianceResults = DEFAULT_SAMPLE_READINGS.map((reading) => {
@@ -127,12 +131,14 @@ export function EnvironmentalComplianceWidget() {
     const rhOk =
       reading.relativeHumidityPct >= customLimits.minRhPct &&
       reading.relativeHumidityPct <= customLimits.maxRhPct;
+    const dewPointOk = dewPoint <= customLimits.maxDewPointC;
     return {
       ...reading,
       dewPointC: dewPoint,
-      compliant: tempOk && rhOk,
+      compliant: tempOk && rhOk && dewPointOk,
       tempOk,
       rhOk,
+      dewPointOk,
     };
   });
 
@@ -164,10 +170,10 @@ export function EnvironmentalComplianceWidget() {
             className="rounded-md border border-border bg-background px-2.5 py-1 text-xs text-foreground focus:border-emerald-500 focus:outline-none"
           >
             <option value="recommended">
-              ASHRAE TC 9.9 Recommended (18°C - 27°C, 50% - 60% RH)
+              ASHRAE TC 9.9 Recommended (18°C - 27°C, ≤60% RH / ≤15°C DP)
             </option>
             <option value="allowableA1">
-              ASHRAE TC 9.9 Class A1 Allowable (15°C - 32°C, 20% - 80% RH)
+              ASHRAE TC 9.9 Class A1 Allowable (15°C - 32°C, 20% - 80% RH / ≤17°C DP)
             </option>
           </select>
         </div>
@@ -326,7 +332,7 @@ export function EnvironmentalComplianceWidget() {
               {singleSensorDewPoint}°C
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Condensation threshold at prevailing humidity
+              Configured dew-point limit: ≤{customLimits.maxDewPointC}°C
             </p>
           </div>
         </div>
@@ -380,7 +386,11 @@ export function EnvironmentalComplianceWidget() {
                       {reading.relativeHumidityPct}%
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">{reading.dewPointC}°C</td>
+                  <td className="px-3 py-2">
+                    <span className={reading.dewPointOk ? "text-muted-foreground" : "text-amber-400 font-bold"}>
+                      {reading.dewPointC}°C
+                    </span>
+                  </td>
                   <td className="px-3 py-2">
                     {reading.compliant ? (
                       <span className="inline-flex items-center rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
@@ -400,8 +410,9 @@ export function EnvironmentalComplianceWidget() {
       </div>
 
       <div className="mt-4 rounded-lg border border-border/40 bg-muted/20 p-3 text-xs text-muted-foreground">
-        <strong className="text-foreground">Authoritative Standard Note:</strong> Temperature
-        envelopes follow ASHRAE TC 9.9 (Thermal Guidelines for Data Processing Environments, 5th
+        <strong className="text-foreground">Illustrative sample note:</strong> These readings and
+         compliance results are local sample data, not live facility telemetry. Temperature
+         envelopes are benchmarked against ASHRAE TC 9.9 (Thermal Guidelines for Data Processing Environments, 5th
         Edition). Recommended bounds balance IT hardware reliability, fan power consumption, and
         economiser operating hours. Excursions within Allowable Class A1 do not cause immediate
         thermal shutdown but increase component failure probabilities over prolonged exposure.

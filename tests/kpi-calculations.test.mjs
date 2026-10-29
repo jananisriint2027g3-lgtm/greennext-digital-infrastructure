@@ -178,9 +178,19 @@ test("KPI 6: Temperature & Humidity Compliance (ASHRAE TC 9.9)", () => {
   const compliance = calculateEnvironmentalCompliance(readings, ASHRAE_A1_RECOMMENDED);
   assert.equal(compliance.totalValidCount, 3);
   assert.equal(compliance.invalidCount, 1);
-  assert.equal(compliance.compliantCount, 2);
-  // Compliance = 2 / 3 = 66.7%
-  assert.equal(compliance.compliancePct, 66.7);
+  assert.equal(compliance.compliantCount, 1);
+  // Compliance = 1 / 3 = 33.3% after applying the configured dew-point limit.
+  assert.equal(compliance.compliancePct, 33.3);
+
+  const dewPointExcursion = calculateEnvironmentalCompliance(
+    [
+      { tempC: 25.8, rhPct: 58 },
+      { tempC: 23.0, rhPct: 50 },
+    ],
+    ASHRAE_A1_RECOMMENDED,
+  );
+  assert.equal(dewPointExcursion.compliantCount, 1);
+  assert.equal(dewPointExcursion.compliancePct, 50);
 
   // 3. Empty readings array
   const empty = calculateEnvironmentalCompliance([], ASHRAE_A1_RECOMMENDED);

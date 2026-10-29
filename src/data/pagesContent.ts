@@ -440,6 +440,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Infrastructure",
     parentPath: "/infrastructure",
     route: "/infrastructure/ai-ready",
+    isConceptual: true,
     title: "AI-Ready Infrastructure",
     eyebrow: "Infrastructure",
     h1: "Architectural Frameworks for High-Density AI Clusters",
@@ -517,6 +518,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Infrastructure",
     parentPath: "/infrastructure",
     route: "/infrastructure/compute",
+    isConceptual: true,
     title: "Accelerated Compute Systems",
     eyebrow: "Infrastructure",
     h1: "High-Throughput Silicon Architectures for AI Training and Inference",
@@ -526,7 +528,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
       {
         title: "Compute Density & Accelerator Topologies",
         body: [
-          "Modern accelerated computing nodes integrate multiple high-performance GPUs or custom ASICs (e.g., NVIDIA HGX H100/H200, GB200 NVL72, AMD Instinct MI300X) on high-bandwidth baseboards. Inter-die communications rely on dedicated proprietary or open crossbars (NVLink, Infinity Fabric) delivering up to 900 GB/s to 1.8 TB/s of bidirectional bandwidth per accelerator.",
+          "Modern accelerated computing nodes integrate multiple high-performance GPUs or custom ASICs (e.g., NVIDIA HGX H100/H200, GB200 NVL72, AMD Instinct MI300X) on high-bandwidth baseboards. Interconnect bandwidth is vendor- and configuration-dependent, ranging from up to 900 GB/s per GPU to higher multi-GPU link configurations.",
           "GreenNext reference designs address the mechanical, thermal, and electrical integration of these accelerated platforms, ensuring that power delivery networks (PDN) and cooling manifolds maintain silicon junction temperatures safely below thermal throttling thresholds.",
         ],
         cards: [
@@ -534,7 +536,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
             meta: "SILICON ARCHITECTURE",
             title: "High-Bandwidth Memory (HBM3e)",
             description:
-              "Stacked memory architectures delivering up to 4.8 TB/s to 5.3 TB/s per socket, eliminating the memory wall for large parameter LLM inference and sequence processing.",
+              "Stacked memory architectures delivering approximately 4.8 TB/s to 5.3 TB/s per accelerator for selected HBM3e/HBM3 platforms, subject to the vendor model and configuration.",
           },
           {
             meta: "ELECTRICAL DELIVERY",
@@ -586,6 +588,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Infrastructure",
     parentPath: "/infrastructure",
     route: "/infrastructure/storage",
+    isConceptual: true,
     title: "High-Throughput Storage Architecture",
     eyebrow: "Infrastructure",
     h1: "Resilient Data Infrastructure for Demanding Workloads",
@@ -650,6 +653,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Infrastructure",
     parentPath: "/infrastructure",
     route: "/infrastructure/network",
+    isConceptual: true,
     title: "Lossless Network & Connectivity",
     eyebrow: "Infrastructure",
     h1: "The Connectivity Layer That Holds the Stack Together",
@@ -714,6 +718,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Infrastructure",
     parentPath: "/infrastructure",
     route: "/infrastructure/architecture",
+    isConceptual: true,
     title: "Connected Stack Architecture",
     eyebrow: "Infrastructure",
     h1: "One Connected Operational Stack",
@@ -731,7 +736,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
             meta: "LAYER 01 · APPLICATIONS",
             title: "Users / AI Applications",
             description:
-              "Workload orchestration engines (Kubernetes, Slurm, Ray) managing distributed model training, inference pipelines, and enterprise enterprise applications.",
+              "Workload orchestration engines (Kubernetes, Slurm, Ray) managing distributed model training, inference pipelines, and enterprise applications.",
           },
           {
             meta: "LAYER 02 · FABRIC",
@@ -806,6 +811,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Infrastructure",
     parentPath: "/infrastructure",
     route: "/infrastructure/cybersecurity",
+    isConceptual: true,
     title: "Cybersecurity & Infrastructure Protection",
     eyebrow: "Infrastructure",
     h1: "Defense-in-Depth for AI-Ready Digital Infrastructure",
@@ -949,7 +955,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
             meta: "SPILL CONTAINMENT",
             title: "Dielectric Oil & Glycol Catchment",
             description:
-              "Sump trenches and secondary containment containment basins with automatic drain shut-off valves preventing environmental contamination during transformer or chiller rupture.",
+              "Sump trenches and secondary containment basins with automatic drain shut-off valves preventing environmental contamination during transformer or chiller rupture.",
           },
           {
             meta: "ACOUSTIC ATTENUATION",
@@ -966,8 +972,8 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
         ],
         list: [
           "Geotechnical borehole drilling verifying subsoil stratification, water table depth, and soil bearing capacity to mitigate uneven foundation settlement",
-          "Topographical elevation surveys establishing white space finished floor levels (FFL) at least 1.5 meters above local 100-year historical flood records",
-          "Engineered stormwater detention and retention ponds sized for 100-year peak rainfall intensity with gravity-assisted site discharge canals",
+          "Topographical elevation surveys establishing white-space finished floor levels (FFL) above the site-specific design flood elevation established by qualified studies and authorities",
+          "Engineered stormwater detention and retention ponds sized for the site-specific design-storm rainfall intensity with gravity-assisted site discharge canals",
           "Dedicated heavy transport haul roads with minimum 15m centerline radius curves to support low-bed mobilization of multi-megawatt transformers and chillers",
           "Seismic bracing designs conforming to regional seismic risk zoning (IS 1893 Zone II/III in southern corridors) for all overhead MEP suspensions and rack anchorages",
         ],
@@ -1005,11 +1011,11 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     eyebrow: "Infrastructure",
     h1: "Multi-Hazard Fire Detection, Suppression, and Containment for Mission-Critical Facilities",
     intro:
-      "Comprehensive fire safety engineering for AI and hyperscale facilities: Very Early Warning Smoke Detection (VESDA), gaseous clean-agent suppression, double-interlock pre-action systems, and specialized BESS battery thermal runaway mitigations.",
+      "Comprehensive fire safety engineering for AI and hyperscale facilities: aspirating smoke detection (ASD; VESDA is an example brand), gaseous clean-agent suppression, double-interlock pre-action systems, and specialized BESS battery thermal runaway mitigations.",
     isConceptual: true,
     sections: [
       {
-        title: "Aspirating Smoke Detection (VESDA) in High-Airflow Environments",
+        title: "Aspirating Smoke Detection (ASD) in High-Airflow Environments",
         body: [
           "Modern high-density data halls present unique fire detection challenges. High-velocity airflow generated by computer room air handlers and high-RPM server fan trays dilutes smoke particles, frequently rendering standard optical spot detectors ineffective during the critical early stages of electrical overheating.",
           "GreenNext reference frameworks specify continuous air-sampling Aspirating Smoke Detection (ASD/VESDA) systems. Air is continuously drawn through calibrated sampling pipe networks deployed across return air plenums, hot-aisle containment caps, and server exhaust paths, feeding high-sensitivity optical laser chambers capable of detecting incipient pyrolysis particles before visible smoke or open flame develops.",
@@ -1239,14 +1245,14 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     eyebrow: "Infrastructure",
     h1: "Continuous Thermal Envelopes, Humidity Tracking, and ASHRAE TC 9.9 Compliance",
     intro:
-      "Multi-point sensory telemetry architectures engineered to track white-space dry-bulb temperatures, relative humidity, and dew point margins across high-density computing aisles in compliance with ASHRAE TC 9.9 thermal standards.",
+      "Conceptual multi-point telemetry architectures for tracking white-space dry-bulb temperatures, relative humidity, and dew-point margins across high-density computing aisles, benchmarked against ASHRAE TC 9.9 guidance.",
     isConceptual: true,
     sections: [
       {
         title: "ASHRAE TC 9.9 Thermal Envelopes & Dew Point Control",
         body: [
           "Hyperscale computing performance requires rigorous atmospheric regulation at server ingress points. The ASHRAE TC 9.9 (Thermal Guidelines for Data Processing Environments, 5th Edition) defines the thermal boundaries necessary to prevent silicon degradation, fan power overconsumption, and catastrophic condensation.",
-          "The Recommended Envelope establishes the optimal operating envelope: dry-bulb temperatures between 18.0°C and 27.0°C, a maximum relative humidity of 60%, and a maximum dew point of 15.0°C. For Class A1 IT hardware, Allowable excursions (15.0°C to 32.0°C, 20% to 80% RH) provide operational flexibility during extreme ambient weather or cooling transition periods without triggering safety shutdowns.",
+          "The Recommended Envelope establishes a commonly used planning envelope: dry-bulb temperatures between 18.0°C and 27.0°C, an upper moisture limit of 60% RH or 15.0°C dew point. For Class A1 IT hardware, the Allowable envelope (15.0°C to 32.0°C, 20% to 80% RH, and up to 17.0°C dew point) provides additional operating flexibility during extreme ambient weather or cooling transition periods; it is not equivalent to the Recommended range and does not replace site-specific OEM limits.",
         ],
         cards: [
           {
@@ -3536,7 +3542,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
           "AI-Ready Infrastructure (/infrastructure/ai-ready): Deep-dive into power density, thermal dissipation, and sustained accelerator operations.",
           "Compute Systems (/infrastructure/compute): High-density hardware clusters, scheduling architecture, and accelerator thermal envelopes.",
           "Workload-Aware Resources (/energy/workload-aware): Dynamic capacity matching between compute jobs and facility energy availability.",
-          "Infrastructure & Grid Index (/solutions/infrastructure-index): Mined infrastructure benchmarks tracking PUE and clean grid mix across South India.",
+          "Infrastructure & Grid Index (/solutions/infrastructure-index): Structured reference data for infrastructure and regional clean-energy planning.",
         ],
       },
     ],
@@ -3805,7 +3811,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
           "Energy Impact Calculator (/solutions/energy-calculator): Interactive modeling of IT compute energy, PUE variations, and annual carbon emissions.",
           "Power Monitoring (/energy/monitoring): Granular electrical telemetry tracking facility, row, and rack-level consumption.",
           "Sustainability Framework (/sustainability): Core principles for expanding digital capacity while decoupling resource consumption.",
-          "Infrastructure & Grid Index (/solutions/infrastructure-index): Mined infrastructure benchmarks and regional clean energy grid statistics.",
+          "Infrastructure & Grid Index (/solutions/infrastructure-index): Structured reference data for infrastructure and regional clean-energy planning.",
           "Energy-Aware Infrastructure (/sustainability/energy-aware): Upfront instrumentation and thermodynamic efficiency strategies.",
         ],
       },
