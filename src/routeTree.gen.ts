@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as RedisDemoRouteImport } from './routes/redis-demo'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as AboutSlugRouteImport } from './routes/about/$slug'
@@ -41,6 +42,11 @@ const IndexRoute = IndexRouteImport.update({
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RedisDemoRoute = RedisDemoRouteImport.update({
@@ -155,6 +161,7 @@ const SustainabilitySlugRoute = SustainabilitySlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/redis-demo': typeof RedisDemoRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/redis-demo': typeof RedisDemoRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/redis-demo': typeof RedisDemoRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
@@ -233,6 +242,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/contact'
+    | '/privacy-policy'
     | '/redis-demo'
     | '/about/$slug'
     | '/automation/$slug'
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/contact'
+    | '/privacy-policy'
     | '/redis-demo'
     | '/about/$slug'
     | '/automation/$slug'
@@ -283,6 +294,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/contact'
+    | '/privacy-policy'
     | '/redis-demo'
     | '/about/$slug'
     | '/automation/$slug'
@@ -309,6 +321,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ContactRoute: typeof ContactRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   RedisDemoRoute: typeof RedisDemoRoute
   AboutSlugRoute: typeof AboutSlugRoute
   AutomationSlugRoute: typeof AutomationSlugRoute
@@ -346,6 +359,13 @@ declare module '@tanstack/react-router' {
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/redis-demo': {
@@ -501,6 +521,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ContactRoute: ContactRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   RedisDemoRoute: RedisDemoRoute,
   AboutSlugRoute: AboutSlugRoute,
   AutomationSlugRoute: AutomationSlugRoute,

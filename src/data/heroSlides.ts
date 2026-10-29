@@ -95,7 +95,7 @@ export const HERO_SLIDES: HeroSlide[] = [
     eyebrow: "Regional Presence · South India",
     headline: "A Regional Approach to Digital Infrastructure",
     description:
-      "Digital infrastructure serving a region effectively requires more than a single central location. GreenNext focuses on Madurai, Coimbatore, Trichy, and Mangalore — four locations with distinct and complementary infrastructure relevance.",
+      "Digital infrastructure serving a region effectively requires more than a single central location. GreenNext focuses on seven locations with distinct and complementary infrastructure relevance across South India.",
     primaryCta: {
       label: "Explore Our Regions →",
       path: "/regions/overview",

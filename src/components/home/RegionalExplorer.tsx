@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { InternalLink as Link } from "../common/InternalLink";
 import { REGIONS_DATA, REGIONAL_NETWORK_DISCLAIMER, RegionInfo } from "../../data/regions";
+import { REGIONAL_PORTFOLIO, RegionalPortfolioLocation } from "../../data/regionalPortfolio";
 import { SOUTH_INDIA_STATES, GEO_BOUNDS } from "../../data/southIndiaGeo";
 import { Globe2, ArrowRight, ShieldCheck, CheckCircle2, Radio } from "../icons";
 import { trackEvent } from "../../lib/analytics";
@@ -57,10 +58,13 @@ interface LocationDef {
 }
 
 const MAP_LOCATIONS: Record<string, LocationDef> = {
-  mangalore:  { latitude: 12.9141, longitude: 74.856,  code: "IXE", label: "Mangalore" },
+  mangalore: { latitude: 12.9141, longitude: 74.856, code: "IXE", label: "Mangalore" },
+  hosur: { latitude: 12.7409, longitude: 77.8253, code: "HSR", label: "Hosur" },
   coimbatore: { latitude: 11.0168, longitude: 76.9558, code: "CJB", label: "Coimbatore" },
-  trichy:     { latitude: 10.7905, longitude: 78.7047, code: "TRZ", label: "Trichy" },
-  madurai:    { latitude:  9.9252, longitude: 78.1198, code: "MDU", label: "Madurai" },
+  trichy: { latitude: 10.7905, longitude: 78.7047, code: "TRZ", label: "Trichy" },
+  madurai: { latitude: 9.9252, longitude: 78.1198, code: "MDU", label: "Madurai" },
+  tirunelveli: { latitude: 8.7139, longitude: 77.7567, code: "TNV", label: "Tirunelveli" },
+  puducherry: { latitude: 11.9416, longitude: 79.8083, code: "PDY", label: "Puducherry" },
 };
 
 // Reference-only cities — shown as geographic context, NOT as GreenNext nodes
@@ -71,40 +75,90 @@ const CONTEXT_CITIES = [
 ];
 
 const STATE_LABELS = [
-  { id: "karnataka",     name: "KARNATAKA",     lon: 76.0,  lat: 15.0 },
-  { id: "kerala",        name: "KERALA",         lon: 75.5,  lat: 10.4 },
-  { id: "tamilnadu",     name: "TAMIL NADU",     lon: 78.6,  lat: 11.5 },
-  { id: "andhrapradesh", name: "ANDHRA PRADESH", lon: 80.4,  lat: 15.5 },
-  { id: "telangana",     name: "TELANGANA",      lon: 79.0,  lat: 18.2 },
+  { id: "karnataka", name: "KARNATAKA", lon: 76.0, lat: 15.0 },
+  { id: "kerala", name: "KERALA", lon: 75.5, lat: 10.4 },
+  { id: "tamilnadu", name: "TAMIL NADU", lon: 78.6, lat: 11.5 },
+  { id: "andhrapradesh", name: "ANDHRA PRADESH", lon: 80.4, lat: 15.5 },
+  { id: "telangana", name: "TELANGANA", lon: 79.0, lat: 18.2 },
 ];
 
-const LOCATION_LABEL_OFFSETS: Record<string, { dx: number; dy: number; anchor: "start" | "end" }> = {
-  mangalore: { dx: 13, dy: -3, anchor: "start" },
-  coimbatore: { dx: 12, dy: -12, anchor: "start" },
-  trichy: { dx: 12, dy: -12, anchor: "start" },
-  madurai: { dx: 13, dy: 16, anchor: "start" },
-};
+const LOCATION_LABEL_OFFSETS: Record<string, { dx: number; dy: number; anchor: "start" | "end" }> =
+  {
+    mangalore: { dx: 13, dy: -3, anchor: "start" },
+    hosur: { dx: 13, dy: -3, anchor: "start" },
+    coimbatore: { dx: 12, dy: -12, anchor: "start" },
+    trichy: { dx: 12, dy: -12, anchor: "start" },
+    madurai: { dx: 13, dy: 16, anchor: "start" },
+    tirunelveli: { dx: 13, dy: 16, anchor: "start" },
+    puducherry: { dx: 13, dy: -3, anchor: "start" },
+  };
 
-const CONTEXT_CITY_LABEL_OFFSETS: Record<string, { dx: number; dy: number; anchor: "start" | "middle" }> = {
+const CONTEXT_CITY_LABEL_OFFSETS: Record<
+  string,
+  { dx: number; dy: number; anchor: "start" | "middle" }
+> = {
   Bengaluru: { dx: 5, dy: -6, anchor: "start" },
   Chennai: { dx: 5, dy: -6, anchor: "start" },
   Salem: { dx: 5, dy: -6, anchor: "start" },
 };
 
 const OCEAN_LABELS = [
-  { text: "ARABIAN SEA",   lon: 73.85, lat: 11.8 },
-  { text: "BAY OF BENGAL", lon: 82.5,  lat: 12.0 },
+  { text: "ARABIAN SEA", lon: 73.85, lat: 11.8 },
+  { text: "BAY OF BENGAL", lon: 82.5, lat: 12.0 },
 ];
 
 // These are conceptual regional relationships, NOT physical infrastructure routes.
 const CONCEPTUAL_RELATIONSHIPS: [string, string][] = [
   ["mangalore", "coimbatore"],
+  ["mangalore", "hosur"],
   ["mangalore", "trichy"],
   ["mangalore", "madurai"],
+  ["hosur", "puducherry"],
   ["coimbatore", "trichy"],
   ["coimbatore", "madurai"],
   ["trichy", "madurai"],
+  ["trichy", "puducherry"],
+  ["madurai", "tirunelveli"],
 ];
+
+const PORTFOLIO_REGION_CODES: Record<string, string> = {
+  hosur: "HSR",
+  tirunelveli: "TNV",
+  puducherry: "PDY",
+};
+
+function fallbackRegion(portfolio: RegionalPortfolioLocation): RegionInfo {
+  const mapLocation = MAP_LOCATIONS[portfolio.id]!;
+  return {
+    id: portfolio.id,
+    name: portfolio.name,
+    code: PORTFOLIO_REGION_CODES[portfolio.id] ?? portfolio.id.slice(0, 3).toUpperCase(),
+    tagline: portfolio.tagline,
+    role: portfolio.facilityType,
+    category: "Regional infrastructure planning focus",
+    intro: portfolio.overview,
+    infrastructureRelevance: portfolio.connectivity.value,
+    ecosystem: portfolio.ecosystems.join(" · "),
+    connectivity: `${portfolio.connectivity.value}. ${portfolio.travel.value}.`,
+    networkRole: `GreenNext's conceptual regional network includes ${portfolio.name} as a ${portfolio.tagline.toLowerCase()}.`,
+    regionalIntent: portfolio.focus.join(" · "),
+    evidenceStatus: portfolio.status === "Proposed" ? "Proposed" : "Not Confirmed",
+    referenceSource: "Internal regional portfolio data",
+    relevantOfferings: portfolio.focus,
+    referenceClaims: portfolio.conflicts,
+    position: {
+      left: `${((mapLocation.longitude - MAP_BOUNDS.west) / (MAP_BOUNDS.east - MAP_BOUNDS.west)) * 100}%`,
+      top: `${((MAP_BOUNDS.north - mapLocation.latitude) / (MAP_BOUNDS.north - MAP_BOUNDS.south)) * 100}%`,
+    },
+    transitInfo: [portfolio.travel.value, portfolio.connectivity.value],
+    image:
+      portfolio.id === "puducherry"
+        ? "mangalore"
+        : portfolio.id === "tirunelveli"
+          ? "trichy"
+          : "coimbatore",
+  };
+}
 
 function conceptualArcPath(from: [number, number], to: [number, number], index: number): string {
   const [x1, y1] = from;
@@ -120,7 +174,11 @@ function conceptualArcPath(from: [number, number], to: [number, number], index: 
 
 export function RegionalExplorer() {
   const [selectedRegionId, setSelectedRegionId] = useState<string>("madurai");
-  const activeRegion: RegionInfo = REGIONS_DATA[selectedRegionId] ?? REGIONS_DATA["madurai"]!;
+  const activePortfolio =
+    REGIONAL_PORTFOLIO.find((location) => location.id === selectedRegionId) ??
+    REGIONAL_PORTFOLIO[0]!;
+  const activeRegion: RegionInfo =
+    REGIONS_DATA[selectedRegionId] ?? fallbackRegion(activePortfolio);
 
   const statePaths = useMemo(
     () =>
@@ -129,23 +187,28 @@ export function RegionalExplorer() {
         name: state.name,
         d: state.rings.map(ringToPath).join(" "),
       })),
-    []
+    [],
   );
 
   const activeLoc = MAP_LOCATIONS[selectedRegionId];
   const activePoint = activeLoc ? project(activeLoc.longitude, activeLoc.latitude) : undefined;
   const projectedLocations = useMemo(
-    () => Object.fromEntries(
-      Object.entries(MAP_LOCATIONS).map(([id, location]) => [id, project(location.longitude, location.latitude)])
-    ) as Record<string, [number, number]>,
-    []
+    () =>
+      Object.fromEntries(
+        Object.entries(MAP_LOCATIONS).map(([id, location]) => [
+          id,
+          project(location.longitude, location.latitude),
+        ]),
+      ) as Record<string, [number, number]>,
+    [],
   );
   const conceptualArcs = useMemo(
-    () => CONCEPTUAL_RELATIONSHIPS.map(([from, to], index) => ({
-      d: conceptualArcPath(projectedLocations[from]!, projectedLocations[to]!, index),
-      index,
-    })),
-    [projectedLocations]
+    () =>
+      CONCEPTUAL_RELATIONSHIPS.map(([from, to], index) => ({
+        d: conceptualArcPath(projectedLocations[from]!, projectedLocations[to]!, index),
+        index,
+      })),
+    [projectedLocations],
   );
 
   return (
@@ -158,12 +221,12 @@ export function RegionalExplorer() {
             <span>SOUTH INDIA REGIONAL NETWORK</span>
           </span>
           <h3 className="text-xl sm:text-2xl font-bold text-white mt-1">
-            Four Conceptual Focus Locations
+            Seven Regional Planning Locations
           </h3>
         </div>
         <div className="flex items-center gap-2 text-xs font-mono text-[#94A3B8] bg-[#0B0F17] px-3 py-1.5 rounded-lg border border-[#1E293B]">
           <Radio size={11} className="text-[#10B981] animate-pulse" />
-          <span>4 CONCEPTUAL FOCUS NODES</span>
+          <span>7 REGIONAL PLANNING NODES</span>
         </div>
       </div>
 
@@ -195,36 +258,43 @@ export function RegionalExplorer() {
       </div>
 
       {/* Main Split Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-8">
-
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start mb-8">
         {/* ── LEFT: Premium Geographic Map ─────────────────────────────── */}
-        <div className="lg:col-span-6 relative rounded-xl border border-[#1E3445] bg-[#07111D] overflow-hidden shadow-2xl">
-          <div className="relative w-full" style={{ aspectRatio: "1 / 1" }}>
+        <div className="lg:col-span-5 relative rounded-xl border border-[#1E3445] bg-[#07111D] overflow-hidden shadow-2xl">
+          <div className="relative w-full aspect-[4/3] lg:aspect-[5/4]">
             <svg
               viewBox={`0 0 ${SVG_W} ${SVG_H}`}
               className="absolute inset-0 h-full w-full"
               role="img"
-              aria-label="Geographic map of South India showing four GreenNext conceptual focus locations"
+              aria-label="Geographic map of South India showing seven GreenNext regional planning locations"
             >
               <defs>
                 {/* Glow filters */}
                 <filter id="gn-node-idle" x="-120%" y="-120%" width="340%" height="340%">
                   <feGaussianBlur stdDeviation="3.5" result="b" />
-                  <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                  <feMerge>
+                    <feMergeNode in="b" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
                 </filter>
                 <filter id="gn-node-active" x="-150%" y="-150%" width="400%" height="400%">
                   <feGaussianBlur stdDeviation="9" result="b" />
-                  <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+                  <feMerge>
+                    <feMergeNode in="b" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
                 </filter>
                 <filter id="gn-halo" x="-200%" y="-200%" width="500%" height="500%">
                   <feGaussianBlur stdDeviation="18" result="b" />
-                  <feMerge><feMergeNode in="b" /></feMerge>
+                  <feMerge>
+                    <feMergeNode in="b" />
+                  </feMerge>
                 </filter>
 
                 {/* Radial gradient for active node area glow */}
                 <radialGradient id="rg-active" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%"   stopColor="#10B981" stopOpacity="0.18" />
-                  <stop offset="60%"  stopColor="#10B981" stopOpacity="0.06" />
+                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.18" />
+                  <stop offset="60%" stopColor="#10B981" stopOpacity="0.06" />
                   <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
                 </radialGradient>
 
@@ -250,7 +320,13 @@ export function RegionalExplorer() {
 
                 {/* Subtle cartographic texture, intentionally subordinate to the geography. */}
                 <pattern id="map-grid" width="52" height="52" patternUnits="userSpaceOnUse">
-                  <path d="M 52 0 L 0 0 0 52" fill="none" stroke="#64748B" strokeWidth="0.3" opacity="0.06" />
+                  <path
+                    d="M 52 0 L 0 0 0 52"
+                    fill="none"
+                    stroke="#64748B"
+                    strokeWidth="0.3"
+                    opacity="0.06"
+                  />
                 </pattern>
 
                 {/* Pulse animation keyframes */}
@@ -309,7 +385,8 @@ export function RegionalExplorer() {
                 return (
                   <text
                     key={sl.id}
-                    x={x} y={y}
+                    x={x}
+                    y={y}
                     fill="#94A3B8"
                     fontSize="8"
                     fontFamily="ui-monospace,SFMono-Regular,monospace"
@@ -329,7 +406,8 @@ export function RegionalExplorer() {
                 return (
                   <text
                     key={ol.text}
-                    x={x} y={y}
+                    x={x}
+                    y={y}
                     fill="#718096"
                     fontSize="7.5"
                     fontFamily="ui-monospace,SFMono-Regular,monospace"
@@ -346,22 +424,34 @@ export function RegionalExplorer() {
               {/* ── Geographic reference cities (NOT GreenNext nodes) ── */}
               {CONTEXT_CITIES.map((c) => {
                 const [x, y] = project(c.longitude, c.latitude);
-                const labelOffset = CONTEXT_CITY_LABEL_OFFSETS[c.label] ?? { dx: 0, dy: -6, anchor: "middle" as const };
+                const labelOffset = CONTEXT_CITY_LABEL_OFFSETS[c.label] ?? {
+                  dx: 0,
+                  dy: -6,
+                  anchor: "middle" as const,
+                };
                 return (
-                <g key={c.label}>
-                  <circle cx={x} cy={y} r="1.7" fill="#314A5D" stroke="#7892A5" strokeWidth="0.55" />
-                  <text
-                    x={x + labelOffset.dx} y={y + labelOffset.dy}
-                    fill="#8AA0AF"
-                    fontSize="6.5"
-                    fontFamily="ui-monospace,SFMono-Regular,monospace"
-                    textAnchor={labelOffset.anchor}
-                    dominantBaseline="middle"
-                    letterSpacing="0.5"
-                  >
-                    {c.label}
-                  </text>
-                </g>
+                  <g key={c.label}>
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r="1.7"
+                      fill="#314A5D"
+                      stroke="#7892A5"
+                      strokeWidth="0.55"
+                    />
+                    <text
+                      x={x + labelOffset.dx}
+                      y={y + labelOffset.dy}
+                      fill="#8AA0AF"
+                      fontSize="6.5"
+                      fontFamily="ui-monospace,SFMono-Regular,monospace"
+                      textAnchor={labelOffset.anchor}
+                      dominantBaseline="middle"
+                      letterSpacing="0.5"
+                    >
+                      {c.label}
+                    </text>
+                  </g>
                 );
               })}
 
@@ -374,26 +464,25 @@ export function RegionalExplorer() {
                   stroke="#06B6D4"
                   strokeWidth="0.85"
                   strokeDasharray="4 6"
-                    className="gn-arc"
-                  style={{ animationDelay: (index * 0.55) + "s" }}
+                  className="gn-arc"
+                  style={{ animationDelay: index * 0.55 + "s" }}
                 />
               ))}
 
               {/* ── Active node radial area glow ── */}
               {activeLoc && activePoint && (
-                <circle
-                  cx={activePoint[0]}
-                  cy={activePoint[1]}
-                  r="80"
-                  fill="url(#rg-active)"
-                />
+                <circle cx={activePoint[0]} cy={activePoint[1]} r="80" fill="url(#rg-active)" />
               )}
 
               {/* ── GreenNext location markers ── */}
               {Object.entries(MAP_LOCATIONS).map(([id, loc]) => {
                 const isActive = selectedRegionId === id;
                 const [mx, my] = projectedLocations[id] ?? projectedLocations["madurai"]!;
-                const labelOffset = LOCATION_LABEL_OFFSETS[id] ?? { dx: 12, dy: -4, anchor: "start" as const };
+                const labelOffset = LOCATION_LABEL_OFFSETS[id] ?? {
+                  dx: 12,
+                  dy: -4,
+                  anchor: "start" as const,
+                };
                 const lx = mx + labelOffset.dx;
                 const labelY = my + labelOffset.dy;
                 const anchor = labelOffset.anchor;
@@ -431,7 +520,8 @@ export function RegionalExplorer() {
                       <>
                         {/* Outer animated pulse ring */}
                         <circle
-                          cx={mx} cy={my}
+                          cx={mx}
+                          cy={my}
                           r="22"
                           fill="none"
                           stroke="#10B981"
@@ -440,7 +530,8 @@ export function RegionalExplorer() {
                         />
                         {/* Inner animated pulse ring */}
                         <circle
-                          cx={mx} cy={my}
+                          cx={mx}
+                          cy={my}
                           r="14"
                           fill="none"
                           stroke="#10B981"
@@ -449,7 +540,8 @@ export function RegionalExplorer() {
                         />
                         {/* Solid halo ring */}
                         <circle
-                          cx={mx} cy={my}
+                          cx={mx}
+                          cy={my}
                           r="9"
                           fill="none"
                           stroke="#10B981"
@@ -459,19 +551,17 @@ export function RegionalExplorer() {
                         />
                         {/* Core dot — bright filled */}
                         <circle
-                          cx={mx} cy={my}
+                          cx={mx}
+                          cy={my}
                           r="5.5"
                           fill="#10B981"
                           filter="url(#gn-node-active)"
                         />
-                        <circle
-                          cx={mx} cy={my}
-                          r="2.5"
-                          fill="#ECFDF5"
-                        />
+                        <circle cx={mx} cy={my} r="2.5" fill="#ECFDF5" />
                         {/* City label — active */}
                         <text
-                          x={lx} y={labelY}
+                          x={lx}
+                          y={labelY}
                           fill="#10B981"
                           fontSize="8.75"
                           fontFamily="ui-monospace,SFMono-Regular,monospace"
@@ -482,7 +572,8 @@ export function RegionalExplorer() {
                           {loc.label}
                         </text>
                         <text
-                          x={lx} y={labelY + 10}
+                          x={lx}
+                          y={labelY + 10}
                           fill="#34D399"
                           fontSize="7"
                           fontFamily="ui-monospace,SFMono-Regular,monospace"
@@ -498,7 +589,8 @@ export function RegionalExplorer() {
                       <>
                         {/* Idle halo */}
                         <circle
-                          cx={mx} cy={my}
+                          cx={mx}
+                          cy={my}
                           r="8"
                           fill="none"
                           stroke="#10B981"
@@ -507,21 +599,19 @@ export function RegionalExplorer() {
                         />
                         {/* Idle marker */}
                         <circle
-                          cx={mx} cy={my}
+                          cx={mx}
+                          cy={my}
                           r="4"
                           fill="#05080F"
                           stroke="#10B981"
                           strokeWidth="1.5"
                           filter="url(#gn-node-idle)"
                         />
-                        <circle
-                          cx={mx} cy={my}
-                          r="1.5"
-                          fill="#10B981"
-                        />
+                        <circle cx={mx} cy={my} r="1.5" fill="#10B981" />
                         {/* City label — idle */}
                         <text
-                          x={lx} y={labelY}
+                          x={lx}
+                          y={labelY}
                           fill="#7DA8B8"
                           fontSize="8"
                           fontFamily="ui-monospace,SFMono-Regular,monospace"
@@ -532,7 +622,8 @@ export function RegionalExplorer() {
                           {loc.label}
                         </text>
                         <text
-                          x={lx} y={labelY + 10}
+                          x={lx}
+                          y={labelY + 10}
                           fill="#10B981"
                           fontSize="6.5"
                           fontFamily="ui-monospace,SFMono-Regular,monospace"
@@ -551,7 +642,12 @@ export function RegionalExplorer() {
               })}
 
               {/* ── Edge vignette for depth ── */}
-              <rect width={SVG_W} height={SVG_H} fill="url(#rg-vignette)" style={{ pointerEvents: "none" }} />
+              <rect
+                width={SVG_W}
+                height={SVG_H}
+                fill="url(#rg-vignette)"
+                style={{ pointerEvents: "none" }}
+              />
             </svg>
 
             {/* Map caption */}
@@ -567,7 +663,7 @@ export function RegionalExplorer() {
         </div>
 
         {/* ── RIGHT: Regional Dossier ───────────────────────────────────── */}
-        <div className="lg:col-span-6 flex flex-col justify-between rounded-xl border border-[#1E293B] bg-[#0B0F17] p-6 shadow-lg min-h-[380px] sm:min-h-[440px]">
+        <div className="lg:col-span-7 flex flex-col rounded-xl border border-[#1E293B] bg-[#0B0F17] p-5 sm:p-6 shadow-lg">
           <div>
             {/* Region header */}
             <div className="flex items-center justify-between gap-4 pb-5 mb-6 border-b border-[#1E293B]">
@@ -575,7 +671,9 @@ export function RegionalExplorer() {
                 <div className="relative">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]" />
                 </div>
-                <span className="text-2xl sm:text-3xl font-bold tracking-tight text-white">{activeRegion.name}</span>
+                <span className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+                  {activeRegion.name}
+                </span>
                 <span className="px-2 py-0.5 rounded bg-[#10B981]/10 text-[#10B981] font-mono text-[10px] font-bold border border-[#10B981]/25">
                   {activeRegion.code}
                 </span>
@@ -598,7 +696,10 @@ export function RegionalExplorer() {
                 <img
                   key={activeRegion.id}
                   src={REGION_IMAGES[activeRegion.id]?.src ?? REGION_IMAGES["madurai"]!.src}
-                  alt={REGION_IMAGES[activeRegion.id]?.alt ?? "Regional infrastructure context in South India"}
+                  alt={
+                    REGION_IMAGES[activeRegion.id]?.alt ??
+                    "Regional infrastructure context in South India"
+                  }
                   loading="lazy"
                   decoding="async"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -642,12 +743,55 @@ export function RegionalExplorer() {
                 ))}
               </div>
             </div>
+
+            <div
+              className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3"
+              aria-label={`${activePortfolio.name} infrastructure profile`}
+            >
+              {[
+                activePortfolio.land,
+                activePortfolio.buildingArea,
+                activePortfolio.sitePower,
+                activePortfolio.itLoad,
+                activePortfolio.substation,
+                activePortfolio.water,
+                activePortfolio.cooling,
+                activePortfolio.pue,
+                activePortfolio.connectivity,
+                activePortfolio.travel,
+              ].map((field) => (
+                <div
+                  key={field.label}
+                  className="rounded-lg border border-[#1E293B] bg-[#111A26] p-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-[10px] sm:text-[11px] font-mono uppercase tracking-wide text-[#64748B]">
+                      {field.label}
+                    </span>
+                    <span className="text-[10px] uppercase tracking-wide text-[#10B981]">
+                      {field.status}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm leading-relaxed text-[#CBD5E1]">{field.value}</p>
+                </div>
+              ))}
+            </div>
+            {activePortfolio.conflicts.length > 0 && (
+              <div className="mt-4 rounded-lg border border-amber-400/20 bg-amber-400/[0.04] px-3 py-2 text-xs leading-relaxed text-[#CBD5E1]">
+                <span className="font-semibold text-amber-200">Confirmation required: </span>
+                {activePortfolio.conflicts.join(" ")}
+              </div>
+            )}
           </div>
 
           {/* Actions */}
           <div className="pt-5 mt-6 border-t border-[#1E293B] flex flex-wrap items-center justify-between gap-3">
             <Link
-              to={"/regions/" + activeRegion.id}
+              to={
+                REGIONS_DATA[activeRegion.id]
+                  ? "/regions/" + activeRegion.id
+                  : "/regions#regional-portfolio"
+              }
               className="px-4 py-2 rounded-lg bg-[#10B981] text-[#070A0E] text-xs font-semibold hover:bg-[#34D399] transition-all flex items-center gap-1.5"
             >
               <span>Explore {activeRegion.name} Page</span>

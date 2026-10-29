@@ -2,9 +2,12 @@ import { useState } from "react";
 import { ArrowRight, CheckCircle2, ShieldCheck } from "../icons";
 import { DASHBOARD_METRICS } from "../../data/dashboard";
 import { REGIONS_DATA } from "../../data/regions";
+import { REGIONAL_PORTFOLIO } from "../../data/regionalPortfolio";
 import { trackEvent } from "../../lib/analytics";
 
-const REGION_IDS = ["madurai", "coimbatore", "trichy", "mangalore"] as const;
+const REGION_IDS = REGIONAL_PORTFOLIO.map((region) => region.id) as Array<
+  keyof typeof REGIONS_DATA
+>;
 
 export function RegionalComparison() {
   const [leftId, setLeftId] = useState<(typeof REGION_IDS)[number]>("madurai");
@@ -23,9 +26,7 @@ export function RegionalComparison() {
         <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#10B981]">
           Regional exploration
         </span>
-        <h2 className="mt-2 text-2xl font-bold text-white">
-          Compare the four conceptual focus nodes
-        </h2>
+        <h2 className="mt-2 text-2xl font-bold text-white">Compare regional planning nodes</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#94A3B8]">
           Compare the existing regional planning narratives side by side. No physical deployment or
           live regional performance is implied.
@@ -82,7 +83,9 @@ export function RegionalComparison() {
                     ["Network", metrics.network],
                   ].map(([label, value]) => (
                     <div key={label as string}>
-                      <strong className="block font-mono text-sm text-white">{value}%</strong>
+                      <strong className="block font-mono text-sm text-white">
+                        {value === null ? "N/A" : `${value}%`}
+                      </strong>
                       <span className="text-[9px] text-[#64748B]">{label as string}</span>
                     </div>
                   ))}

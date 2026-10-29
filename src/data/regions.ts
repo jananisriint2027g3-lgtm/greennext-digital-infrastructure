@@ -11,6 +11,11 @@ export interface RegionInfo {
   connectivity: string;
   networkRole: string;
   regionalIntent: string;
+  /** Content governance fields: reference claims are not independent verification. */
+  evidenceStatus: "Under Validation" | "Proposed" | "Not Confirmed";
+  referenceSource: string;
+  relevantOfferings: string[];
+  referenceClaims: string[];
   position: { left: string; top: string };
   transitInfo: string[];
   /** Regional context image – factual disclaimer: illustrative infrastructure/connectivity context only */
@@ -25,6 +30,9 @@ export const REGION_IMAGE_KEYS: Record<string, string> = {
   coimbatore: "coimbatore",
   trichy: "trichy",
   mangalore: "mangalore",
+  hosur: "coimbatore",
+  tirunelveli: "trichy",
+  puducherry: "mangalore",
 };
 
 export const REGIONS_DATA: Record<string, RegionInfo> = {
@@ -47,6 +55,18 @@ export const REGIONS_DATA: Record<string, RegionInfo> = {
       "Within GreenNext's conceptual regional architecture, Madurai represents the southern anchor node. It is designed to evaluate regional edge compute distribution, reduce metropolitan backhaul transit latency for southern enterprises, and anchor disaster recovery compute capacity for coastal Tamil Nadu.",
     regionalIntent:
       "GreenNext's focus in Madurai encompasses regional site feasibility due diligence, evaluating utility substation feeder capacities, modeling open-access solar PPA wheeling pathways, and assessing edge compute demands across southern Tamil Nadu's expanding industrial and educational institutions.",
+    evidenceStatus: "Under Validation",
+    referenceSource:
+      "Green Data reference: index.html, locations.html, V2-GreenNext-Technologies.html",
+    relevantOfferings: [
+      "Enterprise and regional computing",
+      "Colocation and edge planning",
+      "Power, cooling and sustainability modeling",
+    ],
+    referenceClaims: [
+      "The reference proposes Madurai ELCOT parcels for IT parks, GCCs, and data-centre or edge-computing use.",
+      "Parcel sizes, utility access, statutory approvals, and operating status require independent confirmation.",
+    ],
     position: { left: "54%", top: "72%" },
     transitInfo: [
       "Madurai International Airport (IXM)",
@@ -75,6 +95,18 @@ export const REGIONS_DATA: Record<string, RegionInfo> = {
       "Within GreenNext's conceptual regional network, Coimbatore represents the western anchor — an operational node tailored to support low-latency manufacturing automation, industrial edge compute clusters, and cross-state network resilience toward Kerala and Karnataka.",
     regionalIntent:
       "GreenNext's focus in Coimbatore is centered on industrial edge data center architectures, exploring brownfield manufacturing facility retrofits, evaluating hybrid air-liquid cooling pod designs, and structuring private edge AI reference models for advanced manufacturing enterprises.",
+    evidenceStatus: "Under Validation",
+    referenceSource:
+      "Green Data reference: index.html, locations.html, V2-GreenNext-Technologies.html",
+    relevantOfferings: [
+      "AI-ready and high-performance computing",
+      "Industrial edge infrastructure",
+      "Networking, cooling and operational monitoring",
+    ],
+    referenceClaims: [
+      "The reference proposes Coimbatore technology, IT-park, and data-centre campus concepts supporting GCC and AI workloads.",
+      "The reference's acreage, substation distance, capacity, and development-readiness claims are not independently verified here.",
+    ],
     position: { left: "38%", top: "57%" },
     transitInfo: [
       "Coimbatore International Airport (CJB)",
@@ -103,6 +135,17 @@ export const REGIONS_DATA: Record<string, RegionInfo> = {
       "Within GreenNext's conceptual regional topology, Trichy functions as the central routing junction and data aggregation node — balancing east-west and north-south data transit, providing optical path diversity, and mitigating single-point-of-failure vulnerabilities in coastal metropolitan fiber networks.",
     regionalIntent:
       "GreenNext's focus in Trichy involves evaluating optical latency aggregation across Tamil Nadu's secondary corridors, studying high-voltage grid interconnect capacities, and modeling modular disaster recovery facilities for public-sector and enterprise institutions.",
+    evidenceStatus: "Under Validation",
+    referenceSource: "Green Data reference: index.html, locations.html",
+    relevantOfferings: [
+      "Regional infrastructure planning",
+      "Network and connectivity",
+      "Resilient storage and disaster-recovery architecture",
+    ],
+    referenceClaims: [
+      "The reference describes a proposed Trichy knowledge/campus corridor linked to education, heavy industry, and connectivity.",
+      "Land, power, fibre, facility, and development claims require independent site and utility validation.",
+    ],
     position: { left: "58%", top: "49%" },
     transitInfo: [
       "Tiruchirappalli International Airport (TRZ)",
@@ -131,12 +174,141 @@ export const REGIONS_DATA: Record<string, RegionInfo> = {
       "Within GreenNext's conceptual network view, Mangalore represents a coastal gateway and cross-state diversity node — evaluating regional network resilience, interconnecting coastal Karnataka with the broader South India grid, and providing geographic separation from inland Tamil Nadu facilities.",
     regionalIntent:
       "GreenNext's focus in Mangalore centers on exploring coastal data center thermal engineering requirements, assessing terrestrial interconnection pathways with carrier-neutral operators, and analyzing industrial power tariffs under the Karnataka Electricity Regulatory Commission (KERC).",
+    evidenceStatus: "Not Confirmed",
+    referenceSource:
+      "GreenNext regional planning model; no city-specific Green Data reference claim was used for this page",
+    relevantOfferings: [
+      "Network and connectivity",
+      "Thermal management",
+      "Regional feasibility analysis",
+    ],
+    referenceClaims: [
+      "Mangalore remains a conceptual comparison node in the existing GreenNext regional model.",
+      "No operating GreenNext facility or city-specific reference development is confirmed by the supplied material.",
+    ],
     position: { left: "14%", top: "28%" },
     transitInfo: [
       "Mangalore International Airport (IXE)",
       "Regional Terrestrial Fiber Corridors & Carrier Interconnects",
       "New Mangalore Port (NMPA) All-Weather Deep-Water Gateway",
       "Konkan Railway & NH-66 Multi-Modal Coastal Transit Corridors",
+    ],
+    image: "mangalore",
+  },
+  hosur: {
+    id: "hosur",
+    name: "Hosur",
+    code: "HSR",
+    tagline: "Bengaluru-Border EV, Robotics & Precision Technology Gateway",
+    role: "Industrial Edge & Bengaluru Technology Corridor Node",
+    category: "Industrial Technology & AI Edge Corridor",
+    intro:
+      "Hosur is positioned in the supplied reference data as a proposed Tamil Nadu–Karnataka border corridor for EV manufacturing, robotics, precision electronics, and hyperscale-edge demand. Its proximity to Bengaluru is relevant for distributed capacity planning, while the industrial ecosystem creates a potential use case for low-latency operational and AI workloads.",
+    infrastructureRelevance:
+      "The reference describes a proposed 90+ acre / 65-acre industrial portfolio with scalable site power, a dedicated 230/110 kV connection, and industrial water planning. These are source-reported planning claims rather than verified GreenNext assets. Any future facility would need independent confirmation of land title, dual-feed design, utility approvals, water continuity, and the distinction between site power and data-centre IT load.",
+    ecosystem:
+      "Hosur's planning relevance comes from its automotive, EV, battery, robotics, drone, avionics, and precision-electronics ecosystem, together with access to the Bengaluru technology and engineering talent market. The proposed regional role is therefore industrial edge and AI infrastructure supporting manufacturing operations, with hyperscale-edge feasibility treated as a future development question.",
+    connectivity:
+      "The supplied reference identifies NH-44 access, proximity to Electronic City, rail-freight potential, and carrier-neutral fibre planning. It also places the proposed corridor about 60 minutes from Bengaluru International Airport. Route diversity, carrier count, latency, and airport travel time require site-specific validation.",
+    networkRole:
+      "Within GreenNext's conceptual topology, Hosur is a northwestern Tamil Nadu border node that can be evaluated for industrial edge compute and cross-border resilience toward Bengaluru, while reducing dependence on a single metropolitan deployment footprint.",
+    regionalIntent:
+      "GreenNext's focus in Hosur is to assess EV and robotics workloads, AI edge architectures, high-density GPU requirements, industrial power and water feasibility, and the connectivity needed for resilient enterprise and manufacturing operations.",
+    evidenceStatus: "Proposed",
+    referenceSource: "Green Data reference: src/data/locationsData.js and locations.html",
+    relevantOfferings: [
+      "Industrial edge infrastructure",
+      "AI-ready and high-performance computing",
+      "Power, cooling and connectivity feasibility",
+    ],
+    referenceClaims: [
+      "The reference reports conflicting land figures of 90+ acres and 65 acres.",
+      "Reference site power, substation, water, fibre and zoning claims require independent confirmation.",
+    ],
+    position: { left: "41%", top: "25%" },
+    transitInfo: [
+      "NH-44 Bengaluru–Hosur industrial corridor",
+      "Electronic City Bengaluru technology corridor",
+      "Rail-freight and industrial logistics access described in the reference",
+      "Bengaluru International Airport (reference: approximately 60 minutes)",
+    ],
+    image: "coimbatore",
+  },
+  tirunelveli: {
+    id: "tirunelveli",
+    name: "Tirunelveli",
+    code: "TNV",
+    tagline: "Renewable-Energy & Proposed AI Hyperscale Corridor",
+    role: "Southern Renewable Power & High-Density Compute Node",
+    category: "Renewable Energy & High-Density Compute Planning",
+    intro:
+      "The supplied reference positions Tirunelveli/Gangaikondan as a proposed renewable-energy and high-density AI corridor. The planning case combines southern Tamil Nadu's wind and solar ecosystem with logistics access toward Tuticorin and a potential role for AI, HPC, and clean-technology workloads.",
+    infrastructureRelevance:
+      "Reference material describes conflicting portfolio land figures of 50+ acres and 40 acres, scalable site power of 150 MW, and a 400/230 kV grid context with a reference substation distance. It separately mentions a proposed 100+ MW renewable data-centre park. These figures must not be combined or treated as secured IT load; land, grid access, wheeling, water allocation, and approvals remain to be confirmed.",
+    ecosystem:
+      "Tirunelveli's proposed infrastructure role is connected to the wind and solar generation corridor, clean-tech manufacturing, SpaceTech and propulsion-related engineering, and the technical talent base of southern Tamil Nadu. The reference also identifies potential high-density AI and GPU workloads, subject to feasibility and customer demand.",
+    connectivity:
+      "The reference identifies NH-44, rail access, and logistics proximity to V.O. Chidambaranar Port in Tuticorin. It places the proposed area about 35 minutes from Tuticorin Airport and about 45 km from the port. Fibre route diversity and service-provider availability require provider and site confirmation.",
+    networkRole:
+      "Within GreenNext's conceptual topology, Tirunelveli is a southern clean-power node for evaluating renewable-backed high-density compute and geographic separation from metropolitan and coastal concentration risks.",
+    regionalIntent:
+      "GreenNext's focus in Tirunelveli is to evaluate renewable power procurement and wheeling, high-density AI/HPC thermal design, grid interconnection, port-linked equipment logistics, and clean-technology ecosystem requirements.",
+    evidenceStatus: "Proposed",
+    referenceSource: "Green Data reference: src/data/locationsData.js and locations.html",
+    relevantOfferings: [
+      "Renewable power and energy planning",
+      "AI-ready and high-performance computing",
+      "High-density thermal and utility feasibility",
+    ],
+    referenceClaims: [
+      "The reference reports conflicting land figures of 50+ acres and 40 acres.",
+      "The proposed 100+ MW compute figure is distinct from the 150 MW site-power claim and is not verified IT load.",
+    ],
+    position: { left: "47%", top: "84%" },
+    transitInfo: [
+      "NH-44 southern Tamil Nadu logistics corridor",
+      "Tuticorin Airport (reference: approximately 35 minutes)",
+      "V.O. Chidambaranar Port / Tuticorin logistics gateway",
+      "Rail and redundant optical-fibre paths require site confirmation",
+    ],
+    image: "trichy",
+  },
+  puducherry: {
+    id: "puducherry",
+    name: "Puducherry",
+    code: "PDY",
+    tagline: "Coastal Edge, Innovation & Regional Resilience Corridor",
+    role: "East-Coast Edge & Disaster-Recovery Planning Node",
+    category: "Coastal Technology & Innovation Ecosystem",
+    intro:
+      "The supplied reference describes Puducherry as a proposed coastal knowledge, innovation, executive-technology, and edge-compute corridor linked to Chennai and the East Coast Road. Its planning relevance is regional connectivity and resilience, not a confirmed operating GreenNext facility.",
+    infrastructureRelevance:
+      "Reference sources describe conflicting land figures of 45+ acres and 35 acres, scalable site power of 60 MW, a 110/33 kV substation concept, and 1.8 MLD water planning. The reference does not document a data-centre building area, IT-load capacity, cooling design, or PUE. Coastal exposure, flood risk, water continuity, and utility redundancy require detailed site due diligence.",
+    ecosystem:
+      "Puducherry's proposed ecosystem combines software and R&D, biotech and precision instruments, creative and executive technology services, and regional edge or disaster-recovery requirements. The corridor's connection to Chennai is relevant for backhaul and talent access, while any latency, subsea-cable, or carrier-diversity claim must be validated with network providers.",
+    connectivity:
+      "The reference identifies East Coast Road, NH-32, Chennai backhaul, local airport access, and port connectivity. It places the proposed area about 15 minutes from Puducherry Airport and about 90 minutes from Chennai International Airport. The reference latency statement is not independently validated.",
+    networkRole:
+      "Within GreenNext's conceptual topology, Puducherry is an east-coast edge and disaster-recovery node that can be evaluated for geographic diversity, innovation workloads, and Chennai-adjacent enterprise services.",
+    regionalIntent:
+      "GreenNext's focus in Puducherry is to assess coastal resilience, edge and disaster-recovery architectures, Chennai backhaul diversity, water and cooling options, and the fit of the local R&D and precision-instrument ecosystem.",
+    evidenceStatus: "Proposed",
+    referenceSource: "Green Data reference: src/data/locationsData.js and locations.html",
+    relevantOfferings: [
+      "Regional edge and disaster recovery",
+      "Network and connectivity planning",
+      "Cooling, water and coastal resilience assessment",
+    ],
+    referenceClaims: [
+      "The reference reports conflicting land figures of 45+ acres and 35 acres.",
+      "Airport, water, substation, fibre, zoning and connectivity claims require independent confirmation.",
+    ],
+    position: { left: "76%", top: "35%" },
+    transitInfo: [
+      "East Coast Road and NH-32 corridors",
+      "Puducherry Airport (reference: approximately 15 minutes)",
+      "Chennai International Airport (reference: approximately 90 minutes)",
+      "Chennai backhaul and port connectivity require provider/site confirmation",
     ],
     image: "mangalore",
   },

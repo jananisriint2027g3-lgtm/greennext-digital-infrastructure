@@ -4,12 +4,12 @@ export interface DashboardRegionMetric {
   code: string;
   detail: string;
   status: string;
-  compute: number;
-  power: number;
-  cooling: number;
-  network: number;
-  events: number;
-  alerts: number;
+  compute: number | null;
+  power: number | null;
+  cooling: number | null;
+  network: number | null;
+  events: number | null;
+  alerts: number | null;
 }
 
 export const DASHBOARD_METRICS: Record<string, DashboardRegionMetric> = {
@@ -64,6 +64,45 @@ export const DASHBOARD_METRICS: Record<string, DashboardRegionMetric> = {
     network: 93,
     events: 21,
     alerts: 3,
+  },
+  hosur: {
+    id: "hosur",
+    name: "Hosur",
+    code: "HSR",
+    detail: "Bengaluru-adjacent industrial and logistics planning node.",
+    status: "Planning / Telemetry unavailable",
+    compute: null,
+    power: null,
+    cooling: null,
+    network: null,
+    events: null,
+    alerts: null,
+  },
+  tirunelveli: {
+    id: "tirunelveli",
+    name: "Tirunelveli",
+    code: "TNV",
+    detail: "Southern Tamil Nadu renewable-energy and regional connectivity node.",
+    status: "Planning / Telemetry unavailable",
+    compute: null,
+    power: null,
+    cooling: null,
+    network: null,
+    events: null,
+    alerts: null,
+  },
+  puducherry: {
+    id: "puducherry",
+    name: "Puducherry",
+    code: "PDY",
+    detail: "Coastal innovation and cross-border connectivity planning node.",
+    status: "Planning / Telemetry unavailable",
+    compute: null,
+    power: null,
+    cooling: null,
+    network: null,
+    events: null,
+    alerts: null,
   },
 };
 

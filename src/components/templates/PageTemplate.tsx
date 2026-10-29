@@ -139,10 +139,10 @@ export function PageTemplate({
       />
 
       {/* Main Content Body */}
-      <main className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <main className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-14">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
           {/* Primary Content Column (8 Cols) */}
-          <div className="lg:col-span-8 space-y-12">
+          <div className="min-w-0 lg:col-span-8 space-y-8 lg:space-y-10">
             {/* Contextual Enterprise Infrastructure Photography */}
             {featuredImage && (
               <div className="rounded-2xl overflow-hidden border border-[#1E293B] bg-[#0B0F17] shadow-xl group">
@@ -192,11 +192,11 @@ export function PageTemplate({
                 {/* Optional Cards Grid */}
                 {section.cards && section.cards.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-                    {section.cards.map((card) => (
-                      <div
-                        key={card.title}
-                        className="rounded-xl border border-[#1E293B] bg-[#121824] p-5 flex flex-col justify-between"
-                      >
+                    {section.cards.map((card) => {
+                      const cardClassName =
+                        "rounded-xl border border-[#1E293B] bg-[#121824] p-5 flex flex-col justify-between transition-colors " +
+                        (card.path ? "hover:border-[#334155] hover:bg-[#1A2234] group" : "");
+                      const cardBody = (
                         <div>
                           {card.meta && (
                             <span className="text-[10px] font-mono uppercase tracking-wider text-[#10B981] block mb-1">
@@ -207,9 +207,24 @@ export function PageTemplate({
                           <p className="text-xs text-[#94A3B8] leading-relaxed">
                             {card.description}
                           </p>
+                          {card.path && (
+                            <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#10B981] group-hover:text-[#34D399]">
+                              Open regional dossier <ArrowRight size={13} />
+                            </span>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+
+                      return card.path ? (
+                        <Link key={card.title} to={card.path} className={cardClassName}>
+                          {cardBody}
+                        </Link>
+                      ) : (
+                        <div key={card.title} className={cardClassName}>
+                          {cardBody}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -250,7 +265,7 @@ export function PageTemplate({
           </div>
 
           {/* Sticky Sidebar Navigation (4 Cols) */}
-          <aside className="lg:col-span-4 space-y-6">
+          <aside className="min-w-0 lg:col-span-4 space-y-6">
             {/* Related Pages Widget */}
             <div className="rounded-2xl border border-[#1E293B] bg-[#0B0F17] p-6 shadow-xl sticky top-28">
               <div className="flex items-center gap-2 pb-4 mb-4 border-b border-[#1E293B]">

@@ -80,7 +80,7 @@ export function ContactPage() {
       icon: Layers,
       title: "Regional Infrastructure",
       tag: "SOUTH INDIA CORRIDORS",
-      desc: "Tier-2 city digital infrastructure integration across Madurai, Coimbatore, Trichy, and Mangalore with low-latency regional interconnects.",
+      desc: "Tier-2 city digital infrastructure integration across seven South Indian regional nodes with low-latency interconnects.",
       bullets: [
         "Secondary-city data hubs",
         "Regional fiber interconnects",
@@ -260,7 +260,7 @@ export function ContactPage() {
                   </div>
                 </div>
                 <p className="text-xs text-[#94A3B8] leading-relaxed mb-3">
-                  Four connected infrastructure nodes supporting regional capacity distribution across South India.
+                  Seven connected planning locations supporting regional capacity distribution across South India.
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-xs font-mono text-[#CBD5E1]">
                   <Link
@@ -290,6 +290,27 @@ export function ContactPage() {
                   >
                     <span>Mangalore</span>
                     <span className="text-[#10B981] text-[10px]">IXE</span>
+                  </Link>
+                  <Link
+                    to="/regions/hosur"
+                    className="p-2.5 rounded-lg bg-[#121824] border border-[#1E293B] hover:border-[#10B981]/50 hover:text-[#10B981] transition-colors flex items-center justify-between"
+                  >
+                    <span>Hosur</span>
+                    <span className="text-[#10B981] text-[10px]">HSR</span>
+                  </Link>
+                  <Link
+                    to="/regions/tirunelveli"
+                    className="p-2.5 rounded-lg bg-[#121824] border border-[#1E293B] hover:border-[#10B981]/50 hover:text-[#10B981] transition-colors flex items-center justify-between"
+                  >
+                    <span>Tirunelveli</span>
+                    <span className="text-[#10B981] text-[10px]">TNV</span>
+                  </Link>
+                  <Link
+                    to="/regions/puducherry"
+                    className="p-2.5 rounded-lg bg-[#121824] border border-[#1E293B] hover:border-[#10B981]/50 hover:text-[#10B981] transition-colors flex items-center justify-between"
+                  >
+                    <span>Puducherry</span>
+                    <span className="text-[#10B981] text-[10px]">PDY</span>
                   </Link>
                 </div>
                 <div className="pt-3 mt-3 border-t border-[#1E293B] text-[10px] text-[#64748B] flex items-center gap-1.5">

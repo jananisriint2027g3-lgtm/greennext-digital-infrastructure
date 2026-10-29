@@ -53,7 +53,7 @@ const ACTIONS = [
 
 export function InfrastructureIntelligence() {
   return (
-    <section className="border-b border-[#1E293B] bg-[#0B0F17] py-16 sm:py-20">
+    <section className="border-b border-[#1E293B] bg-[#0B0F17] py-14 lg:py-16">
       <div className="mx-auto max-w-[1340px] px-4 sm:px-6 lg:px-8">
         <div className="mb-9 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
@@ -87,7 +87,7 @@ export function InfrastructureIntelligence() {
             <Link
               key={href}
               to={href}
-              className="group flex min-h-[208px] flex-col rounded-xl border border-[#1E293B] bg-[#121824] p-5 shadow-xl transition-colors hover:border-[#334155] hover:bg-[#16202E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0F17]"
+              className="group flex min-h-[184px] flex-col rounded-xl border border-[#1E293B] bg-[#121824] p-5 shadow-xl transition-colors hover:border-[#334155] hover:bg-[#16202E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0F17]"
             >
               <div className="mb-5 flex items-center justify-between">
                 <div

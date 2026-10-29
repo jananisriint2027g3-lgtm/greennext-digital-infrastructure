@@ -6,6 +6,7 @@ import {
   DASHBOARD_DISCLAIMER,
   DashboardRegionMetric,
 } from "../../data/dashboard";
+import { REGIONS_DATA } from "../../data/regions";
 import {
   Cpu,
   Zap,
@@ -23,6 +24,9 @@ export function DashboardPreview() {
   const [selectedRegionKey, setSelectedRegionKey] = useState<string>("madurai");
   const activeMetric: DashboardRegionMetric =
     DASHBOARD_METRICS[selectedRegionKey] ?? DASHBOARD_METRICS["madurai"]!;
+  const activeRegion = REGIONS_DATA[selectedRegionKey];
+  const formatValue = (value: number | null | undefined, suffix = "") =>
+    value == null ? "Unavailable" : `${value}${suffix}`;
 
   const metricCards = [
     {
@@ -30,28 +34,38 @@ export function DashboardPreview() {
       value: activeMetric.compute,
       icon: Cpu,
       color: "#06B6D4",
-      sub: "Illustrative workload signal",
+      sub:
+        activeMetric.compute == null
+          ? "Location telemetry unavailable"
+          : "Illustrative workload signal",
     },
     {
       label: "Energy Monitoring",
       value: activeMetric.power,
       icon: Zap,
       color: "#F59E0B",
-      sub: "Illustrative power load",
+      sub:
+        activeMetric.power == null ? "Location telemetry unavailable" : "Illustrative power load",
     },
     {
       label: "Cooling Status",
       value: activeMetric.cooling,
       icon: Snowflake,
       color: "#38BDF8",
-      sub: "Illustrative thermal loop",
+      sub:
+        activeMetric.cooling == null
+          ? "Location telemetry unavailable"
+          : "Illustrative thermal loop",
     },
     {
       label: "Network Connectivity",
       value: activeMetric.network,
       icon: Network,
       color: "#10B981",
-      sub: "Illustrative link health",
+      sub:
+        activeMetric.network == null
+          ? "Location telemetry unavailable"
+          : "Illustrative link health",
     },
   ];
 
@@ -110,7 +124,7 @@ export function DashboardPreview() {
       {/* Main Dashboard Body */}
       <div className="p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Node Profile Sidebar (4 Cols) */}
-        <div className="lg:col-span-4 rounded-xl border border-[#1E293B] bg-[#121824] p-5 flex flex-col justify-between">
+        <div className="lg:col-span-4 rounded-xl border border-[#1E293B] bg-[#121824] p-5 flex flex-col">
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-3xl font-mono font-bold text-white">{activeMetric.code}</span>
@@ -120,7 +134,9 @@ export function DashboardPreview() {
             </div>
 
             <h4 className="text-lg font-bold text-white mb-1">{activeMetric.name}</h4>
-            <p className="text-xs text-[#94A3B8] mb-6">{activeMetric.detail}</p>
+            <p className="text-xs text-[#94A3B8] mb-6">
+              {activeRegion?.role ?? activeMetric.detail}
+            </p>
 
             <div className="space-y-3 pt-4 border-t border-[#1E293B]">
               <div className="flex items-center justify-between text-xs">
@@ -129,8 +145,10 @@ export function DashboardPreview() {
                   <span>Automation Events</span>
                 </span>
                 <span className="font-mono text-white font-bold">
-                  {activeMetric.events}{" "}
-                  <span className="text-[10px] font-normal text-[#64748B]">/ 24h</span>
+                  {formatValue(activeMetric.events)}{" "}
+                  <span className="text-[10px] font-normal text-[#64748B]">
+                    {activeMetric.events == null ? "telemetry unavailable" : "/ 24h"}
+                  </span>
                 </span>
               </div>
 
@@ -140,8 +158,10 @@ export function DashboardPreview() {
                   <span>Open Alerts</span>
                 </span>
                 <span className="font-mono text-white font-bold">
-                  {activeMetric.alerts}{" "}
-                  <span className="text-[10px] font-normal text-[#64748B]">illustrative</span>
+                  {formatValue(activeMetric.alerts)}{" "}
+                  <span className="text-[10px] font-normal text-[#64748B]">
+                    {activeMetric.alerts == null ? "telemetry unavailable" : "illustrative"}
+                  </span>
                 </span>
               </div>
             </div>
@@ -176,19 +196,25 @@ export function DashboardPreview() {
 
                   <div>
                     <span className="text-2xl sm:text-3xl font-mono font-bold text-white block mb-2">
-                      {m.value}%
+                      {formatValue(m.value, "%")}
                     </span>
 
                     {/* Progress Bar Track */}
-                    <div className="h-1.5 w-full rounded-full bg-[#070A0E] overflow-hidden mb-2">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${m.value}%`,
-                          backgroundColor: m.color,
-                        }}
-                      />
-                    </div>
+                    {m.value == null ? (
+                      <div className="mb-2 rounded-md border border-[#334155] bg-[#070A0E] px-2 py-1.5 text-[10px] font-mono uppercase tracking-wide text-[#94A3B8]">
+                        Telemetry unavailable
+                      </div>
+                    ) : (
+                      <div className="h-1.5 w-full rounded-full bg-[#070A0E] overflow-hidden mb-2">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${m.value}%`,
+                            backgroundColor: m.color,
+                          }}
+                        />
+                      </div>
+                    )}
 
                     <span className="text-[11px] font-medium text-[#CBD5E1] block truncate">
                       {m.label}

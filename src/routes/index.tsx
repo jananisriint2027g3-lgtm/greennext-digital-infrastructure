@@ -36,7 +36,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Intelligent infrastructure for a sustainable digital future. Connecting AI-driven data center infrastructure, energy efficiency, and intelligent automation across Madurai, Coimbatore, Trichy, and Mangalore.",
+          "Intelligent infrastructure for a sustainable digital future. Connecting AI-driven data center infrastructure, energy efficiency, and intelligent automation across seven South Indian regional nodes.",
       },
       {
         property: "og:title",
@@ -88,7 +88,7 @@ function HomePage() {
       path: "/regions/overview",
       icon: Network,
       accent: "#10B981",
-      desc: "A distributed regional approach designed around the infrastructure and connectivity requirements of Madurai, Coimbatore, Trichy, and Mangalore across South India.",
+      desc: "A distributed regional approach designed around the infrastructure and connectivity requirements of seven South Indian regional nodes.",
     },
   ];
 
@@ -208,7 +208,7 @@ function HomePage() {
       </section>
 
       {/* 03. CORE CAPABILITY CARDS */}
-      <section className="py-20 border-b border-[#1E293B] bg-[#070A0E]">
+      <section className="py-14 lg:py-16 border-b border-[#1E293B] bg-[#070A0E]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl mb-12">
             <span className="text-xs font-mono uppercase tracking-widest text-[#10B981] font-semibold block mb-2">
@@ -270,7 +270,7 @@ function HomePage() {
       <InfrastructureIntelligence />
 
       {/* 05. AI-DRIVEN INFRASTRUCTURE PIPELINE */}
-      <section className="py-20 border-b border-[#1E293B] bg-[#0B0F17]">
+      <section className="py-14 lg:py-16 border-b border-[#1E293B] bg-[#0B0F17]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center mb-12">
             <div className="lg:col-span-7">
@@ -346,28 +346,28 @@ function HomePage() {
       </section>
 
       {/* 06. ENERGY EFFICIENCY DISCIPLINE */}
-      <section className="py-20 border-b border-[#1E293B] bg-[#070A0E]">
+      <section className="py-14 lg:py-16 border-b border-[#1E293B] bg-[#070A0E]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <EnergyFlowModel />
         </div>
       </section>
 
       {/* 07. INTELLIGENT AUTOMATION */}
-      <section className="py-20 border-b border-[#1E293B] bg-[#0B0F17]">
+      <section className="py-14 lg:py-16 border-b border-[#1E293B] bg-[#0B0F17]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <AutomationWorkflow />
         </div>
       </section>
 
       {/* 08. REGIONAL DIGITAL INFRASTRUCTURE */}
-      <section className="py-20 border-b border-[#1E293B] bg-[#070A0E]">
+      <section className="py-14 lg:py-16 border-b border-[#1E293B] bg-[#070A0E]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <RegionalExplorer />
         </div>
       </section>
 
       {/* 09. 7-LAYER INFRASTRUCTURE ARCHITECTURE */}
-      <section className="py-20 border-b border-[#1E293B] bg-[#0B0F17]">
+      <section className="py-14 lg:py-16 border-b border-[#1E293B] bg-[#0B0F17]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mb-12">
             <span className="text-xs font-mono uppercase tracking-widest text-[#10B981] font-semibold block mb-2">
@@ -388,7 +388,7 @@ function HomePage() {
       </section>
 
       {/* 10. DASHBOARD PREVIEW */}
-      <section className="py-20 border-b border-[#1E293B] bg-[#070A0E]">
+      <section className="py-14 lg:py-16 border-b border-[#1E293B] bg-[#070A0E]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl mb-8">
             <span className="text-xs font-mono uppercase tracking-widest text-[#10B981] font-semibold block mb-2">
@@ -408,7 +408,7 @@ function HomePage() {
       </section>
 
       {/* 11. OPERATIONAL USE CASES */}
-      <section className="py-20 border-b border-[#1E293B] bg-[#0B0F17]">
+      <section className="py-14 lg:py-16 border-b border-[#1E293B] bg-[#0B0F17]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
             <div>
@@ -470,7 +470,7 @@ function HomePage() {
       </section>
 
       {/* 11. SUSTAINABILITY PRINCIPLES */}
-      <section className="py-20 border-b border-[#1E293B] bg-[#070A0E]">
+      <section className="py-14 lg:py-16 border-b border-[#1E293B] bg-[#070A0E]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mb-12">
             <span className="text-xs font-mono uppercase tracking-widest text-[#10B981] font-semibold block mb-2">
@@ -521,7 +521,7 @@ function HomePage() {
       </section>
 
       {/* 12. THE GREENNEXT APPROACH */}
-      <section className="py-20 border-b border-[#1E293B] bg-[#0B0F17]">
+      <section className="py-14 lg:py-16 border-b border-[#1E293B] bg-[#0B0F17]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl mb-12">
             <span className="text-xs font-mono uppercase tracking-widest text-[#10B981] font-semibold block mb-2">
@@ -572,7 +572,7 @@ function HomePage() {
       </section>
 
       {/* 13. TYPE 1 LONG-FORM CONVERSION CTA */}
-      <section className="py-20 bg-[#070A0E]">
+      <section className="py-14 lg:py-16 bg-[#070A0E]">
         <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
           <LongFormCta />
         </div>

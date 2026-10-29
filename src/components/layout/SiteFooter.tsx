@@ -19,8 +19,8 @@ export function SiteFooter() {
         onClose={() => setWhatsAppModalOpen(false)}
         onOpenQuickInquiry={() => openQuickInquiry()}
       />
-      <footer className="bg-[#070A0E] text-white border-t border-[#1E293B] pt-14 pb-12 mt-6 sm:mt-10">
-        <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8">
+      <footer className="bg-[#070A0E] text-white border-t border-[#1E293B] pt-14 pb-28 sm:pb-32 mt-6 sm:mt-10">
+        <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Top Section: Brand & High-level Columns */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 pb-14 border-b border-[#1E293B]">
             {/* Brand Column (4 Cols) */}
@@ -532,6 +532,48 @@ export function SiteFooter() {
                     Mangalore (IXE)
                   </Link>
                   <Link
+                    to="/regions/hosur"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/regions/hosur",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
+                    Hosur (HSR)
+                  </Link>
+                  <Link
+                    to="/regions/tirunelveli"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/regions/tirunelveli",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
+                    Tirunelveli (TNV)
+                  </Link>
+                  <Link
+                    to="/regions/puducherry"
+                    onClick={() =>
+                      trackEvent({
+                        tab: "Navigation",
+                        event: "nav_footer_click",
+                        value: "/regions/puducherry",
+                        page: currentPath,
+                      })
+                    }
+                    className="hover:text-white transition-colors"
+                  >
+                    Puducherry (PDY)
+                  </Link>
+                  <Link
                     to="/solutions"
                     onClick={() =>
                       trackEvent({
@@ -562,7 +604,7 @@ export function SiteFooter() {
                 </div>
               </div>
 
-              {/* Column 5: Ideal Customer Profile (ICP) */}
+              {/* Column 5: Industries */}
               <div className="flex flex-col gap-3">
                 <span className="text-xs font-mono uppercase tracking-wider text-[#10B981]">
                   Customer Profiles
@@ -580,7 +622,7 @@ export function SiteFooter() {
                     }
                     className="hover:text-white transition-colors font-medium text-white"
                   >
-                    ICP Overview
+                    Industries Overview
                   </Link>
                   <Link
                     to="/icp/data-center-operators"
@@ -659,9 +701,27 @@ export function SiteFooter() {
               <span>© {new Date().getFullYear()} GreenNext Initiative</span>
               <span>South India</span>
               <span className="text-[#334155]">•</span>
-              <Link to="/redis-demo" className="text-[#64748B] hover:text-[#10B981] transition-colors flex items-center gap-1">
+              <Link
+                to="/redis-demo"
+                className="text-[#64748B] hover:text-[#10B981] transition-colors flex items-center gap-1"
+              >
                 <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
                 <span>Redis Demo</span>
+              </Link>
+              <span className="text-[#334155]">•</span>
+              <Link
+                to="/privacy-policy"
+                onClick={() =>
+                  trackEvent({
+                    tab: "Navigation",
+                    event: "nav_footer_click",
+                    value: "/privacy-policy",
+                    page: currentPath,
+                  })
+                }
+                className="text-[#64748B] hover:text-[#10B981] transition-colors"
+              >
+                Privacy Policy
               </Link>
             </div>
           </div>

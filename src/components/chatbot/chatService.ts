@@ -55,7 +55,10 @@ export function getAssistantOpening(
   return `Welcome back. ${page.returningMessage}${behaviorNote} Would you like to explore a specific area?`;
 }
 
-const REGION_IDS = ["madurai", "coimbatore", "trichy", "mangalore"] as const;
+const REGION_IDS = Object.keys(REGIONS_DATA) as Array<keyof typeof REGIONS_DATA>;
+const REGION_LIST = Object.values(REGIONS_DATA)
+  .map((region) => `• ${region.name} — ${region.code}`)
+  .join("\n");
 
 function regionResponse(id: (typeof REGION_IDS)[number]): AssistantResponse {
   const region = REGIONS_DATA[id];
@@ -131,7 +134,7 @@ export function getAssistantResponse(
     query.includes("focus area")
   ) {
     return {
-      text: "GreenNext presents four conceptual regional infrastructure focus locations:\n\n• Madurai — MDU\n• Coimbatore — CJB\n• Trichy — TRZ\n• Mangalore — IXE\n\nThese locations represent GreenNext's planning focus areas, not claims of currently operating GreenNext facilities.",
+      text: `GreenNext presents seven conceptual regional infrastructure focus locations:\n\n${REGION_LIST}\n\nThese locations represent GreenNext's planning focus areas, not claims of currently operating GreenNext facilities.`,
       links: [{ label: "Explore the regions", href: "/regions/overview" }],
     };
   }

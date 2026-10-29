@@ -234,6 +234,14 @@ const NAVIGATION_CATALOG: NavigationCategory[] = [
         isConceptual: true,
       },
       {
+        id: "regional-portfolio",
+        label: "Data Centre Portfolio",
+        path: "/regions#regional-portfolio",
+        description:
+          "Seven source-referenced regional locations with transparent infrastructure fields.",
+        isConceptual: true,
+      },
+      {
         id: "madurai",
         label: "Madurai (MDU)",
         path: "/regions/madurai",
@@ -259,6 +267,27 @@ const NAVIGATION_CATALOG: NavigationCategory[] = [
         label: "Mangalore (IXE)",
         path: "/regions/mangalore",
         description: "Coastal technology gateway with undersea cable landing proximity.",
+        isConceptual: true,
+      },
+      {
+        id: "hosur",
+        label: "Hosur (HSR)",
+        path: "/regions/hosur",
+        description: "Bengaluru-border EV, robotics, and industrial edge corridor.",
+        isConceptual: true,
+      },
+      {
+        id: "tirunelveli",
+        label: "Tirunelveli (TNV)",
+        path: "/regions/tirunelveli",
+        description: "Renewable-energy and proposed high-density compute corridor.",
+        isConceptual: true,
+      },
+      {
+        id: "puducherry",
+        label: "Puducherry (PDY)",
+        path: "/regions/puducherry",
+        description: "Coastal edge, innovation, and regional resilience corridor.",
         isConceptual: true,
       },
       {
@@ -455,7 +484,13 @@ export const NAVIGATION_STRUCTURE: NavigationCategory[] = [
   navigationById("infrastructure"),
   navigationById("energy"),
   navigationById("automation"),
-  navigationById("solutions"),
+  {
+    ...navigationById("solutions"),
+    id: "offerings",
+    label: "Offerings",
+    description:
+      "Conceptual infrastructure offerings spanning compute, power, cooling, monitoring, connectivity, and regional planning.",
+  },
   {
     ...industries,
     id: "industries",
@@ -476,7 +511,7 @@ export const NAVIGATION_STRUCTURE: NavigationCategory[] = [
   {
     ...regionsAndSustainability,
     id: "region",
-    label: "Region",
+    label: "Regions",
     path: "/regions",
     description:
       "Regional digital infrastructure planning and network topology across South India.",

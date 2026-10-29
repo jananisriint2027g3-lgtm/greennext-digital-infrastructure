@@ -39,7 +39,7 @@ export const Route = createFileRoute("/regions/$slug")({
 function RegionsSubmenuPage() {
   const { slug } = Route.useParams();
 
-  // If this is a specific city dossier (Madurai, Coimbatore, Trichy, Mangalore)
+  // If this is a specific regional dossier, use the shared regional page template.
   if (REGIONS_DATA[slug]) {
     return <RegionalPageTemplate region={REGIONS_DATA[slug]} />;
   }

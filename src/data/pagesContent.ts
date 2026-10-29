@@ -5,6 +5,7 @@ export interface ContentSection {
     title: string;
     description: string;
     meta?: string;
+    path?: string;
   }>;
   list?: string[];
   callout?: string;
@@ -72,7 +73,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
             meta: "REGIONAL RESILIENCE",
             title: "Distributed South India Corridors",
             description:
-              "A decentralized digital infrastructure focus evaluating high-capability secondary industrial hubs across Madurai, Coimbatore, Trichy, and Mangalore.",
+              "A decentralized digital infrastructure focus evaluating seven high-capability secondary industrial and coastal hubs across South India.",
           },
         ],
       },
@@ -217,7 +218,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
       {
         title: "The Opportunity in Decentralized Regional Infrastructure",
         body: [
-          "Decentralizing compute capacity to South India's high-capability Tier-2 industrial and educational corridors — such as Madurai, Coimbatore, Trichy, and Mangalore — addresses these structural bottlenecks directly. It distributes electrical grid load, utilizes local renewable energy potential (wind in the Palakkad Gap and solar across southern Tamil Nadu), provides lower-latency compute to regional manufacturing enterprises, and reduces the environmental burden on saturated coastal metros.",
+          "Decentralizing compute capacity to South India's high-capability Tier-2 industrial, educational, and coastal corridors addresses these structural bottlenecks directly. It distributes electrical grid load, utilizes local renewable energy potential, provides lower-latency compute to regional enterprises, and reduces the environmental burden on saturated coastal metros.",
         ],
       },
     ],
@@ -2321,42 +2322,67 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     eyebrow: "Regions",
     h1: "A Regional Approach to Digital Infrastructure",
     intro:
-      "GreenNext develops strategic infrastructure models for secondary industrial and educational hubs across South India, delivering distributed compute capacity closer to enterprise users while alleviating metropolitan power and water saturation.",
+      "GreenNext develops strategic infrastructure models for secondary industrial and educational hubs across South India. The portfolio intelligence view covers seven regional locations while preserving a separate conceptual network view for GreenNext's regional planning focus.",
     sections: [
       {
         title: "The South India Distributed Network",
         body: [
           "Traditional digital infrastructure investment in India has concentrated heavily in coastal Tier-1 metropolises like Chennai and Mumbai. While these locations offer subsea cable landings, they increasingly face severe municipal power grid bottlenecks, rising real estate costs, water supply vulnerability, and heightened geopolitical exposure.",
-          "GreenNext evaluates high-capability secondary industrial corridors across Tamil Nadu and Karnataka. By distributing compute capacity to Madurai, Coimbatore, Trichy, and Mangalore, enterprises gain access to robust renewable energy corridors, lower land costs, skilled engineering talent, and lower network transit latency to regional manufacturing hubs.",
+          "GreenNext evaluates high-capability secondary industrial corridors across Tamil Nadu, Karnataka, and Puducherry. The regional portfolio includes Coimbatore, Hosur, Madurai, Tiruchirappalli, Tirunelveli, Puducherry, and Mangalore; separate conceptual network pages cover GreenNext's current planning focus. Land, power, water, and facility figures are shown with explicit validation status rather than treated as operating facts.",
         ],
         cards: [
           {
             meta: "TAMIL NADU SOUTH CORRIDOR",
             title: "Madurai (MDU)",
+            path: "/regions/madurai",
             description:
               "Southern logistics gateway adjacent to 230kV/400kV TANTRANSCO grid substations and the vast southern Tamil Nadu solar belt, ideal for asynchronous batch AI training and disaster recovery.",
           },
           {
             meta: "WESTERN INDUSTRIAL HUB",
             title: "Coimbatore (CJB)",
+            path: "/regions/coimbatore",
             description:
               "High-precision engineering and industrial automation corridor benefiting from the Palakkad Gap wind energy corridor and multi-carrier dark fiber along NH-544.",
           },
           {
             meta: "CENTRAL TRANSIT NEXUS",
             title: "Trichy (TRZ)",
+            path: "/regions/trichy",
             description:
               "Centrally positioned transit node anchored by premier technical institutions (NIT Trichy) and heavy manufacturing, offering balanced terrestrial fiber reach to Chennai, Bangalore, and Kochi.",
           },
           {
             meta: "COASTAL GATEWAY & TRANSIT",
             title: "Mangalore (IXE)",
+            path: "/regions/mangalore",
             description:
               "Strategic coastal nexus connected to Karnataka 400kV hydro grids and regional terrestrial telecommunications routes connecting coastal Karnataka to Southern India.",
           },
+          {
+            meta: "BENGALURU-BORDER INDUSTRIAL EDGE",
+            title: "Hosur (HSR)",
+            path: "/regions/hosur",
+            description:
+              "Proposed EV, robotics, precision-electronics, and AI-edge corridor linked to NH-44, Electronic City, and the Bengaluru technology ecosystem.",
+          },
+          {
+            meta: "SOUTHERN RENEWABLE POWER CORRIDOR",
+            title: "Tirunelveli (TNV)",
+            path: "/regions/tirunelveli",
+            description:
+              "Proposed wind-and-solar corridor for renewable-backed high-density compute, AI/HPC planning, and clean-technology logistics toward Tuticorin.",
+          },
+          {
+            meta: "EAST-COAST EDGE & RESILIENCE",
+            title: "Puducherry (PDY)",
+            path: "/regions/puducherry",
+            description:
+              "Proposed coastal innovation and edge-compute corridor linked to Chennai backhaul, East Coast Road, software R&D, and disaster-recovery planning.",
+          },
         ],
         callout:
-          "Regional Infrastructure Scope & Planning Disclaimer: Regional nodes (MDU, CJB, TRZ, IXE) represent GreenNext strategic research corridors, feasibility analyses, and conceptual network topologies. GreenNext does not currently own, lease, build, or operate commercial data centers or physical points of presence in these cities.",
+          "Regional Infrastructure Scope & Planning Disclaimer: Regional locations (MDU, CJB, TRZ, IXE, HSR, TNV, PDY) represent GreenNext strategic research corridors, feasibility analyses, and conceptual network topologies. GreenNext does not currently own, lease, build, or operate commercial data centers or physical points of presence in these cities.",
       },
       {
         title: "Key Regional Evaluation Criteria",
@@ -2436,7 +2462,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
       {
         title: "Decentralized Network Topologies",
         body: [
-          "Our regional network design models a redundant ring topology interconnecting Madurai, Coimbatore, Trichy, and Mangalore directly to core exchange hubs in Chennai and Bangalore. This guarantees multi-path carrier-neutral transit, ensuring that a fiber cut on any single transit highway never isolates a regional node.",
+          "Our regional network design models a redundant topology interconnecting seven planning nodes with core exchange hubs in Chennai and Bengaluru. This supports multi-path carrier-neutral transit so a fiber cut on any single transit highway does not isolate a regional node.",
         ],
       },
     ],
@@ -2464,18 +2490,42 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Solutions",
     parentPath: "/",
     route: "/solutions",
-    title: "Enterprise Infrastructure Solutions",
+    title: "GreenNext Offerings",
     eyebrow: "Solutions",
-    h1: "Operational Scenarios GreenNext Is Designed to Address",
+    h1: "Infrastructure Offerings for AI-Era Workloads",
     intro:
-      "Seven targeted architectural and operational solutions engineered to resolve high-density compute, power monitoring, cooling efficiency, and predictive automation challenges.",
+      "GreenNext offerings are engineering reference designs, software intelligence, and regional feasibility services for organizations planning or improving digital infrastructure. They are conceptual unless a page explicitly identifies a live integration.",
     sections: [
       {
-        title: "Enterprise Infrastructure Scenarios",
+        title: "Offerings mapped to the reference",
         body: [
-          "Deploying and operating AI-ready digital infrastructure requires specialized engineering solutions that span physical facility mechanics and software orchestration. GreenNext has structured its capabilities into seven core enterprise operational scenarios:",
+          "GreenNext organizes its infrastructure platform into the following offerings while preserving the distinction between planning proposals and operational facilities:",
         ],
         cards: [
+          {
+            meta: "OFFERING 01",
+            title: "AI-Ready & High-Performance Computing",
+            description:
+              "Reference architecture for GPU/HPC workloads, high-density rack planning, compute systems, storage, and network fabrics. Capacity, deployment, and operating status remain project-specific.",
+          },
+          {
+            meta: "OFFERING 02",
+            title: "Data-Centre & Enterprise Computing",
+            description:
+              "Conceptual enterprise, colocation, and hyperscale facility models with power distribution, redundancy, security, and operational KPI planning.",
+          },
+          {
+            meta: "OFFERING 03",
+            title: "Power, Cooling & Resource Efficiency",
+            description:
+              "Power monitoring, thermal management, liquid-cooling reference designs, energy analytics, and water-conscious planning without claiming a specific PUE, WUE, or utility connection.",
+          },
+          {
+            meta: "OFFERING 04",
+            title: "Automation, Connectivity & Regional Planning",
+            description:
+              "Infrastructure monitoring, operational workflows, carrier/network planning, and regional feasibility analysis for South Indian digital infrastructure corridors.",
+          },
           {
             meta: "USE CASE · UC-01",
             title: "Data Center Energy Monitoring",
@@ -2919,7 +2969,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
             meta: "REGIONAL FEASIBILITY",
             title: "South India Corridor Assessments",
             description:
-              "Grid substation capacity evaluations, terrestrial dark fiber route analysis, and renewable energy PPA structuring across Madurai, Coimbatore, Trichy, and Mangalore.",
+              "Grid substation capacity evaluations, terrestrial dark fiber route analysis, and renewable energy PPA structuring across seven regional planning nodes.",
           },
           {
             meta: "SOFTWARE & TELEMETRY",
@@ -2998,6 +3048,44 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
             title: "Sustainability, Energy & ESG Stakeholders",
             description:
               "Corporate sustainability directors and energy managers requiring rigorous, auditable Scope 1, 2, and 3 accounting boundaries and clean energy integration models.",
+          },
+        ],
+      },
+      {
+        title: "Reference-supported verticals",
+        body: [
+          "The following demand environments are market and planning lenses for GreenNext's infrastructure work, not a list of current customers or proof of live deployments.",
+        ],
+        cards: [
+          {
+            meta: "VERTICAL 01",
+            title: "Cloud, AI & Technology Companies",
+            description:
+              "High-density compute, storage, networking, and thermal planning for cloud, GPU, HPC, and AI workloads.",
+          },
+          {
+            meta: "VERTICAL 02",
+            title: "IT/ITES & Global Capability Centres",
+            description:
+              "Grade-A technology workspace, resilient enterprise IT, and regional talent-led campus planning for software and GCC teams.",
+          },
+          {
+            meta: "VERTICAL 03",
+            title: "BFSI, Healthcare & Life Sciences",
+            description:
+              "Resilient enterprise computing, disaster recovery, security, and low-latency regional infrastructure for regulated workloads.",
+          },
+          {
+            meta: "VERTICAL 04",
+            title: "Manufacturing, Aerospace & DeepTech",
+            description:
+              "Industrial edge AI, precision engineering, robotics, aerospace, EV, and research workloads supported by power and connectivity planning.",
+          },
+          {
+            meta: "VERTICAL 05",
+            title: "Telecom & Digital Connectivity",
+            description:
+              "Carrier-neutral connectivity, fibre diversity, edge nodes, and network resilience planning across regional corridors.",
           },
         ],
       },

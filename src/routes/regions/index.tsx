@@ -5,6 +5,7 @@ import { RegionalExplorer } from "../../components/home/RegionalExplorer";
 import { DashboardPreview } from "../../components/home/DashboardPreview";
 import { RegionalComparison } from "../../components/solutions/RegionalComparison";
 import { LongFormCta } from "../../components/common/CtaBlock";
+import { RegionalPortfolio } from "../../components/regional/RegionalPortfolio";
 
 export const Route = createFileRoute("/regions/")({
   head: () => ({
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/regions/")({
       {
         name: "description",
         content:
-          "Distributed digital infrastructure network connecting Madurai, Coimbatore, Trichy, and Mangalore across South India.",
+          "Regional infrastructure intelligence for seven locations across South India, with separate site power, IT-load, cooling, water, and connectivity fields.",
       },
     ],
   }),
@@ -25,8 +26,9 @@ function RegionsIndexPage() {
   return (
     <div className="w-full bg-[#070A0E] text-white">
       <PageTemplate data={content} showCta={false} />
-      <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 space-y-16 pb-16">
+      <section className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 space-y-10 pb-12">
         <RegionalExplorer />
+        <RegionalPortfolio />
         <RegionalComparison />
         <DashboardPreview />
         <LongFormCta

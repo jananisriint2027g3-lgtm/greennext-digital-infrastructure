@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronDown, Menu, X, ArrowRight } from "../icons";
 import { NAVIGATION_STRUCTURE } from "../../data/navigation";
@@ -15,6 +15,31 @@ export function SiteHeader() {
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+
+  const pathMatches = (path: string) =>
+    currentPath === path || (path !== "/" && currentPath.startsWith(`${path}/`));
+
+  const closeDropdown = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setActiveDropdown(null);
+  }, []);
+
+  const trackNavigation = useCallback(
+    (value: string) => {
+      closeDropdown();
+      trackEvent({
+        tab: "Navigation",
+        event: "nav_header_click",
+        value,
+        page: currentPath,
+      });
+    },
+    [closeDropdown, currentPath],
+  );
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,8 +52,22 @@ export function SiteHeader() {
   // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
-    setActiveDropdown(null);
-  }, [currentPath]);
+    closeDropdown();
+  }, [closeDropdown, currentPath]);
+
+  // Close an open desktop flyout when interaction moves into the page content.
+  useEffect(() => {
+    if (!activeDropdown) return;
+
+    const handleOutsidePointer = (event: PointerEvent) => {
+      if (!headerRef.current?.contains(event.target as Node)) {
+        closeDropdown();
+      }
+    };
+
+    document.addEventListener("pointerdown", handleOutsidePointer);
+    return () => document.removeEventListener("pointerdown", handleOutsidePointer);
+  }, [activeDropdown, closeDropdown]);
 
   // Lock body scroll when mobile drawer is open
   useEffect(() => {
@@ -47,7 +86,7 @@ export function SiteHeader() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (activeDropdown) {
-          setActiveDropdown(null);
+          closeDropdown();
         } else if (mobileMenuOpen) {
           setMobileMenuOpen(false);
           hamburgerRef.current?.focus();
@@ -56,7 +95,7 @@ export function SiteHeader() {
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [activeDropdown, mobileMenuOpen]);
+  }, [activeDropdown, closeDropdown, mobileMenuOpen]);
 
   const handleMouseEnter = (id: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -64,8 +103,10 @@ export function SiteHeader() {
   };
 
   const handleMouseLeave = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       setActiveDropdown(null);
+      timeoutRef.current = null;
     }, 150);
   };
 
@@ -80,13 +121,14 @@ export function SiteHeader() {
 
   return (
     <header
+      ref={headerRef}
       className={`sticky top-0 z-50 transition-all duration-200 ${
         scrolled
           ? "bg-[#0B0F17]/95 backdrop-blur-md border-b border-[#1E293B] shadow-2xl py-3"
           : "bg-[#070A0E]/80 backdrop-blur-sm border-b border-[#1E293B]/60 py-4"
       }`}
     >
-      <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+      <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         {/* Brand Logo */}
         <Link
           to="/"
@@ -111,14 +153,8 @@ export function SiteHeader() {
         <nav className="hidden xl:flex items-center gap-1.5" aria-label="Main Navigation">
           {NAVIGATION_STRUCTURE.map((cat) => {
             const isCurrent =
-              currentPath === cat.path ||
-              (cat.path !== "/" && currentPath.startsWith(cat.path)) ||
-              (cat.items &&
-                cat.items.some(
-                  (item) =>
-                    currentPath === item.path ||
-                    (item.path !== "/" && currentPath.startsWith(item.path)),
-                ));
+              pathMatches(cat.path) ||
+              (cat.items && cat.items.some((item) => pathMatches(item.path)));
             const hasSubmenu = cat.items && cat.items.length > 0;
 
             if (!hasSubmenu) {
@@ -126,14 +162,7 @@ export function SiteHeader() {
                 <Link
                   key={cat.id}
                   to={cat.path}
-                  onClick={() =>
-                    trackEvent({
-                      tab: "Navigation",
-                      event: "nav_header_click",
-                      value: cat.path,
-                      page: currentPath,
-                    })
-                  }
+                  onClick={() => trackNavigation(cat.path)}
                   className={`px-3 py-1.5 rounded text-[13px] font-medium transition-colors ${
                     isCurrent
                       ? "text-[#10B981] bg-[#10B981]/10"
@@ -153,17 +182,16 @@ export function SiteHeader() {
                 className="relative"
                 onMouseEnter={() => handleMouseEnter(cat.id)}
                 onMouseLeave={handleMouseLeave}
+                onFocusCapture={() => handleMouseEnter(cat.id)}
+                onBlur={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                    handleMouseLeave();
+                  }
+                }}
               >
                 <Link
                   to={cat.path}
-                  onClick={() =>
-                    trackEvent({
-                      tab: "Navigation",
-                      event: "nav_header_click",
-                      value: cat.path,
-                      page: currentPath,
-                    })
-                  }
+                  onClick={() => trackNavigation(cat.path)}
                   className={`px-3 py-1.5 rounded text-[13px] font-medium flex items-center gap-1 transition-colors ${
                     isCurrent || isOpen
                       ? "text-[#10B981] bg-[#10B981]/10"
@@ -184,25 +212,20 @@ export function SiteHeader() {
                 {/* Dropdown / Mega-Menu Flyout */}
                 {isOpen && (
                   <div
-                    className={`absolute left-0 top-full pt-2 z-50 ${
-                      (cat.items?.length || 0) > 4 ? "w-[540px]" : "w-[340px]"
+                    className={`absolute top-full z-50 w-[min(540px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] pt-2 ${
+                      (cat.items?.length || 0) > 4 || cat.id === "about"
+                        ? "right-0 left-auto"
+                        : "left-0"
                     }`}
                   >
-                    <div className="bg-[#121824] border border-[#334155] rounded-xl shadow-2xl p-4 overflow-hidden backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="max-h-[min(70vh,720px)] overflow-y-auto overflow-x-hidden rounded-xl border border-[#334155] bg-[#121824] p-4 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-150">
                       <div className="mb-2 pb-2 border-b border-[#1E293B] flex items-center justify-between">
                         <span className="text-[11px] font-mono uppercase tracking-wider text-[#10B981]">
                           {cat.label} Section
                         </span>
                         <Link
                           to={cat.path}
-                          onClick={() =>
-                            trackEvent({
-                              tab: "Navigation",
-                              event: "nav_header_click",
-                              value: cat.path,
-                              page: currentPath,
-                            })
-                          }
+                          onClick={() => trackNavigation(cat.path)}
                           className="text-[11px] text-[#94A3B8] hover:text-white flex items-center gap-1 group"
                         >
                           <span>Overview</span>
@@ -224,14 +247,7 @@ export function SiteHeader() {
                             <Link
                               key={item.id}
                               to={item.path}
-                              onClick={() =>
-                                trackEvent({
-                                  tab: "Navigation",
-                                  event: "nav_header_click",
-                                  value: item.path,
-                                  page: currentPath,
-                                })
-                              }
+                              onClick={() => trackNavigation(item.path)}
                               className={`p-2.5 rounded-lg border transition-all text-left flex flex-col group ${
                                 isSubCurrent
                                   ? "bg-[#1A2234] border-[#10B981]/50 text-white"
@@ -311,21 +327,18 @@ export function SiteHeader() {
               const hasSubmenu = cat.items && cat.items.length > 0;
               const isExpanded = expandedMobileCategory === cat.id;
               const isCurrent =
-                currentPath === cat.path ||
-                (cat.path !== "/" && currentPath.startsWith(cat.path)) ||
-                (cat.items &&
-                  cat.items.some(
-                    (item) =>
-                      currentPath === item.path ||
-                      (item.path !== "/" && currentPath.startsWith(item.path)),
-                  ));
+                pathMatches(cat.path) ||
+                (cat.items && cat.items.some((item) => pathMatches(item.path)));
 
               if (!hasSubmenu) {
                 return (
                   <Link
                     key={cat.id}
                     to={cat.path}
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => {
+                      closeDropdown();
+                      setMobileMenuOpen(false);
+                    }}
                     className={`min-h-[44px] flex items-center p-3 rounded-lg border text-sm font-medium transition-colors ${
                       isCurrent
                         ? "bg-[#10B981]/15 border-[#10B981]/40 text-[#10B981]"
@@ -345,7 +358,10 @@ export function SiteHeader() {
                   <div className="flex items-center justify-between p-2 pl-3">
                     <Link
                       to={cat.path}
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={() => {
+                        closeDropdown();
+                        setMobileMenuOpen(false);
+                      }}
                       className={`min-h-[44px] flex items-center flex-1 text-sm font-medium ${
                         isCurrent ? "text-[#10B981]" : "text-white"
                       }`}
@@ -375,7 +391,10 @@ export function SiteHeader() {
                           <Link
                             key={sub.id}
                             to={sub.path}
-                            onClick={() => setMobileMenuOpen(false)}
+                            onClick={() => {
+                              closeDropdown();
+                              setMobileMenuOpen(false);
+                            }}
                             className={`min-h-[40px] px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between ${
                               isSubCurrent
                                 ? "bg-[#10B981]/20 text-[#10B981] font-semibold"
@@ -401,7 +420,10 @@ export function SiteHeader() {
             <div className="mt-4 pt-4 border-t border-[#1E293B] flex flex-col gap-3">
               <Link
                 to="/contact"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  closeDropdown();
+                  setMobileMenuOpen(false);
+                }}
                 className="w-full py-3 rounded-lg bg-[#10B981] text-[#070A0E] text-center font-semibold text-sm hover:bg-[#34D399] transition-colors"
               >
                 Connect With GreenNext

@@ -68,8 +68,8 @@ export function VisitorWelcomeBanner() {
       className="relative z-30 border-b border-[#1E293B] bg-gradient-to-r from-[#09111C] via-[#0E1B2A] to-[#09111C] shadow-inner"
       aria-label="GreenNext visitor welcome"
     >
-      <div className="mx-auto flex max-w-[1340px] flex-wrap items-center justify-between gap-3 px-4 py-2.5 sm:px-6 lg:px-8">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
+      <div className="mx-auto flex w-full max-w-[1340px] flex-wrap items-start justify-between gap-2 px-4 py-2.5 sm:items-center sm:gap-3 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
           <span
             className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${
               greeting.isReturning
@@ -88,7 +88,7 @@ export function VisitorWelcomeBanner() {
             />
           </span>
 
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
             <span
               className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
                 greeting.isReturning
@@ -100,11 +100,11 @@ export function VisitorWelcomeBanner() {
             </span>
 
             <div className="min-w-0">
-              <p className="truncate text-xs font-normal text-[#E2E8F0] sm:text-sm">
+              <p className="line-clamp-2 text-xs font-normal text-[#E2E8F0] sm:truncate sm:text-sm">
                 {greeting.text}
               </p>
               {recommendation?.show && (
-                <p className="truncate text-[11px] text-[#94A3B8] sm:text-xs">
+                <p className="line-clamp-2 text-[11px] text-[#94A3B8] sm:truncate sm:text-xs">
                   {recommendation.body}
                 </p>
               )}
