@@ -5,6 +5,9 @@ import { RegionalPageTemplate } from "../../components/templates/RegionalPageTem
 import { PageTemplate } from "../../components/templates/PageTemplate";
 import { RegionalExplorer } from "../../components/home/RegionalExplorer";
 import { DashboardPreview } from "../../components/home/DashboardPreview";
+import { RegionalComparison } from "../../components/solutions/RegionalComparison";
+import { LongFormCta } from "../../components/common/CtaBlock";
+import { RegionalPortfolio } from "../../components/regional/RegionalPortfolio";
 
 export const Route = createFileRoute("/regions/$slug")({
   head: ({ params }) => {
@@ -70,10 +73,13 @@ function RegionsSubmenuPage() {
 
   return (
     <div>
-      <PageTemplate data={page} />
+      <PageTemplate data={page} showCta={false} />
       <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 space-y-16 pb-16">
-        <RegionalExplorer />
+        <RegionalPortfolio />
+        <RegionalComparison />
         <DashboardPreview />
+        <RegionalExplorer />
+        <LongFormCta />
       </section>
     </div>
   );

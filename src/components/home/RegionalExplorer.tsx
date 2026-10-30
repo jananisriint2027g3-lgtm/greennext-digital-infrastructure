@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useRef, useState, useMemo } from "react";
 import { InternalLink as Link } from "../common/InternalLink";
 import { REGIONS_DATA, REGIONAL_NETWORK_DISCLAIMER, RegionInfo } from "../../data/regions";
 import { REGIONAL_PORTFOLIO, RegionalPortfolioLocation } from "../../data/regionalPortfolio";
@@ -32,13 +32,14 @@ const REGION_IMAGES: Record<string, { src: string; alt: string }> = {
 const MAP_BOUNDS = GEO_BOUNDS;
 const SVG_W = 520;
 const SVG_H = 520;
+const MAP_MIN_SCALE = 1;
+const MAP_MAX_SCALE = 2.5;
 
 function project(lon: number, lat: number): [number, number] {
   const x = ((lon - MAP_BOUNDS.west) / (MAP_BOUNDS.east - MAP_BOUNDS.west)) * SVG_W;
   const y = ((MAP_BOUNDS.north - lat) / (MAP_BOUNDS.north - MAP_BOUNDS.south)) * SVG_H;
   return [x, y];
 }
-
 function ringToPath(ring: [number, number][]): string {
   return (
     ring
@@ -174,6 +175,34 @@ function conceptualArcPath(from: [number, number], to: [number, number], index: 
 
 export function RegionalExplorer() {
   const [selectedRegionId, setSelectedRegionId] = useState<string>("madurai");
+  const [mapScale, setMapScale] = useState(MAP_MIN_SCALE);
+  const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
+  const dragState = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
+
+  const clampOffset = (value: number, scale: number, viewportSize: number) => {
+    const maxOffset = Math.max((scale - 1) * viewportSize * 0.45, 0);
+    return Math.max(-maxOffset, Math.min(maxOffset, value));
+  };
+
+  const updateMapScale = (nextScale: number) => {
+    const scale = Math.max(MAP_MIN_SCALE, Math.min(MAP_MAX_SCALE, nextScale));
+    setMapScale(scale);
+    setMapOffset((offset) => ({
+      x: clampOffset(offset.x, scale, SVG_W),
+      y: clampOffset(offset.y, scale, SVG_H),
+    }));
+  };
+
+  const resetMapView = () => {
+    setMapScale(MAP_MIN_SCALE);
+    setMapOffset({ x: 0, y: 0 });
+  };
   const activePortfolio =
     REGIONAL_PORTFOLIO.find((location) => location.id === selectedRegionId) ??
     REGIONAL_PORTFOLIO[0]!;
@@ -260,11 +289,78 @@ export function RegionalExplorer() {
       {/* Main Split Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start mb-8">
         {/* ── LEFT: Premium Geographic Map ─────────────────────────────── */}
-        <div className="lg:col-span-5 relative rounded-xl border border-[#1E3445] bg-[#07111D] overflow-hidden shadow-2xl">
-          <div className="relative w-full aspect-[4/3] lg:aspect-[5/4]">
+        <div className="lg:col-span-6 relative rounded-xl border border-[#1E3445] bg-[#07111D] overflow-hidden p-3 sm:p-4 shadow-2xl">
+          <div
+            className="relative w-full aspect-[10/11] lg:aspect-[5/6] overflow-hidden rounded-lg touch-none"
+            aria-label="Interactive conceptual South India regional map"
+            onWheel={(event) => {
+              event.preventDefault();
+              updateMapScale(mapScale + (event.deltaY < 0 ? 0.15 : -0.15));
+            }}
+            onPointerDown={(event) => {
+              event.currentTarget.setPointerCapture(event.pointerId);
+              dragState.current = {
+                pointerId: event.pointerId,
+                startX: event.clientX,
+                startY: event.clientY,
+                originX: mapOffset.x,
+                originY: mapOffset.y,
+              };
+            }}
+            onPointerMove={(event) => {
+              const drag = dragState.current;
+              if (!drag || drag.pointerId !== event.pointerId) return;
+              setMapOffset({
+                x: clampOffset(drag.originX + event.clientX - drag.startX, mapScale, SVG_W),
+                y: clampOffset(drag.originY + event.clientY - drag.startY, mapScale, SVG_H),
+              });
+            }}
+            onPointerUp={(event) => {
+              if (dragState.current?.pointerId === event.pointerId) {
+                dragState.current = null;
+                event.currentTarget.releasePointerCapture(event.pointerId);
+              }
+            }}
+            onPointerCancel={() => {
+              dragState.current = null;
+            }}
+          >
+            <div className="absolute right-3 top-3 z-10 flex flex-col gap-1 rounded-lg border border-[#334155] bg-[#05080F]/90 p-1 shadow-lg backdrop-blur-sm">
+              <button
+                type="button"
+                onClick={() => updateMapScale(mapScale + 0.25)}
+                className="flex h-9 w-9 items-center justify-center rounded-md text-lg text-white transition-colors hover:bg-[#1E293B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]"
+                aria-label="Zoom in on regional map"
+                title="Zoom in"
+              >
+                +
+              </button>
+              <button
+                type="button"
+                onClick={() => updateMapScale(mapScale - 0.25)}
+                className="flex h-9 w-9 items-center justify-center rounded-md text-lg text-white transition-colors hover:bg-[#1E293B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]"
+                aria-label="Zoom out of regional map"
+                title="Zoom out"
+              >
+                −
+              </button>
+              <button
+                type="button"
+                onClick={resetMapView}
+                className="flex h-9 w-9 items-center justify-center rounded-md text-[10px] font-mono uppercase text-[#CBD5E1] transition-colors hover:bg-[#1E293B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981]"
+                aria-label="Reset regional map view"
+                title="Reset view"
+              >
+                1:1
+              </button>
+            </div>
             <svg
               viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-              className="absolute inset-0 h-full w-full"
+              className="absolute inset-0 h-full w-full cursor-grab transition-transform duration-150 active:cursor-grabbing"
+              style={{
+                transform: `translate(${mapOffset.x}px, ${mapOffset.y}px) scale(${mapScale})`,
+                transformOrigin: "center",
+              }}
               role="img"
               aria-label="Geographic map of South India showing seven GreenNext regional planning locations"
             >
@@ -649,21 +745,20 @@ export function RegionalExplorer() {
                 style={{ pointerEvents: "none" }}
               />
             </svg>
-
-            {/* Map caption */}
-            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-              <span className="rounded bg-[#05080F]/85 px-2 py-1 text-[9px] font-mono text-[#3D6B8A] tracking-wider uppercase">
-                Conceptual Digital Infrastructure Relationships
-              </span>
-              <span className="rounded bg-[#05080F]/85 px-2 py-1 text-[9px] font-mono text-[#10B981]/60">
-                ILLUSTRATIVE
-              </span>
-            </div>
+          </div>
+          {/* Map caption remains outside the interactive viewport so it cannot obscure geography or labels. */}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 px-1">
+            <span className="rounded bg-[#05080F]/85 px-2 py-1 text-[9px] font-mono uppercase tracking-wider text-[#3D6B8A]">
+              Conceptual Digital Infrastructure Relationships
+            </span>
+            <span className="rounded bg-[#05080F]/85 px-2 py-1 text-[9px] font-mono text-[#10B981]/60">
+              ILLUSTRATIVE
+            </span>
           </div>
         </div>
 
         {/* ── RIGHT: Regional Dossier ───────────────────────────────────── */}
-        <div className="lg:col-span-7 flex flex-col rounded-xl border border-[#1E293B] bg-[#0B0F17] p-5 sm:p-6 shadow-lg">
+        <div className="lg:col-span-6 flex flex-col rounded-xl border border-[#1E293B] bg-[#0B0F17] p-5 sm:p-6 shadow-lg">
           <div>
             {/* Region header */}
             <div className="flex items-center justify-between gap-4 pb-5 mb-6 border-b border-[#1E293B]">
