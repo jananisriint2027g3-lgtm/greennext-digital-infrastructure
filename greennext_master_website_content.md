@@ -1331,7 +1331,6 @@ To illustrate how a distributed regional network can be monitored through unifie
 - **Eyebrow:** Focus Region · MDU
 - **Headline (H1):** Madurai — Regional Technology and Infrastructure Hub
 - **Supporting Paragraph:** Madurai is one of Tamil Nadu's most significant secondary cities, with a growing technology services presence, established educational institutions, and improving digital connectivity. Its position in southern Tamil Nadu makes it a relevant focus location for regional digital infrastructure that serves the broader southern part of the state.
-- **Primary CTA:** View in Regional Dashboard → (`/regions/overview#dashboard`)
 - **Secondary CTA:** Explore Coimbatore Hub (`/regions/coimbatore`)
 
 #### Section 1: Regional Infrastructure Relevance
@@ -1366,7 +1365,6 @@ Within GreenNext's conceptual network topology, Madurai serves as the southern a
 - **Eyebrow:** Focus Region · CJB
 - **Headline (H1):** Coimbatore — Industrial and Technology Ecosystem
 - **Supporting Paragraph:** Coimbatore has a well-established industrial base — particularly in manufacturing, textiles, and engineering — alongside a growing technology sector. The city has a strong engineering talent pool and increasing connectivity infrastructure, making it a relevant location for digital infrastructure that serves both industrial and technology ecosystem needs.
-- **Primary CTA:** View in Regional Dashboard → (`/regions/overview#dashboard`)
 - **Secondary CTA:** Explore Trichy Hub (`/regions/trichy`)
 
 #### Section 1: Regional Infrastructure Relevance
@@ -1401,7 +1399,6 @@ Within GreenNext's conceptual network architecture, Coimbatore acts as the weste
 - **Eyebrow:** Focus Region · TRZ
 - **Headline (H1):** Trichy — Strategic Connectivity at the Centre of Tamil Nadu
 - **Supporting Paragraph:** Trichy (Tiruchirappalli) occupies a strategically important geographic position at approximately the centre of Tamil Nadu, making it a natural junction point for connectivity infrastructure between the northern and southern parts of the state.
-- **Primary CTA:** View in Regional Dashboard → (`/regions/overview#dashboard`)
 - **Secondary CTA:** Explore Mangalore Gateway (`/regions/mangalore`)
 
 #### Section 1: Geographic & Network Routing Relevance
@@ -1436,7 +1433,6 @@ Within GreenNext's conceptual network, Trichy functions as the central routing j
 - **Eyebrow:** Focus Region · IXE
 - **Headline (H1):** Mangalore — Coastal Connectivity Gateway
 - **Supporting Paragraph:** Mangalore (Mangaluru) is a significant port city and coastal technology hub with established connectivity advantages — including proximity to undersea cable landing infrastructure that is strategically relevant for internet connectivity. It serves as a gateway between Karnataka and Kerala, with a growing technology services presence.
-- **Primary CTA:** View in Regional Dashboard → (`/regions/overview#dashboard`)
 - **Secondary CTA:** View Regional Overview (`/regions/overview`)
 
 #### Section 1: Strategic Coastal Connectivity Assets

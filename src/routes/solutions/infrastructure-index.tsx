@@ -26,7 +26,7 @@ function InfrastructureIndexPage() {
         ]}
         eyebrow="Structured Regional Intelligence"
         h1="South India Digital Infrastructure & Clean Energy Index"
-        intro="An authorized public data mining and operational intelligence repository organizing regional data centers, high-density AI clusters, and clean grid substations across South India."
+        intro="A structured illustrative dataset for regional digital infrastructure and clean-energy planning."
         isConceptual={false}
         cta={{ label: "View Regional Network →", path: "/regions/overview" }}
       />

@@ -5,6 +5,12 @@
 **Target Platform:** Enterprise Responsive Web (Desktop, Tablet, Mobile)  
 **Status:** Implementation-Ready for Frontend Development & Component Architecture  
 
+**Implementation alignment note (2026-10-30):** The current approved information architecture uses
+`Offerings`, `Industries`, `Sustainability`, and `Regions` as separate top-level navigation areas,
+with seven regional planning locations. Shared page chrome follows the 1280px container token below;
+wide maps, tables, and diagrams may use intentional local width exceptions. This note supersedes older
+examples that refer to a single `Solutions` menu or only four regional hubs.
+
 ---
 
 > [!IMPORTANT]

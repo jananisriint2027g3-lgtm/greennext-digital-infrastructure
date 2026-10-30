@@ -26,7 +26,7 @@ function RegionsIndexPage() {
   return (
     <div className="w-full bg-[#070A0E] text-white">
       <PageTemplate data={content} showCta={false} />
-      <section className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 space-y-10 pb-12">
+      <section className="gn-container space-y-10 pb-12">
         <RegionalPortfolio />
         <RegionalComparison />
         <DashboardPreview />

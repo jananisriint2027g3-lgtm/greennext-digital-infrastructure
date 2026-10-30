@@ -16,6 +16,7 @@ export function SiteHeader() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const pathMatches = (path: string) =>
     currentPath === path || (path !== "/" && currentPath.startsWith(`${path}/`));
@@ -81,6 +82,38 @@ export function SiteHeader() {
     };
   }, [mobileMenuOpen]);
 
+  // Keep keyboard focus inside the open mobile navigation drawer.
+  useEffect(() => {
+    if (!mobileMenuOpen || !mobileMenuRef.current) return;
+
+    const drawer = mobileMenuRef.current;
+    const getFocusable = () =>
+      Array.from(
+        drawer.querySelectorAll<HTMLElement>(
+          "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])",
+        ),
+      );
+    getFocusable()[0]?.focus();
+
+    const handleTab = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const items = getFocusable();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    drawer.addEventListener("keydown", handleTab);
+    return () => drawer.removeEventListener("keydown", handleTab);
+  }, [mobileMenuOpen]);
+
   // Keyboard: Escape closes menus and restores focus
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -128,7 +161,7 @@ export function SiteHeader() {
           : "bg-[#070A0E]/80 backdrop-blur-sm border-b border-[#1E293B]/60 py-4"
       }`}
     >
-      <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+      <div className="gn-container flex items-center justify-between">
         {/* Brand Logo */}
         <Link
           to="/"
@@ -150,7 +183,10 @@ export function SiteHeader() {
         </Link>
 
         {/* Desktop Primary Navigation */}
-        <nav className="hidden xl:flex items-center gap-1.5" aria-label="Main Navigation">
+        <nav
+          className="hidden min-w-0 flex-1 items-center justify-end gap-0.5 xl:flex 2xl:gap-1.5"
+          aria-label="Main Navigation"
+        >
           {NAVIGATION_STRUCTURE.map((cat) => {
             const isCurrent =
               pathMatches(cat.path) ||
@@ -163,7 +199,7 @@ export function SiteHeader() {
                   key={cat.id}
                   to={cat.path}
                   onClick={() => trackNavigation(cat.path)}
-                  className={`px-3 py-1.5 rounded text-[13px] font-medium transition-colors ${
+                  className={`shrink-0 whitespace-nowrap px-2 py-1.5 text-[13px] font-medium rounded transition-colors 2xl:px-3 ${
                     isCurrent
                       ? "text-[#10B981] bg-[#10B981]/10"
                       : "text-[#94A3B8] hover:text-white hover:bg-[#121824]"
@@ -192,7 +228,7 @@ export function SiteHeader() {
                 <Link
                   to={cat.path}
                   onClick={() => trackNavigation(cat.path)}
-                  className={`px-3 py-1.5 rounded text-[13px] font-medium flex items-center gap-1 transition-colors ${
+                  className={`shrink-0 whitespace-nowrap px-2 py-1.5 text-[13px] font-medium rounded flex items-center gap-1 transition-colors 2xl:px-3 ${
                     isCurrent || isOpen
                       ? "text-[#10B981] bg-[#10B981]/10"
                       : "text-[#94A3B8] hover:text-white hover:bg-[#121824]"
@@ -313,6 +349,7 @@ export function SiteHeader() {
             className="min-w-[44px] min-h-[44px] p-2.5 rounded-lg border border-[#1E293B] text-[#94A3B8] hover:text-white hover:bg-[#121824] transition-colors focus:outline-none flex items-center justify-center"
             aria-label="Toggle navigation menu"
             aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-navigation"
           >
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -321,7 +358,14 @@ export function SiteHeader() {
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="xl:hidden fixed inset-x-0 top-[60px] sm:top-[68px] bottom-0 bg-[#070A0E] border-t border-[#1E293B] z-50 overflow-y-auto p-4 sm:p-6 pb-[calc(4rem+env(safe-area-inset-bottom))] animate-in slide-in-from-top-4 duration-200">
+        <div
+          id="mobile-navigation"
+          ref={mobileMenuRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mobile navigation"
+          className="xl:hidden fixed inset-x-0 top-[60px] sm:top-[68px] bottom-0 bg-[#070A0E] border-t border-[#1E293B] z-[130] overflow-y-auto p-4 sm:p-6 pb-[calc(4rem+env(safe-area-inset-bottom))] animate-in slide-in-from-top-4 duration-200"
+        >
           <div className="flex flex-col gap-2 max-w-lg mx-auto pb-12">
             {NAVIGATION_STRUCTURE.map((cat) => {
               const hasSubmenu = cat.items && cat.items.length > 0;
@@ -418,6 +462,16 @@ export function SiteHeader() {
 
             {/* Mobile Connect CTA */}
             <div className="mt-4 pt-4 border-t border-[#1E293B] flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("open-greennext-assistant"));
+                  closeMobileMenu();
+                }}
+                className="w-full min-h-[44px] rounded-lg border border-[#10B981]/40 bg-[#0B0F17] px-3 py-3 text-center text-sm font-semibold text-[#10B981] hover:bg-[#10B981]/10 transition-colors"
+              >
+                Ask GreenNext Assistant
+              </button>
               <Link
                 to="/contact"
                 onClick={() => {

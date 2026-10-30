@@ -71,7 +71,7 @@ export function InfrastructureDataExplorer() {
         <div className="p-4 sm:p-5 rounded-2xl border border-[#1E293B] bg-[#0B0F17] flex flex-col justify-between">
           <span className="text-[11px] font-mono uppercase tracking-wider text-[#94A3B8] flex items-center gap-1.5">
             <Zap size={14} className="text-[#10B981]" />
-            Total Tracked Capacity
+            Total Listed Capacity
           </span>
           <div className="flex items-baseline gap-1 mt-2">
             <span className="text-2xl sm:text-3xl font-bold font-mono text-white">
@@ -80,14 +80,14 @@ export function InfrastructureDataExplorer() {
             <span className="text-xs font-mono text-[#10B981]">MW</span>
           </div>
           <span className="text-[10px] text-[#64748B] mt-1">
-            Across monitored South India nodes
+            Across catalogued South India records.
           </span>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl border border-[#1E293B] bg-[#0B0F17] flex flex-col justify-between">
           <span className="text-[11px] font-mono uppercase tracking-wider text-[#94A3B8] flex items-center gap-1.5">
             <Server size={14} className="text-[#38BDF8]" />
-            Fleet Aggregate PUE
+            Dataset Aggregate PUE
           </span>
           <div className="flex items-baseline gap-1 mt-2">
             <span className="text-2xl sm:text-3xl font-bold font-mono text-white">
@@ -95,7 +95,7 @@ export function InfrastructureDataExplorer() {
                 ? summary.capacityWeightedPue.toFixed(2)
                 : summary.averagePue !== null
                   ? summary.averagePue.toFixed(2)
-                  : "1.23"}
+                  : "Not available"}
             </span>
             <span className="text-xs font-mono text-[#38BDF8]">Ratio</span>
           </div>
@@ -108,7 +108,7 @@ export function InfrastructureDataExplorer() {
         <div className="p-4 sm:p-5 rounded-2xl border border-[#1E293B] bg-[#0B0F17] flex flex-col justify-between">
           <span className="text-[11px] font-mono uppercase tracking-wider text-[#94A3B8] flex items-center gap-1.5">
             <Cpu size={14} className="text-[#A855F7]" />
-            Clean Energy Share
+            Listed Clean-Energy Share
           </span>
           <div className="flex items-baseline gap-1 mt-2">
             <span className="text-2xl sm:text-3xl font-bold font-mono text-white">
@@ -116,13 +116,15 @@ export function InfrastructureDataExplorer() {
             </span>
             <span className="text-xs font-mono text-[#A855F7]">%</span>
           </div>
-          <span className="text-[10px] text-[#64748B] mt-1">Capacity-weighted renewable blend</span>
+          <span className="text-[10px] text-[#64748B] mt-1">
+            Capacity-weighted value from listed records.
+          </span>
         </div>
 
         <div className="p-4 sm:p-5 rounded-2xl border border-[#1E293B] bg-[#0B0F17] flex flex-col justify-between">
           <span className="text-[11px] font-mono uppercase tracking-wider text-[#94A3B8] flex items-center gap-1.5">
             <Layers size={14} className="text-[#F59E0B]" />
-            Monitored Infrastructure Nodes
+            Catalogued Infrastructure Records.
           </span>
           <div className="flex items-baseline gap-1 mt-2">
             <span className="text-2xl sm:text-3xl font-bold font-mono text-white">
@@ -349,7 +351,7 @@ export function InfrastructureDataExplorer() {
             <div className="flex items-start justify-between pb-4 border-b border-[#1E293B]">
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-wider text-[#10B981] px-2 py-0.5 rounded bg-[#10B981]/10">
-                  Data Provenance & Audit Trail
+                  Record Details & Source Metadata.
                 </span>
                 <h4 className="text-lg font-bold text-white mt-1.5">{selectedRecord.name}</h4>
                 <p className="text-xs text-[#94A3B8]">
@@ -387,7 +389,7 @@ export function InfrastructureDataExplorer() {
             <div className="p-3.5 rounded-xl border border-[#1E293B] bg-[#070A0E] flex flex-col gap-2 text-xs">
               <span className="text-[10px] text-[#64748B] font-mono uppercase flex items-center gap-1.5">
                 <Calendar size={12} />
-                Collection Timestamp & Source Registry
+                Dataset Timestamp & Source Metadata.
               </span>
               <p className="font-medium text-white">{selectedRecord.sourceName}</p>
               <a
@@ -396,11 +398,11 @@ export function InfrastructureDataExplorer() {
                 rel="noopener noreferrer"
                 className="text-xs text-[#10B981] hover:underline flex items-center gap-1.5"
               >
-                <span>View Authorized Public Filing</span>
+                <span>View Referenced Public Source.</span>
                 <ExternalLink size={12} />
               </a>
               <span className="text-[10px] text-[#64748B] font-mono">
-                Audit Date:{" "}
+                Record Timestamp:{" "}
                 {new Date(selectedRecord.lastCollectedAt).toLocaleDateString("en-IN", {
                   timeZone: "Asia/Kolkata",
                 })}
@@ -410,7 +412,7 @@ export function InfrastructureDataExplorer() {
             <div className="p-3 rounded-xl border border-[#1E293B] bg-[#121824] flex items-start gap-2.5 text-xs text-[#94A3B8]">
               <ShieldCheck size={16} className="text-[#10B981] shrink-0 mt-0.5" />
               <p className="leading-relaxed">
-                <strong className="text-white">Robots.txt & Compliance:</strong>{" "}
+                <strong className="text-white">Source Note:</strong>{" "}
                 {selectedRecord.complianceNote}
               </p>
             </div>

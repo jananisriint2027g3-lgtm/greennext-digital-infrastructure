@@ -20,7 +20,7 @@ export function SiteFooter() {
         onOpenQuickInquiry={() => openQuickInquiry()}
       />
       <footer className="bg-[#070A0E] text-white border-t border-[#1E293B] pt-14 pb-28 sm:pb-32 mt-6 sm:mt-10">
-        <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="gn-container">
           {/* Top Section: Brand & High-level Columns */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 pb-14 border-b border-[#1E293B]">
             {/* Brand Column (4 Cols) */}
@@ -700,14 +700,6 @@ export function SiteFooter() {
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 flex-shrink-0 font-mono text-[11px]">
               <span>© {new Date().getFullYear()} GreenNext Initiative</span>
               <span>South India</span>
-              <span className="text-[#334155]">•</span>
-              <Link
-                to="/redis-demo"
-                className="text-[#64748B] hover:text-[#10B981] transition-colors flex items-center gap-1"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
-                <span>Redis Demo</span>
-              </Link>
               <span className="text-[#334155]">•</span>
               <Link
                 to="/privacy-policy"

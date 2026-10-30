@@ -1,22 +1,15 @@
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
-import {
-  getRedisClient,
-  getSanitizedRedisStatus,
-  isRedisConfigured,
-  pingRedis,
-  type RedisSanitizedStatus,
-} from './redis.server';
-import {
-  createSession,
-  deleteSession,
-  formatSessionKey,
-  getSession,
-  parseSessionTokenFromCookies,
-  serializeSessionClearCookie,
-  validateSession,
-  DEFAULT_SESSION_TTL_SECONDS,
-} from './session.server';
+
+const DEFAULT_SESSION_TTL_SECONDS = 3600;
+
+type RedisSanitizedStatus = {
+  configured: boolean;
+  connected: boolean;
+  endpoint?: string | undefined;
+  tlsEnabled?: boolean | undefined;
+  hasAuth?: boolean | undefined;
+};
 
 export interface SerializableSessionResult {
   valid: boolean;
@@ -87,6 +80,7 @@ export function maskKeyForDisplay(token: string): string {
  * Callable directly by tests or through TanStack Start server functions.
  */
 export async function executeRedisPing(): Promise<RedisPingResult> {
+  const { getSanitizedRedisStatus, isRedisConfigured, pingRedis } = await import('./redis.server');
   const configured = isRedisConfigured();
   const status = getSanitizedRedisStatus();
 
@@ -131,7 +125,11 @@ export async function executeRedisPing(): Promise<RedisPingResult> {
 export async function executeRedisDemoSessions(options?: {
   cleanupAfterVerification?: boolean | undefined;
 }): Promise<RedisDemoRunSummary> {
-  const statusMeta = getSanitizedRedisStatus();
+  const [redis, session] = await Promise.all([
+    import('./redis.server'),
+    import('./session.server'),
+  ]);
+  const statusMeta = redis.getSanitizedRedisStatus();
   const defaultSummary: RedisDemoRunSummary = {
     success: false,
     totalUsers: 10,
@@ -153,7 +151,7 @@ export async function executeRedisDemoSessions(options?: {
     };
   }
 
-  if (!isRedisConfigured()) {
+  if (!redis.isRedisConfigured()) {
     return {
       ...defaultSummary,
       error: 'Redis is not configured in environment variables.',
@@ -168,7 +166,7 @@ export async function executeRedisDemoSessions(options?: {
   let failedCount = 0;
 
   try {
-    const client = await getRedisClient();
+    const client = await redis.getRedisClient();
 
     // Step 1: Create 10 synthetic sessions
     for (let i = 1; i <= 10; i++) {
@@ -176,7 +174,7 @@ export async function executeRedisDemoSessions(options?: {
       const userId = `redis-test-user-${padIndex}`;
 
       try {
-        const { token } = await createSession(
+        const { token } = await session.createSession(
           userId,
           {
             role: 'synthetic-test-user',
@@ -204,12 +202,12 @@ export async function executeRedisDemoSessions(options?: {
 
     // Step 2: Read back and verify each session
     for (const item of createdTokens) {
-      const key = formatSessionKey(item.token);
+      const key = session.formatSessionKey(item.token);
       const maskedKey = maskKeyForDisplay(item.token);
 
       try {
-        const fetched = await getSession(item.token);
-        const validation = await validateSession(item.token);
+        const fetched = await session.getSession(item.token);
+        const validation = await session.validateSession(item.token);
         const ttl = await client.ttl(key);
 
         const userMatches = Boolean(fetched && fetched.userId === item.userId);
@@ -252,7 +250,7 @@ export async function executeRedisDemoSessions(options?: {
     // Optional Cleanup
     if (shouldCleanup && createdTokens.length > 0) {
       for (const record of createdTokens) {
-        await deleteSession(record.token).catch(() => {});
+        await session.deleteSession(record.token).catch(() => {});
       }
     }
 
@@ -272,7 +270,7 @@ export async function executeRedisDemoSessions(options?: {
   } catch (err) {
     // Safe cleanup if exception occurred
     for (const record of createdTokens) {
-      await deleteSession(record.token).catch(() => {});
+      await session.deleteSession(record.token).catch(() => {});
     }
 
     return {
@@ -301,6 +299,7 @@ export const validateSessionServerFn = createServerFn({ method: 'POST' })
       .parse(input);
   })
   .handler(async ({ data }): Promise<SerializableSessionResult> => {
+    const { parseSessionTokenFromCookies, validateSession } = await import('./session.server');
     const token = data.token || parseSessionTokenFromCookies(data.cookieHeader);
     if (!token) {
       return { valid: false, error: 'invalid_token' };
@@ -332,6 +331,8 @@ export const logoutSessionServerFn = createServerFn({ method: 'POST' })
       .parse(input);
   })
   .handler(async ({ data }) => {
+    const { deleteSession, parseSessionTokenFromCookies, serializeSessionClearCookie } =
+      await import('./session.server');
     const token = data.token || parseSessionTokenFromCookies(data.cookieHeader);
     let success = false;
     if (token) {
@@ -347,6 +348,7 @@ export const logoutSessionServerFn = createServerFn({ method: 'POST' })
  * Server function to check Redis health without exposing secrets.
  */
 export const checkRedisHealthServerFn = createServerFn({ method: 'GET' }).handler(async () => {
+  const { getSanitizedRedisStatus } = await import('./redis.server');
   return getSanitizedRedisStatus();
 });
 

@@ -31,7 +31,7 @@ export function CoolingEfficiencyCalculator() {
             KPI 03 · THERMODYNAMICS & EFFICIENCY
           </span>
           <h3 className="text-xl sm:text-2xl font-bold text-white mt-1">
-            Cooling Efficiency & Thermal Performance Calculator
+            Illustrative Cooling Efficiency & Thermal Performance Calculator
           </h3>
           <p className="text-xs text-[#94A3B8] mt-1 max-w-2xl">
             Calculates Coefficient of Performance (COP), electrical power per ton of refrigeration
@@ -130,9 +130,9 @@ export function CoolingEfficiencyCalculator() {
                 <span className="text-white font-semibold block mb-1">
                   Equipment COP vs. Whole-System COP
                 </span>
-                A centrifugal chiller compressor may operate at an equipment COP of 6.5 to 7.0 (0.50
-                kW/ton). When primary/secondary pumps, cooling tower fans, and CDUs are included,
-                real whole-system COP typically averages 3.8 to 5.2.
+            Equipment and whole-system COP vary with equipment selection, operating conditions, and
+            measurement boundary. The ranges shown here are illustrative reference values, not
+            GreenNext measurements.
               </div>
             </div>
 
@@ -168,7 +168,7 @@ export function CoolingEfficiencyCalculator() {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-[#94A3B8]">Cooling Power Overhead:</span>
+                      <span className="text-[#94A3B8]">Electrical Input Share of Cooling Total:</span>
                       <span className="text-white font-semibold">
                         {(
                           (electricalInputKw / (coolingOutputKw + electricalInputKw)) *
@@ -201,6 +201,10 @@ export function CoolingEfficiencyCalculator() {
             </div>
             <div className="text-[11px] text-[#10B981]">
               Water Specific Heat Cp = 4.184 kJ/(kg·K)
+            </div>
+            <div className="text-[11px] text-[#64748B]">
+              Illustrative water-like assumption: density ≈ 1 kg/L. Glycol mixtures and other
+              coolants require their actual density and heat-capacity properties.
             </div>
           </div>
 
@@ -244,7 +248,8 @@ export function CoolingEfficiencyCalculator() {
                     className="w-full rounded-lg border border-[#1E293B] bg-[#121824] px-4 py-2.5 text-white font-mono text-sm focus:border-[#10B981] focus:outline-none"
                   />
                   <span className="text-[10px] text-[#64748B] block mt-1">
-                    ASHRAE W4 target: ~32°C–40°C
+                    Illustrative ASHRAE W32/W40 planning range: ~32°C–40°C maximum facility water
+                    supply temperature; verify the applicable class and equipment limits.
                   </span>
                 </div>
                 <div>
@@ -264,7 +269,7 @@ export function CoolingEfficiencyCalculator() {
                     className="w-full rounded-lg border border-[#1E293B] bg-[#121824] px-4 py-2.5 text-white font-mono text-sm focus:border-[#10B981] focus:outline-none"
                   />
                   <span className="text-[10px] text-[#64748B] block mt-1">
-                    Typically 8°C–12°C delta-T
+                    Illustrative planning range: 8°C–12°C delta-T; actual values are configuration-dependent.
                   </span>
                 </div>
               </div>

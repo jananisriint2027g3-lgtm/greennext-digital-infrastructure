@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Activity, ShieldAlert, Snowflake, Zap } from "../icons";
 import { trackEvent } from "../../lib/analytics";
 import { calculateEnergyAndCost } from "../../lib/kpi-calculations";
+import { EnergyScenarioChart } from "./EnergyScenarioChart";
 
 type Workload = "AI Training" | "AI Inference" | "Cloud" | "Analytics" | "Enterprise";
 const WORKLOAD_WATTS: Record<Workload, number> = {
@@ -19,7 +20,7 @@ export function EnergyImpactCalculator() {
   const [days, setDays] = useState(22);
 
   // KPI 9: Electricity tariff & PUE configuration
-  const [tariff, setTariff] = useState(8.5); // Default INR 8.50 / kWh
+  const [tariff, setTariff] = useState<number | "">(8.5); // Default INR 8.50 / kWh
   const [currency, setCurrency] = useState<"INR" | "USD">("INR");
   const [pue, setPue] = useState(1.25); // Configurable facility PUE (default 1.25)
 
@@ -30,8 +31,12 @@ export function EnergyImpactCalculator() {
       hours,
       days,
       pue,
-      tariff,
+      tariff === "" ? Number.NaN : tariff,
     );
+
+    if (raw.status === "invalid") {
+      return raw;
+    }
 
     const currencySymbol = currency === "INR" ? "₹" : "$";
     const monthlyCost = {
@@ -46,6 +51,7 @@ export function EnergyImpactCalculator() {
     };
 
     return {
+      status: "valid" as const,
       itEnergyKwh: raw.itEnergyKwh,
       overheadKwh: raw.coolingEnergyKwh,
       totalFacilityEnergyKwh: raw.facilityEnergyKwh,
@@ -188,7 +194,10 @@ export function EnergyImpactCalculator() {
                 min="0"
                 inputMode="decimal"
                 value={tariff}
-                onChange={(e) => setTariff(Math.max(0, parseFloat(e.target.value) || 0))}
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value);
+                  setTariff(Number.isNaN(parsed) ? "" : Math.max(0, parsed));
+                }}
                 className="w-full rounded border border-[#334155] bg-[#0B0F17] px-2.5 py-1 font-mono text-sm text-white focus:border-[#10B981] focus:outline-none"
               />
               <span className="font-mono text-xs text-[#64748B]">/ kWh</span>
@@ -215,79 +224,98 @@ export function EnergyImpactCalculator() {
             </span>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <EstimateCard
-              icon={Zap}
-              label="IT Compute Energy"
-              value={`${estimate.itEnergyKwh.toLocaleString(undefined, { maximumFractionDigits: 1 })} kWh`}
-              color="#F59E0B"
-            />
-            <EstimateCard
-              icon={Snowflake}
-              label="Cooling & Overhead"
-              value={`${estimate.overheadKwh.toLocaleString(undefined, { maximumFractionDigits: 1 })} kWh`}
-              color="#38BDF8"
-            />
-            <EstimateCard
-              icon={Activity}
-              label="Total Facility Power"
-              value={`${estimate.totalFacilityEnergyKwh.toLocaleString(undefined, { maximumFractionDigits: 1 })} kWh`}
-              color="#10B981"
-            />
-          </div>
-
-          {/* Operating Cost Projection Cards */}
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border border-[#1E293B] bg-[#0B0F17] p-4">
-              <span className="text-[10px] uppercase tracking-wide text-[#64748B]">
-                Est. Monthly Electricity Cost
-              </span>
-              <div className="mt-1 text-2xl font-bold font-mono text-[#10B981]">
-                {estimate.monthlyCost.formattedCost}
+          {estimate.status === "valid" ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <EstimateCard
+                  icon={Zap}
+                  label="IT Compute Energy"
+                  value={`${estimate.itEnergyKwh.toLocaleString(undefined, { maximumFractionDigits: 1 })} kWh`}
+                  color="#F59E0B"
+                />
+                <EstimateCard
+                  icon={Snowflake}
+                  label="Cooling & Overhead"
+                  value={`${estimate.overheadKwh.toLocaleString(undefined, { maximumFractionDigits: 1 })} kWh`}
+                  color="#38BDF8"
+                />
+                <EstimateCard
+                  icon={Activity}
+                  label="Total Facility Power"
+                  value={`${estimate.totalFacilityEnergyKwh.toLocaleString(undefined, { maximumFractionDigits: 1 })} kWh`}
+                  color="#10B981"
+                />
               </div>
-              <span className="text-[11px] text-[#94A3B8]">
-                Based on {days} operating days ({estimate.totalFacilityEnergyKwh.toFixed(0)} kWh @{" "}
-                {estimate.monthlyCost.currency}
-                {tariff}/kWh)
-              </span>
-            </div>
 
-            <div className="rounded-lg border border-[#1E293B] bg-[#0B0F17] p-4">
-              <span className="text-[10px] uppercase tracking-wide text-[#64748B]">
-                Est. Annualized Facility OPEX
-              </span>
-              <div className="mt-1 text-2xl font-bold font-mono text-[#38BDF8]">
-                {estimate.annualCost.formattedCost}
+              {/* Operating Cost Projection Cards */}
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border border-[#1E293B] bg-[#0B0F17] p-4">
+                  <span className="text-[10px] uppercase tracking-wide text-[#64748B]">
+                    Est. Monthly Electricity Cost
+                  </span>
+                  <div className="mt-1 text-2xl font-bold font-mono text-[#10B981]">
+                    {estimate.monthlyCost.formattedCost}
+                  </div>
+                  <span className="text-[11px] text-[#94A3B8]">
+                    Based on {days} operating days ({estimate.totalFacilityEnergyKwh.toFixed(0)} kWh @{" "}
+                    {estimate.monthlyCost.currency}
+                    {tariff}/kWh)
+                  </span>
+                </div>
+
+                <div className="rounded-lg border border-[#1E293B] bg-[#0B0F17] p-4">
+                  <span className="text-[10px] uppercase tracking-wide text-[#64748B]">
+                    Est. Annualized Facility OPEX
+                  </span>
+                  <div className="mt-1 text-2xl font-bold font-mono text-[#38BDF8]">
+                    {estimate.annualCost.formattedCost}
+                  </div>
+                  <span className="text-[11px] text-[#94A3B8]">
+                    12-month run rate with static workload assumption
+                  </span>
+                </div>
               </div>
-              <span className="text-[11px] text-[#94A3B8]">
-                12-month run rate with static workload assumption
-              </span>
-            </div>
-          </div>
 
-          <div className="mt-5 border-t border-[#1E293B] pt-4">
-            <p className="text-xs leading-relaxed text-[#94A3B8]">
-              <strong>Formulas:</strong>{" "}
-              <span className="font-mono text-[#CBD5E1]">
-                IT Energy (kWh) = (Units × Assumed Watts × Hours × Days) ÷ 1,000
-              </span>
-              <br />
-              <span className="font-mono text-[#CBD5E1]">
-                Facility Energy (kWh) = IT Energy × PUE ({pue.toFixed(2)})
-              </span>
-              <br />
-              <span className="font-mono text-[#CBD5E1]">
-                Cost = Facility Energy × Electricity Tariff ({estimate.monthlyCost.currency}
-                {tariff}/kWh)
-              </span>
-            </p>
-            <div className="mt-3 rounded border border-amber-500/20 bg-amber-500/5 p-2.5 text-[11px] text-[#F59E0B]">
-              <strong>Billing Exclusions:</strong> This estimate computes raw active electrical
-              energy consumption. It excludes contractual maximum demand (kVA) charges, power factor
-              penalties, Time-of-Day (TOD) peak tariffs, open-access transmission wheeling
-              surcharges, and state electricity duties. Not an actual utility bill.
+              <EnergyScenarioChart
+                computeCount={computeCount}
+                wattsPerUnit={WORKLOAD_WATTS[workload]}
+                hours={hours}
+                days={days}
+                tariff={tariff}
+                currency={currency}
+                currentPue={pue}
+              />
+
+              <div className="mt-5 border-t border-[#1E293B] pt-4">
+                <p className="text-xs leading-relaxed text-[#94A3B8]">
+                  <strong>Formulas:</strong>{" "}
+                  <span className="font-mono text-[#CBD5E1]">
+                    IT Energy (kWh) = (Units × Assumed Watts × Hours × Days) ÷ 1,000
+                  </span>
+                  <br />
+                  <span className="font-mono text-[#CBD5E1]">
+                    Facility Energy (kWh) = IT Energy × PUE ({pue.toFixed(2)})
+                  </span>
+                  <br />
+                  <span className="font-mono text-[#CBD5E1]">
+                    Cost = Facility Energy × Electricity Tariff ({estimate.monthlyCost.currency}
+                    {tariff}/kWh)
+                  </span>
+                </p>
+                <div className="mt-3 rounded border border-amber-500/20 bg-amber-500/5 p-2.5 text-[11px] text-[#F59E0B]">
+                  <strong>Billing Exclusions:</strong> This estimate computes raw active electrical
+                  energy consumption. It excludes contractual maximum demand (kVA) charges, power factor
+                  penalties, Time-of-Day (TOD) peak tariffs, open-access transmission wheeling
+                  surcharges, and state electricity duties. Not an actual utility bill.
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="rounded-lg border border-[#F43F5E]/30 bg-[#F43F5E]/10 p-4 text-sm text-[#FCA5A5]">
+              <strong className="block text-[#FECACA]">Estimate unavailable</strong>
+              <span>{estimate.errorMessage}</span>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </section>

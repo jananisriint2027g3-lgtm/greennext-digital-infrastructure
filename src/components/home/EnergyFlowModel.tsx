@@ -57,7 +57,7 @@ const FLOW_STEPS: FlowStep[] = [
     title: "Power Delivery",
     headline: "Continuous Power Telemetry",
     description:
-      "Electricity delivered across substation feeds and per-rack circuits must be measured continuously to correlate power usage with useful compute output.",
+      "A reference monitoring design can measure electricity across substation feeds and per-rack circuits to correlate power usage with useful compute output.",
     icon: Zap,
     accentColor: "#F59E0B",
   },
@@ -67,7 +67,7 @@ const FLOW_STEPS: FlowStep[] = [
     title: "Thermal Extraction",
     headline: "Precision Cooling Calibration",
     description:
-      "Electrical energy transforms into heat that must be extracted immediately. Dynamic cooling adjusts chiller loops to match measured heat output without over-cooling.",
+      "Electrical energy transforms into heat that must be managed. Reference cooling designs can adjust chiller loops to modeled or measured heat output without unnecessary over-cooling.",
     icon: Snowflake,
     accentColor: "#38BDF8",
   },
@@ -77,7 +77,7 @@ const FLOW_STEPS: FlowStep[] = [
     title: "Resource Efficiency",
     headline: "Closed-Loop Operational Feedback",
     description:
-      "Telemetry from power and thermal sensors feeds back into workload scheduling and facility automation, closing the loop and eliminating waste.",
+      "A conceptual telemetry loop can feed power and thermal signals into workload planning and facility automation, supporting investigation of avoidable waste.",
     icon: Gauge,
     accentColor: "#10B981",
   },
@@ -169,7 +169,7 @@ export function EnergyFlowModel() {
                   style={{ backgroundColor: selected.accentColor }}
                 />
                 <span className="text-xs font-mono uppercase tracking-wider text-[#94A3B8]">
-                  Operational Stage: {selected.title}
+                  Reference Stage: {selected.title}
                 </span>
               </div>
               <h4 className="text-lg sm:text-xl font-bold text-white mb-2">{selected.headline}</h4>
@@ -208,7 +208,7 @@ export function EnergyFlowModel() {
               </div>
               <div className="px-3.5 py-2 bg-[#0B0F17] border-t border-[#1E293B] flex items-center justify-between text-[10px] font-mono text-[#94A3B8]">
                 <span>{STEP_IMAGES[selected.id]?.badge || "PHYSICAL INFRASTRUCTURE"}</span>
-                <span className="text-[#10B981]">OPERATIONAL MODEL</span>
+                <span className="text-[#10B981]">REFERENCE MODEL</span>
               </div>
             </div>
           </div>

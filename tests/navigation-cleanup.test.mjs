@@ -39,7 +39,22 @@ test("restores the approved Energy and Automation submenu definitions", () => {
   const navFile = fs.readFileSync(path.join(rootDir, "src/data/navigation.ts"), "utf8");
   const catalog = navFile.slice(0, navFile.indexOf("const navigationById"));
 
+  const energyBlock = catalog.slice(catalog.indexOf('id: "energy"'), catalog.indexOf('id: "automation"'));
+  assert.deepEqual(
+    [...energyBlock.matchAll(/label: "([^"]+)"/g)].map((match) => match[1]),
+    [
+      "Energy",
+      "Overview",
+      "Power Monitoring",
+      "Cooling Efficiency",
+      "Workload-Aware Resources",
+      "Energy Analytics",
+      "Operational Optimization",
+    ],
+  );
+
   for (const entry of [
+    ['label: "Overview"', "/energy"],
     ['label: "Energy"', "/energy"],
     ['label: "Automation"', "/automation"],
     ['label: "Power Monitoring"', "/energy/monitoring"],

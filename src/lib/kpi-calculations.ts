@@ -622,14 +622,26 @@ export function calculateMttr(totalRepairMinutes: number, repairsCount: number):
 
 // ─── KPI 9: Energy Consumption and Operating Cost ────────────────────────────
 
-export interface EnergyCostResult {
-  itEnergyKwh: number;
-  coolingEnergyKwh: number;
-  facilityEnergyKwh: number;
-  monthlyCost: number;
-  annualCost: number;
-  carbonEmissionsKgCo2: number;
-}
+export type EnergyCostResult =
+  | {
+      status: "valid";
+      itEnergyKwh: number;
+      coolingEnergyKwh: number;
+      facilityEnergyKwh: number;
+      monthlyCost: number;
+      annualCost: number;
+      carbonEmissionsKgCo2: number;
+    }
+  | {
+      status: "invalid";
+      itEnergyKwh: null;
+      coolingEnergyKwh: null;
+      facilityEnergyKwh: null;
+      monthlyCost: null;
+      annualCost: null;
+      carbonEmissionsKgCo2: null;
+      errorMessage: string;
+    };
 
 export function calculateEnergyAndCost(
   units: number,
@@ -640,22 +652,42 @@ export function calculateEnergyAndCost(
   tariffPerKwh: number = 8.5, // Default INR 8.50/kWh (Industrial HT tariff in South India)
   carbonIntensityGPerKwh: number = 716, // CEA India national grid average ~716 gCO2/kWh
 ): EnergyCostResult {
-  const safeUnits = Math.max(1, units || 1);
-  const safeWatts = Math.max(10, wattsPerUnit || 10);
-  const safeHours = Math.min(24, Math.max(1, hoursPerDay || 1));
-  const safeDays = Math.min(31, Math.max(1, daysPerMonth || 1));
-  const safePue = Math.max(1.0, pue || 1.0);
-  const safeTariff = Math.max(0, tariffPerKwh || 0);
+  if (
+    ![units, wattsPerUnit, hoursPerDay, daysPerMonth, pue, tariffPerKwh, carbonIntensityGPerKwh].every(
+      (value) => Number.isFinite(value),
+    ) ||
+    units <= 0 ||
+    wattsPerUnit <= 0 ||
+    hoursPerDay <= 0 ||
+    hoursPerDay > 24 ||
+    daysPerMonth <= 0 ||
+    daysPerMonth > 31 ||
+    pue < 1.0 ||
+    tariffPerKwh < 0 ||
+    carbonIntensityGPerKwh < 0
+  ) {
+    return {
+      status: "invalid",
+      itEnergyKwh: null,
+      coolingEnergyKwh: null,
+      facilityEnergyKwh: null,
+      monthlyCost: null,
+      annualCost: null,
+      carbonEmissionsKgCo2: null,
+      errorMessage:
+        "Enter finite positive workload, power, hours, days, and PUE values. Tariff and carbon intensity cannot be negative; hours cannot exceed 24 and days cannot exceed 31.",
+    };
+  }
 
   // IT Compute Energy = units * watts * hours * days / 1000
-  const itEnergyKwh = Math.round(((safeUnits * safeWatts * safeHours * safeDays) / 1000) * 10) / 10;
+  const itEnergyKwh = Math.round(((units * wattsPerUnit * hoursPerDay * daysPerMonth) / 1000) * 10) / 10;
   // Total Facility Energy = IT Energy * PUE
-  const facilityEnergyKwh = Math.round(itEnergyKwh * safePue * 10) / 10;
+  const facilityEnergyKwh = Math.round(itEnergyKwh * pue * 10) / 10;
   // Cooling and auxiliary overhead
   const coolingEnergyKwh = Math.round(Math.max(0, facilityEnergyKwh - itEnergyKwh) * 10) / 10;
 
   // Monthly Cost = Facility Energy * Tariff
-  const monthlyCost = Math.round(facilityEnergyKwh * safeTariff);
+  const monthlyCost = Math.round(facilityEnergyKwh * tariffPerKwh);
   // Annualized Cost = Monthly * 12
   const annualCost = Math.round(monthlyCost * 12);
 
@@ -663,6 +695,7 @@ export function calculateEnergyAndCost(
   const carbonEmissionsKgCo2 = Math.round((facilityEnergyKwh * carbonIntensityGPerKwh) / 1000);
 
   return {
+    status: "valid",
     itEnergyKwh,
     coolingEnergyKwh,
     facilityEnergyKwh,

@@ -26,7 +26,7 @@ export function DashboardPreview() {
     DASHBOARD_METRICS[selectedRegionKey] ?? DASHBOARD_METRICS["madurai"]!;
   const activeRegion = REGIONS_DATA[selectedRegionKey];
   const formatValue = (value: number | null | undefined, suffix = "") =>
-    value == null ? "Unavailable" : `${value}${suffix}`;
+    value == null ? "—" : `${value}${suffix}`;
 
   const metricCards = [
     {
@@ -34,38 +34,28 @@ export function DashboardPreview() {
       value: activeMetric.compute,
       icon: Cpu,
       color: "#06B6D4",
-      sub:
-        activeMetric.compute == null
-          ? "Location telemetry unavailable"
-          : "Illustrative workload signal",
+      sub: activeMetric.compute == null ? "Not connected" : "Illustrative workload signal",
     },
     {
       label: "Energy Monitoring",
       value: activeMetric.power,
       icon: Zap,
       color: "#F59E0B",
-      sub:
-        activeMetric.power == null ? "Location telemetry unavailable" : "Illustrative power load",
+      sub: activeMetric.power == null ? "Not connected" : "Illustrative power load",
     },
     {
       label: "Cooling Status",
       value: activeMetric.cooling,
       icon: Snowflake,
       color: "#38BDF8",
-      sub:
-        activeMetric.cooling == null
-          ? "Location telemetry unavailable"
-          : "Illustrative thermal loop",
+      sub: activeMetric.cooling == null ? "Not connected" : "Illustrative thermal loop",
     },
     {
       label: "Network Connectivity",
       value: activeMetric.network,
       icon: Network,
       color: "#10B981",
-      sub:
-        activeMetric.network == null
-          ? "Location telemetry unavailable"
-          : "Illustrative link health",
+      sub: activeMetric.network == null ? "Not connected" : "Illustrative link health",
     },
   ];
 
@@ -122,7 +112,7 @@ export function DashboardPreview() {
       </div>
 
       {/* Main Dashboard Body */}
-      <div className="p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="p-5 sm:p-7 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-7">
         {/* Node Profile Sidebar (4 Cols) */}
         <div className="lg:col-span-4 rounded-xl border border-[#1E293B] bg-[#121824] p-5 flex flex-col">
           <div>
@@ -147,7 +137,7 @@ export function DashboardPreview() {
                 <span className="font-mono text-white font-bold">
                   {formatValue(activeMetric.events)}{" "}
                   <span className="text-[10px] font-normal text-[#64748B]">
-                    {activeMetric.events == null ? "telemetry unavailable" : "/ 24h"}
+                    {activeMetric.events == null ? "not connected" : "/ 24h · demo"}
                   </span>
                 </span>
               </div>
@@ -160,7 +150,7 @@ export function DashboardPreview() {
                 <span className="font-mono text-white font-bold">
                   {formatValue(activeMetric.alerts)}{" "}
                   <span className="text-[10px] font-normal text-[#64748B]">
-                    {activeMetric.alerts == null ? "telemetry unavailable" : "illustrative"}
+                    {activeMetric.alerts == null ? "not connected" : "illustrative"}
                   </span>
                 </span>
               </div>
@@ -181,59 +171,81 @@ export function DashboardPreview() {
         {/* Telemetry Metric Cards & 24h Activity Graph (8 Cols) */}
         <div className="lg:col-span-8 flex flex-col gap-6">
           {/* 4 Metric Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {metricCards.map((m) => {
-              const Icon = m.icon;
-              return (
-                <div
-                  key={m.label}
-                  className="rounded-xl border border-[#1E293B] bg-[#121824] p-4 flex flex-col justify-between"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <Icon size={16} style={{ color: m.color }} />
-                    <span className="text-[9px] font-mono text-[#64748B] uppercase">Demo</span>
+          <div>
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-white">
+                  Planning indicators
+                </h4>
+                <p className="mt-1 text-[11px] text-[#64748B]">
+                  Values are illustrative planning signals; no live telemetry is connected.
+                </p>
+              </div>
+              {activeMetric.compute == null && (
+                <span className="rounded-full border border-slate-500/40 bg-slate-500/10 px-2 py-1 text-[10px] font-mono uppercase tracking-wide text-slate-300">
+                  Data unavailable
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {metricCards.map((m) => {
+                const Icon = m.icon;
+                return (
+                  <div
+                    key={m.label}
+                    className="min-h-[158px] rounded-xl border border-[#1E293B] bg-[#121824] p-4 flex flex-col justify-between"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <Icon size={16} style={{ color: m.color }} />
+                      <span className="text-[9px] font-mono text-[#64748B] uppercase">Demo</span>
+                    </div>
+
+                    <div>
+                      <span
+                        className={`text-2xl sm:text-3xl font-mono font-bold block mb-2 ${m.value == null ? "text-[#94A3B8]" : "text-white"}`}
+                      >
+                        {formatValue(m.value, "%")}
+                      </span>
+
+                      {/* Progress Bar Track */}
+                      {m.value == null ? (
+                        <div className="mb-2 rounded-md border border-[#334155] bg-[#070A0E] px-2 py-1.5 text-[10px] font-mono uppercase tracking-wide text-[#94A3B8]">
+                          No live telemetry
+                        </div>
+                      ) : (
+                        <div className="h-1.5 w-full rounded-full bg-[#070A0E] overflow-hidden mb-2">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${m.value}%`,
+                              backgroundColor: m.color,
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      <span className="text-[11px] font-medium text-[#CBD5E1] block truncate">
+                        {m.label}
+                      </span>
+                      <span className="text-[9px] text-[#64748B] block truncate">{m.sub}</span>
+                    </div>
                   </div>
-
-                  <div>
-                    <span className="text-2xl sm:text-3xl font-mono font-bold text-white block mb-2">
-                      {formatValue(m.value, "%")}
-                    </span>
-
-                    {/* Progress Bar Track */}
-                    {m.value == null ? (
-                      <div className="mb-2 rounded-md border border-[#334155] bg-[#070A0E] px-2 py-1.5 text-[10px] font-mono uppercase tracking-wide text-[#94A3B8]">
-                        Telemetry unavailable
-                      </div>
-                    ) : (
-                      <div className="h-1.5 w-full rounded-full bg-[#070A0E] overflow-hidden mb-2">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${m.value}%`,
-                            backgroundColor: m.color,
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    <span className="text-[11px] font-medium text-[#CBD5E1] block truncate">
-                      {m.label}
-                    </span>
-                    <span className="text-[9px] text-[#64748B] block truncate">{m.sub}</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
 
           {/* 24-Hour Operational Pattern Chart */}
-          <div className="rounded-xl border border-[#1E293B] bg-[#121824] p-5">
+          <figure
+            className="rounded-xl border border-[#1E293B] bg-[#121824] p-5"
+            aria-labelledby="dashboard-chart-title"
+          >
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#1E293B]">
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-wider text-[#64748B] block">
-                  Connected Telemetry Signals
+                  Illustrative telemetry model
                 </span>
-                <h5 className="text-xs font-semibold text-white">
+                <h5 id="dashboard-chart-title" className="text-xs font-semibold text-white">
                   24-Hour Operational Pattern (Illustrative Signal Curve)
                 </h5>
               </div>
@@ -242,8 +254,17 @@ export function DashboardPreview() {
               </span>
             </div>
 
+            <div className="mb-3 flex items-center justify-between text-[10px] font-mono text-[#64748B]">
+              <span>Relative signal index (%)</span>
+              <span>Illustrative / demo data</span>
+            </div>
+
             {/* Simulated Hourly Bar Chart */}
-            <div className="h-28 flex items-end gap-1 sm:gap-1.5 pt-4 pb-1">
+            <div
+              className="relative h-32 flex items-end gap-1 sm:gap-1.5 border-b border-l border-[#334155] bg-[linear-gradient(to_bottom,transparent_24%,rgba(71,85,105,0.18)_25%,transparent_26%,transparent_49%,rgba(71,85,105,0.18)_50%,transparent_51%,transparent_74%,rgba(71,85,105,0.18)_75%,transparent_76%)] px-2 pt-4 pb-1"
+              role="img"
+              aria-label="Illustrative hourly signal pattern ranging from 34 to 84 percent; this is not live telemetry."
+            >
               {HOURLY_ACTIVITY_PATTERN.map((val, idx) => (
                 <div
                   key={idx}
@@ -258,7 +279,7 @@ export function DashboardPreview() {
             </div>
 
             {/* X-Axis Timeline */}
-            <div className="flex items-center justify-between text-[10px] font-mono text-[#64748B] pt-2 border-t border-[#1E293B]">
+            <div className="flex items-center justify-between text-[10px] font-mono text-[#64748B] pt-2">
               <span>00:00</span>
               <span>04:00</span>
               <span>08:00</span>
@@ -267,7 +288,7 @@ export function DashboardPreview() {
               <span>20:00</span>
               <span>24:00</span>
             </div>
-          </div>
+          </figure>
         </div>
       </div>
 

@@ -11,6 +11,13 @@ import coolingImg from "../../assets/cooling-systems.jpg";
 import powerImg from "../../assets/power-distribution.jpg";
 import nocImg from "../../assets/operations-noc.jpg";
 
+function getSectionId(title: string) {
+  return `section-${title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")}`;
+}
+
 function getPageFeaturedImage(data: DedicatedPageData) {
   if (data.route?.startsWith("/about") || data.category === "About") {
     return {
@@ -139,7 +146,28 @@ export function PageTemplate({
       />
 
       {/* Main Content Body */}
-      <main className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-14">
+      <main className="gn-container py-12 sm:py-14">
+        {data.sections.length >= 3 && (
+          <nav
+            aria-label="On this page"
+            className="mb-8 rounded-xl border border-[#1E293B] bg-[#0B0F17] p-4 sm:flex sm:items-center sm:gap-4"
+          >
+            <span className="shrink-0 text-xs font-mono uppercase tracking-wider text-[#10B981]">
+              On this page
+            </span>
+            <div className="mt-3 flex flex-wrap gap-2 sm:mt-0">
+              {data.sections.map((section, idx) => (
+                <a
+                  key={section.title}
+                  href={`#${getSectionId(section.title)}`}
+                  className="rounded-lg border border-[#1E293B] px-3 py-2 text-xs text-[#CBD5E1] transition-colors hover:border-[#10B981]/50 hover:text-white"
+                >
+                  {String(idx + 1).padStart(2, "0")} · {section.title}
+                </a>
+              ))}
+            </div>
+          </nav>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
           {/* Primary Content Column (8 Cols) */}
           <div className="min-w-0 lg:col-span-8 space-y-8 lg:space-y-10">
@@ -164,7 +192,8 @@ export function PageTemplate({
             {data.sections.map((section, idx) => (
               <section
                 key={section.title}
-                className="rounded-2xl border border-[#1E293B] bg-[#0B0F17] p-6 sm:p-8 shadow-xl"
+                id={getSectionId(section.title)}
+                className="scroll-mt-28 rounded-2xl border border-[#1E293B] bg-[#0B0F17] p-6 sm:p-8 shadow-xl"
               >
                 <div className="flex items-center gap-2 mb-4">
                   <span className="font-mono text-xs text-[#10B981] font-semibold">

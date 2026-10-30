@@ -175,7 +175,11 @@ export function CapacityUtilizationModel() {
                 {powerUsed} / {powerAvailable} kW
               </span>
             </div>
+            <label htmlFor="capacity-it-power" className="sr-only">
+              IT Power Draw in kilowatts
+            </label>
             <input
+              id="capacity-it-power"
               type="range"
               min="100"
               max={powerAvailable}
@@ -201,7 +205,11 @@ export function CapacityUtilizationModel() {
                 {rackUsed} / {rackAvailable} Cabinets
               </span>
             </div>
+            <label htmlFor="capacity-white-space" className="sr-only">
+              White Space Racks in cabinets
+            </label>
             <input
+              id="capacity-white-space"
               type="range"
               min="5"
               max={rackAvailable}
@@ -227,7 +235,11 @@ export function CapacityUtilizationModel() {
                 {coolingUsed} / {coolingAvailable} kW
               </span>
             </div>
+            <label htmlFor="capacity-cooling" className="sr-only">
+              Cooling Thermal Draw in kilowatts
+            </label>
             <input
+              id="capacity-cooling"
               type="range"
               min="100"
               max={coolingAvailable}
@@ -253,7 +265,11 @@ export function CapacityUtilizationModel() {
                 {gpuUsed} / {gpuAvailable} GPUs
               </span>
             </div>
+            <label htmlFor="capacity-gpu" className="sr-only">
+              GPU Accelerator Silicon in GPUs
+            </label>
             <input
+              id="capacity-gpu"
               type="range"
               min="16"
               max={gpuAvailable}
@@ -279,7 +295,11 @@ export function CapacityUtilizationModel() {
                 {storageUsed} / {storageAvailable} TB
               </span>
             </div>
+            <label htmlFor="capacity-nvme" className="sr-only">
+              NVMe Burst Buffer in terabytes
+            </label>
             <input
+              id="capacity-nvme"
               type="range"
               min="50"
               max={storageAvailable}

@@ -45,14 +45,15 @@ export function PueCalculator() {
       <div className="border-b border-[#1E293B] pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <span className="text-xs font-mono uppercase tracking-widest text-[#10B981] font-semibold">
-            KPI 01 · ISO/IEC 30134-2 STANDARD
+            KPI 01 · ISO/IEC 30134-2 · ILLUSTRATIVE MODEL
           </span>
           <h3 className="text-xl sm:text-2xl font-bold text-white mt-1">
-            Power Usage Effectiveness (PUE) Calculator
+            Illustrative Power Usage Effectiveness (PUE) Calculator
           </h3>
           <p className="text-xs text-[#94A3B8] mt-1 max-w-2xl">
-            PUE expresses the relationship between total energy consumed by the data centre facility
-            and energy delivered to productive IT compute equipment.
+            PUE expresses the relationship between total facility energy and energy delivered to
+            productive IT compute equipment. This local calculator uses user-supplied planning values;
+            it is not a live facility measurement.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -73,6 +74,10 @@ export function PueCalculator() {
           ))}
         </div>
       </div>
+      <p className="-mt-5 text-[11px] leading-relaxed text-[#64748B]">
+        Enter facility and IT values in the same unit and for the same measurement period. The
+        selector changes the displayed unit label only; it does not convert kW, kWh, or MWh values.
+      </p>
 
       {/* Formula Definition Banner */}
       <div className="p-4 rounded-xl bg-[#121824] border border-[#1E293B] flex flex-col md:flex-row md:items-center justify-between gap-4 font-mono text-xs">
@@ -192,7 +197,7 @@ export function PueCalculator() {
             {/* Measurement Boundary Category */}
             <div>
               <label className="block text-xs font-mono uppercase text-[#94A3B8] mb-1.5">
-                ISO/IEC 30134-2 Measurement Category
+              Illustrative Measurement Boundary
               </label>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <button
@@ -204,10 +209,10 @@ export function PueCalculator() {
                       : "border-[#1E293B] bg-[#121824] text-[#94A3B8] hover:text-white"
                   }`}
                 >
-                  <div className="font-semibold text-white">Category 1 (UPS Output)</div>
+                  <div className="font-semibold text-white">UPS-output boundary</div>
                   <div className="text-[10px] text-[#64748B] mt-0.5">
-                    IT load metered at centralized UPS output; includes downstream PDU & cable
-                    losses.
+                    Illustrative boundary: IT load is represented at centralized UPS output and
+                    includes downstream PDU and cable losses.
                   </div>
                 </button>
                 <button
@@ -219,10 +224,10 @@ export function PueCalculator() {
                       : "border-[#1E293B] bg-[#121824] text-[#94A3B8] hover:text-white"
                   }`}
                 >
-                  <div className="font-semibold text-white">Category 2 (PDU / Rack Output)</div>
+                  <div className="font-semibold text-white">PDU / rack-output boundary</div>
                   <div className="text-[10px] text-[#64748B] mt-0.5">
-                    IT load metered at floor PDU or rack busway; isolates pure compute equipment
-                    draw.
+                    Illustrative boundary: IT load is represented at a floor PDU or rack busway to
+                    isolate equipment draw.
                   </div>
                 </button>
               </div>
@@ -269,7 +274,7 @@ export function PueCalculator() {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#94A3B8]">Energy Lost per 100 kW IT:</span>
+                  <span className="text-[#94A3B8]">Facility Overhead per 100 kW IT:</span>
                   <span className="font-mono text-[#F43F5E] font-semibold">
                     {((result.pue - 1) * 100).toFixed(1)} kW
                   </span>
@@ -297,9 +302,11 @@ export function PueCalculator() {
               Measurement Boundary Notice
             </div>
             <p>
-              Under ISO/IEC 30134-2, PUE must be reported with its measurement boundary category
-              (e.g. PUE Category 2) and measurement period (e.g. annualized continuous 12-month
-              data). PUE alone does not account for water efficiency (WUE) or compute productivity.
+              ISO/IEC 30134-2 defines PUE using a documented measurement boundary and matching
+              measurement period; its public preview describes categories and continuous 12-month
+              reporting. These simplified boundary choices are illustrative and do not establish
+              ISO compliance or certification. PUE alone does not account for water efficiency
+              (WUE) or compute productivity.
             </p>
           </div>
         </div>

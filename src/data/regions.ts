@@ -44,7 +44,7 @@ export const REGIONS_DATA: Record<string, RegionInfo> = {
     role: "Southern Anchor & Regional Service Node",
     category: "Regional Technology & Infrastructure Hub",
     intro:
-      "Madurai serves as the commercial, educational, and logistics capital of southern Tamil Nadu. As digital compute demands surge across non-metropolitan corridors, Madurai provides an advantageous strategic geography to decentralize digital infrastructure away from grid-constrained Tier-1 coastal metros like Chennai.",
+      "Madurai is a commercial, educational, and logistics centre for southern Tamil Nadu. As digital compute demand grows beyond major metropolitan corridors, its geography can be evaluated as part of a more distributed infrastructure approach.",
     infrastructureRelevance:
       "Madurai offers compelling infrastructure fundamentals for distributed digital infrastructure: robust high-voltage transmission corridors managed by TANTRANSCO, lower seismic vulnerability, and favorable land availability for high-footprint modular facility designs. From a sustainability perspective, southern Tamil Nadu's high solar irradiation presents strategic opportunities for dedicated renewable power wheeling via open-access Power Purchase Agreements (PPAs). Additionally, local water table considerations make Madurai an ideal candidate for closed-loop dry heat-rejection and direct-to-chip liquid cooling architectures that minimize operational water consumption without depleting municipal aquifers.",
     ecosystem:
@@ -84,7 +84,7 @@ export const REGIONS_DATA: Record<string, RegionInfo> = {
     role: "Western Anchor & Industrial Edge Compute Node",
     category: "Industrial & Technology Ecosystem",
     intro:
-      "Coimbatore is the industrial manufacturing and engineering powerhouse of Western Tamil Nadu. Characterized by high concentrations of precision engineering, automotive casting, textile automation, and aerospace component manufacturing, the city represents a premier market for industrial edge AI compute and sovereign on-premise operational intelligence.",
+      "Coimbatore is a major manufacturing and engineering centre in western Tamil Nadu. Its concentration of precision engineering, automotive casting, textile automation, and aerospace component manufacturing makes it relevant to industrial edge AI and on-premise operational computing assessments.",
     infrastructureRelevance:
       "Industrial digitisation — including computer vision, predictive robotics, and SCADA analytics — can benefit from localized on-premise and edge computing to reduce network transit latency and support application-specific response-time requirements. Coimbatore possesses robust industrial electrical infrastructure, with dedicated medium-to-high voltage industrial feeders and proximity to the Palakkad Gap's wind energy generation corridor. To support 40 kW to 100 kW+ industrial AI training pods, modular liquid cooling reference designs provide precise thermal rejection without competing with industrial manufacturing processes for cooling water resources.",
     ecosystem:
@@ -128,7 +128,7 @@ export const REGIONS_DATA: Record<string, RegionInfo> = {
     infrastructureRelevance:
       "Trichy's geographic midpoint provides distinct engineering advantages for digital infrastructure resilience: network packets routed through central Tamil Nadu achieve balanced round-trip propagation times across Chennai, Bengaluru, Madurai, and Coimbatore. The region features elevated, flood-resilient terrain along the Cauvery basin periphery, access to robust 230kV/400kV high-voltage substation feeds from central state grids, and substantial industrial land reserves with lower land acquisition and civil development costs compared to Tier-1 metros.",
     ecosystem:
-      "Trichy is anchored by national premier educational institutions including the National Institute of Technology (NIT Trichy), the Indian Institute of Management (IIM Trichy), and Bharathidasan University. It also maintains a heavy industrial fabrication legacy through public enterprises such as Bharat Heavy Electricals Limited (BHEL) and the Golden Rock Railway Workshops, providing an established regional mechanical and electrical engineering technician workforce.",
+      "Trichy is supported by institutions including the National Institute of Technology (NIT Trichy), the Indian Institute of Management (IIM Trichy), and Bharathidasan University. Its industrial base includes Bharat Heavy Electricals Limited (BHEL) and the Golden Rock Railway Workshops, contributing to the region's engineering and technical workforce.",
     connectivity:
       "Tiruchirappalli International Airport (IATA: TRZ) is the second-largest international passenger airport in Tamil Nadu by passenger volume, offering direct flights across Southeast Asia and the Middle East. Geographically, Trichy represents the convergence point of NH-45 (Grand Southern Trunk Road connecting Chennai to the south), NH-81, and NH-83, supplemented by the Southern Railway Divisional Headquarters rail junction and dual-path national terrestrial dark-fiber conduits.",
     networkRole:
@@ -163,7 +163,7 @@ export const REGIONS_DATA: Record<string, RegionInfo> = {
     role: "Coastal Gateway & Regional Network Diversity Node",
     category: "Coastal Technology & Connectivity Gateway",
     intro:
-      "Mangalore (Mangaluru) is the premier coastal port city and technology center of southwest Karnataka. Positioned on the Arabian Sea coastline between Goa and Kerala, Mangalore combines maritime commercial logistics with regional telecommunications infrastructure connecting to wider national networks.",
+      "Mangalore (Mangaluru) is a coastal port city and technology centre in southwest Karnataka. Positioned on the Arabian Sea between Goa and Kerala, it combines maritime logistics with regional telecommunications links to wider national networks.",
     infrastructureRelevance:
       "Mangalore offers critical network diversity for Indian digital infrastructure, mitigating the concentration risk of compute facilities clustered exclusively in inland or single-metro hubs. Mangalore's coastal location and regional telecommunications infrastructure may offer opportunities for terrestrial connectivity to wider national networks. Specific fiber routes, carrier diversity, and access to international subsea cable landing stations require site- and provider-specific verification. From a physical facility engineering perspective, coastal environmental conditions — characterized by elevated ambient relative humidity and marine salinity — necessitate specialized infrastructure designs: closed-loop direct-to-chip cooling or indirect systems with sealed heat exchangers and anti-corrosive coatings to protect sensitive AI compute silicon from airborne salt aerosol degradation.",
     ecosystem:

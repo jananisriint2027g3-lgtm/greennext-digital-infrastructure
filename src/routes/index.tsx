@@ -36,7 +36,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Intelligent infrastructure for a sustainable digital future. Connecting AI-driven data center infrastructure, energy efficiency, and intelligent automation across seven South Indian regional nodes.",
+          "GreenNext explores AI-ready digital infrastructure, energy-aware operations, and intelligent automation across seven South Indian regional locations.",
       },
       {
         property: "og:title",
@@ -45,7 +45,7 @@ export const Route = createFileRoute("/")({
       {
         property: "og:description",
         content:
-          "AI-driven data center infrastructure, energy efficiency, and intelligent automation across South India.",
+          "AI-ready digital infrastructure, energy-aware operations, and intelligent automation across South India.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "/" },
@@ -72,7 +72,7 @@ function HomePage() {
       path: "/energy/monitoring",
       icon: Zap,
       accent: "#F59E0B",
-      desc: "Continuous monitoring and active optimization of power delivery and cooling requirements, treating energy performance as an engineering discipline rather than overhead.",
+      desc: "Reference approaches for monitoring power delivery and cooling requirements, treating energy performance as an engineering discipline rather than overhead.",
     },
     {
       num: "03",
@@ -80,7 +80,7 @@ function HomePage() {
       path: "/automation/monitoring",
       icon: Bot,
       accent: "#38BDF8",
-      desc: "Event-driven automation of operational workflows — including monitoring, alert management, anomaly detection, and capacity planning — supporting consistent infrastructure responses.",
+      desc: "Reference workflows for monitoring, alert management, anomaly detection, and capacity planning that can support more consistent infrastructure responses.",
     },
     {
       num: "04",
@@ -111,13 +111,13 @@ function HomePage() {
     {
       num: "02",
       title: "Efficient Cooling",
-      desc: "Cooling systems calibrated to actual measured thermal load rather than theoretical worst-case buffers.",
+      desc: "Cooling approaches evaluated against thermal-load assumptions and available operating data rather than theoretical worst-case buffers alone.",
       path: "/sustainability/efficient-cooling",
     },
     {
       num: "03",
       title: "Resource Optimization",
-      desc: "Eliminating idle compute, overprovisioned chillers, and underutilised network interfaces.",
+      desc: "Identifying idle compute, overprovisioned cooling equipment, and underutilised network interfaces as part of resource planning.",
       path: "/sustainability/resource-optimization",
     },
     {
@@ -129,13 +129,13 @@ function HomePage() {
     {
       num: "05",
       title: "Infrastructure Visibility",
-      desc: "Consolidated operational insight across physical and logical systems as the prerequisite for waste reduction.",
+      desc: "Consolidated operational insight across physical and logical systems as a prerequisite for evaluating waste reduction.",
       path: "/energy/monitoring",
     },
     {
       num: "06",
       title: "Sustainable Digital Growth",
-      desc: "Scaling regional digital capacity without proportional degradation in energy and resource use.",
+      desc: "Planning regional digital capacity with attention to energy and resource requirements as demand evolves.",
       path: "/sustainability/sustainable-growth",
     },
   ];
@@ -151,13 +151,13 @@ function HomePage() {
       step: "02",
       name: "Intelligence",
       icon: CircuitBoard,
-      desc: "Apply telemetry, analytics, and AI-driven analysis to understand operational states across the full stack in real time.",
+      desc: "Apply telemetry, analytics, and AI-driven analysis where suitable to interpret operational states across the infrastructure stack.",
     },
     {
       step: "03",
       name: "Optimize",
       icon: Gauge,
-      desc: "Use operational insights to continuously improve resource efficiency, cooling calibration, and operational reliability as workloads evolve.",
+      desc: "Use available operational insights to evaluate resource efficiency, cooling calibration, and reliability as workloads evolve.",
     },
   ];
 

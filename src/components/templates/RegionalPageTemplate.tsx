@@ -66,43 +66,45 @@ export function RegionalPageTemplate({ region }: { region: RegionInfo }) {
         isConceptual={true}
       />
 
-      <main className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-14">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
-          {/* Main Column (8 Cols) */}
-          <div className="min-w-0 lg:col-span-8 space-y-8 lg:space-y-10">
-            {/* Regional Context Photography Card (Illustrative) */}
-            <div className="rounded-2xl overflow-hidden border border-[#1E293B] bg-[#0B0F17] shadow-xl group">
-              <div className="aspect-[16/8] sm:aspect-[16/7] w-full overflow-hidden bg-[#070A0E]">
-                <img
-                  src={regionImg.src}
-                  alt={regionImg.alt}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+      <div className="gn-container py-12 sm:py-14">
+        <div className="space-y-8 lg:space-y-10">
+          {/* The dossier owns the full content width; related nodes follow it as a separate section. */}
+          <main className="min-w-0 space-y-8 lg:space-y-10">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8 items-stretch">
+              {/* Regional Context Photography Card (Illustrative) */}
+              <div className="rounded-2xl overflow-hidden border border-[#1E293B] bg-[#0B0F17] shadow-xl group">
+                <div className="aspect-[16/10] xl:aspect-auto xl:h-full min-h-[240px] w-full overflow-hidden bg-[#070A0E]">
+                  <img
+                    src={regionImg.src}
+                    alt={regionImg.alt}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                <div className="px-4 py-2.5 bg-[#121824] border-t border-[#1E293B] flex items-center justify-between text-[11px] font-mono text-[#94A3B8]">
+                  <span>REGIONAL CONTEXT // {region.name.toUpperCase()} (ILLUSTRATIVE)</span>
+                  <span className="text-[#10B981]">SOUTH INDIA CORRIDOR</span>
+                </div>
               </div>
-              <div className="px-4 py-2.5 bg-[#121824] border-t border-[#1E293B] flex items-center justify-between text-[11px] font-mono text-[#94A3B8]">
-                <span>REGIONAL CONTEXT // {region.name.toUpperCase()} (ILLUSTRATIVE)</span>
-                <span className="text-[#10B981]">SOUTH INDIA CORRIDOR</span>
-              </div>
+
+              {/* Section 1: Regional Infrastructure Relevance */}
+              <section className="rounded-2xl border border-[#1E293B] bg-[#0B0F17] p-6 sm:p-8 shadow-xl flex flex-col justify-center">
+                <span className="text-xs font-mono uppercase tracking-wider text-[#10B981] font-semibold block mb-2">
+                  01 // Regional Mandate
+                </span>
+                <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
+                  Infrastructure Relevance
+                </h2>
+                <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed mb-6">
+                  {region.infrastructureRelevance}
+                </p>
+
+                <div className="p-4 rounded-xl border border-[#10B981]/30 bg-[#10B981]/5 text-xs text-[#CBD5E1]">
+                  <strong>Strategic Network Role:</strong> {region.networkRole}
+                </div>
+              </section>
             </div>
-
-            {/* Section 1: Regional Infrastructure Relevance */}
-            <section className="rounded-2xl border border-[#1E293B] bg-[#0B0F17] p-6 sm:p-8 shadow-xl">
-              <span className="text-xs font-mono uppercase tracking-wider text-[#10B981] font-semibold block mb-2">
-                01 // Regional Mandate
-              </span>
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
-                Infrastructure Relevance
-              </h2>
-              <p className="text-sm sm:text-base text-[#94A3B8] leading-relaxed mb-6">
-                {region.infrastructureRelevance}
-              </p>
-
-              <div className="p-4 rounded-xl border border-[#10B981]/30 bg-[#10B981]/5 text-xs text-[#CBD5E1]">
-                <strong>Strategic Network Role:</strong> {region.networkRole}
-              </div>
-            </section>
 
             {/* Section 2: Regional planning status */}
             <section className="rounded-2xl border border-amber-400/25 bg-amber-400/[0.04] p-6 sm:p-8 shadow-xl">
@@ -240,11 +242,11 @@ export function RegionalPageTemplate({ region }: { region: RegionInfo }) {
                 <span>{REGIONAL_NETWORK_DISCLAIMER}</span>
               </div>
             </section>
-          </div>
+          </main>
 
-          {/* Sidebar: Explore Sister Nodes (4 Cols) */}
-          <aside className="min-w-0 lg:col-span-4 space-y-6">
-            <div className="rounded-2xl border border-[#1E293B] bg-[#0B0F17] p-6 shadow-xl sticky top-28">
+          {/* Related nodes use the reclaimed width instead of reserving a persistent sidebar track. */}
+          <aside className="min-w-0 space-y-6">
+            <div className="rounded-2xl border border-[#1E293B] bg-[#0B0F17] p-6 sm:p-7 shadow-xl">
               <div className="flex items-center gap-2 pb-4 mb-4 border-b border-[#1E293B]">
                 <Globe2 size={16} className="text-[#10B981]" />
                 <h3 className="text-xs font-mono uppercase tracking-wider text-white font-semibold">
@@ -252,7 +254,7 @@ export function RegionalPageTemplate({ region }: { region: RegionInfo }) {
                 </h3>
               </div>
 
-              <div className="space-y-3 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-6">
                 {otherRegions.map((other) => (
                   <Link
                     key={other.id}
@@ -268,7 +270,7 @@ export function RegionalPageTemplate({ region }: { region: RegionInfo }) {
                           {other.code}
                         </span>
                       </div>
-                      <span className="text-[11px] text-[#64748B] block truncate max-w-[200px]">
+                      <span className="text-[11px] text-[#64748B] block truncate max-w-[260px]">
                         {other.category}
                       </span>
                     </div>
@@ -295,7 +297,7 @@ export function RegionalPageTemplate({ region }: { region: RegionInfo }) {
           title={`Discuss Infrastructure in ${region.name}`}
           copy={`Connect with our infrastructure team to evaluate local power feeds, connectivity routes, and deployment requirements across ${region.name} and surrounding districts.`}
         />
-      </main>
+      </div>
     </div>
   );
 }

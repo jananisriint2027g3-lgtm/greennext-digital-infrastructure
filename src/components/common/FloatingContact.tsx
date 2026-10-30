@@ -532,7 +532,7 @@ export function FloatingContact() {
 
       {/* Floating Widget — bottom-right, above mobile navigation */}
       <aside
-        className="fixed bottom-6 right-4 sm:right-6 z-[100] flex flex-col items-end gap-2"
+        className="hidden sm:flex fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-4 sm:right-6 z-[100] flex-col items-end gap-2"
         aria-label="Quick contact and inquiry options"
       >
         {/* Expanded actions */}

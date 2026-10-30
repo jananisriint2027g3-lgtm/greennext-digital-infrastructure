@@ -241,7 +241,7 @@ export function resolveServiceContent(
     return {
       title: "Regional Infrastructure Grid across South India",
       description:
-        "Learn about our strategically distributed Tier-2 edge nodes across Madurai, Coimbatore, Trichy, and Mangalore, delivering sub-15ms regional latency.",
+        "Learn about our strategically distributed Tier-2 edge-node planning portfolio across seven South Indian regional locations.",
       url: `${normBase}/regions/overview`,
     };
   }

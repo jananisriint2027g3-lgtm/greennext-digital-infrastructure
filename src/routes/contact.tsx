@@ -66,14 +66,14 @@ export function ContactPage() {
       icon: Zap,
       title: "Energy & Cooling",
       tag: "THERMAL & POWER",
-      desc: "PUE reduction pathways, hybrid liquid/air thermal engineering, ambient climate adaptation for South India, and power telemetry calibration.",
+      desc: "PUE assessment pathways, hybrid liquid/air thermal engineering, ambient-climate considerations for South India, and power telemetry calibration.",
       bullets: ["PUE calibration targets", "Liquid-to-chip transition", "Renewable power pairing"],
     },
     {
       icon: Activity,
       title: "Automation & Monitoring",
       tag: "CLOSED-LOOP TELEMETRY",
-      desc: "Full-stack telemetry architectures, real-time threshold monitoring, automated environmental pacing, and predictive incident detection.",
+      desc: "Full-stack telemetry architectures, threshold-monitoring references, environmental pacing concepts, and predictive incident-detection approaches.",
       bullets: ["7-layer telemetry design", "Automated alert pacing", "Thermal anomaly detection"],
     },
     {

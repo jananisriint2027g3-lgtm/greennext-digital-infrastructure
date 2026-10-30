@@ -45,6 +45,17 @@ export function GreenNextChatbot() {
       ? restoredConversation.messages
       : [{ id: 1, role: "assistant", text: getChatGreeting() }],
   );
+
+  useEffect(() => {
+    const handleOpenAssistant = () => {
+      setIsOpen(true);
+      setIsContactMenuOpen(false);
+      setIsQuickInquiryOpen(false);
+    };
+
+    window.addEventListener("open-greennext-assistant", handleOpenAssistant);
+    return () => window.removeEventListener("open-greennext-assistant", handleOpenAssistant);
+  }, []);
   const nextId = useRef(2);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -169,13 +180,13 @@ export function GreenNextChatbot() {
   };
 
   return (
-    <div className="fixed bottom-24 right-4 z-[110] sm:right-6">
+    <div className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-4 z-[110] sm:right-6">
       {isOpen && (
         <section
           role="dialog"
           aria-modal="false"
           aria-labelledby="greennext-assistant-title"
-          className="fixed inset-x-3 bottom-20 z-[120] sm:absolute sm:inset-auto sm:bottom-16 sm:right-0 sm:w-[380px] flex h-[min(600px,calc(100vh-100px))] max-w-[380px] mx-auto sm:mx-0 flex-col overflow-hidden rounded-2xl border border-[#1E293B] bg-[#0B0F17] shadow-[0_18px_60px_rgba(0,0,0,0.45)] animate-in fade-in slide-in-from-bottom-3"
+          className="fixed inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[120] sm:absolute sm:inset-auto sm:bottom-16 sm:right-0 sm:w-[380px] flex h-[min(600px,calc(100vh-100px))] max-w-[380px] mx-auto sm:mx-0 flex-col overflow-hidden rounded-2xl border border-[#1E293B] bg-[#0B0F17] shadow-[0_18px_60px_rgba(0,0,0,0.45)] animate-in fade-in slide-in-from-bottom-3"
         >
           <header className="flex items-center justify-between border-b border-[#1E293B] bg-[#0D1520] px-4 py-3">
             <div className="flex min-w-0 items-center gap-2.5">
@@ -360,7 +371,7 @@ export function GreenNextChatbot() {
           aria-label={isOpen ? "Close GreenNext AI Assistant" : "Open GreenNext AI Assistant"}
           aria-expanded={isOpen}
           title="GreenNext AI Assistant"
-          className="flex h-12 w-12 items-center justify-center rounded-full border border-[#34D399]/60 bg-[#10B981] text-[#06110D] shadow-[0_0_24px_rgba(16,185,129,0.28)] transition-all hover:scale-105 hover:bg-[#34D399] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981] focus-visible:ring-offset-2 focus-visible:ring-offset-[#070A0E]"
+          className="hidden h-12 w-12 items-center justify-center rounded-full border border-[#34D399]/60 bg-[#10B981] text-[#06110D] shadow-[0_0_24px_rgba(16,185,129,0.28)] transition-all hover:scale-105 hover:bg-[#34D399] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981] focus-visible:ring-offset-2 focus-visible:ring-offset-[#070A0E] sm:flex"
         >
           {isOpen ? (
             <X size={20} aria-hidden="true" />

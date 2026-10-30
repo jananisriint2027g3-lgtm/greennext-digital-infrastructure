@@ -42,38 +42,38 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     eyebrow: "About GreenNext",
     h1: "Where Digital Infrastructure Meets Intelligence",
     intro:
-      "GreenNext is an enterprise digital infrastructure intelligence and architectural advisory initiative. We address the convergence of extreme AI compute density, rising electrical power demand, precision thermal dissipation limits, and the strategic imperative for distributed digital capacity across South India.",
+      "GreenNext is a digital infrastructure planning and architectural advisory initiative. It examines the relationship between high-density AI compute, electrical power demand, thermal management, and the case for distributed digital capacity across South India.",
     sections: [
       {
         title: "The GreenNext Mandate",
         body: [
-          "Modern deep learning foundation models, distributed training clusters, and real-time inference engines place structural demands on digital infrastructure that conventional legacy data centers were never engineered to support. Racks exceeding 40 kW to 100+ kW render raised-floor air cooling obsolete, strain municipal electrical substations, and expose severe operational visibility gaps.",
-          "GreenNext approaches these challenges as an integrated, co-optimized operational system: compute silicon, electrical power distribution, precision liquid cooling loops, lossless network fabrics, and telemetry automation are designed and managed as a single responsive discipline.",
+          "Modern deep-learning models, distributed training clusters, and real-time inference can place demands on digital infrastructure that conventional facility designs may not accommodate. Higher rack densities can increase pressure on electrical distribution, heat rejection, and operational visibility.",
+          "GreenNext examines these requirements as an integrated system: compute, electrical distribution, thermal management, network design, and telemetry are considered together so that engineering decisions can be evaluated in context.",
         ],
         cards: [
           {
             meta: "INFRASTRUCTURE VISIBILITY",
-            title: "Full-Stack Telemetry Intelligence",
+            title: "Full-Stack Telemetry Visibility",
             description:
-              "Continuous multi-protocol sensory monitoring spanning substation switchgear, UPS modules, track busways, CDU liquid manifolds, and server BMCs.",
+              "A reference approach to monitoring signals from substation switchgear, UPS modules, busways, CDU liquid manifolds, and server BMCs.",
           },
           {
             meta: "THERMODYNAMIC DISCIPLINE",
-            title: "Physics-Based Energy Efficiency",
+            title: "Physics-Informed Energy Efficiency",
             description:
-              "Workload-aware thermal and electrical management designed to eliminate the over-cooling penalty and align compute execution with grid capacity.",
+              "Workload-aware thermal and electrical management intended to assess over-cooling and align compute planning with available grid capacity.",
           },
           {
             meta: "OPERATIONAL AUTOMATION",
-            title: "Closed-Loop Event Orchestration",
+            title: "Structured Event Orchestration",
             description:
-              "Telemetry-driven anomaly detection and structured alerting workflows that transition infrastructure operations from reactive crisis management to proactive mitigation.",
+              "Telemetry-driven anomaly detection and structured alerting workflows that can support earlier investigation and more consistent operational responses.",
           },
           {
             meta: "REGIONAL RESILIENCE",
-            title: "Distributed South India Corridors",
+            title: "Distributed South India Planning",
             description:
-              "A decentralized digital infrastructure focus evaluating seven high-capability secondary industrial and coastal hubs across South India.",
+              "A regional planning focus that evaluates seven industrial and coastal locations across South India for complementary infrastructure relevance.",
           },
         ],
       },
@@ -84,7 +84,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
         ],
         list: [
           "Data center operators retrofitting or developing facilities for high-density 40 kW to 100+ kW accelerator racks",
-          "AI Neoclouds and infrastructure leaders planning power and thermal capacity for distributed training clusters",
+          "AI infrastructure providers and technology leaders planning power and thermal capacity for distributed training clusters",
           "Industrial and manufacturing enterprises deploying low-latency edge AI compute for factory automation and robotics",
           "Enterprise technology executives seeking auditable non-financial ESG compliance data under SEBI BRSR and EU CSRD",
           "Regional utility and infrastructure authorities planning digital capacity outside congested Tier-1 coastal metropolises",
@@ -282,7 +282,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
       },
     ],
     cta: {
-      label: "Review Our Strategic Direction →",
+      label: "Review Our Long-Term Direction →",
       path: "/about/direction",
     },
     relatedPages: [
@@ -301,7 +301,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "About",
     parentPath: "/about",
     route: "/about/direction",
-    title: "Strategic Direction",
+    title: "Long-Term Direction",
     eyebrow: "About GreenNext",
     h1: "Phased Architectural Evolution for AI Infrastructure Intelligence",
     intro:
@@ -323,7 +323,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
             meta: "PHASE 2 · MONTHS 7–12",
             title: "Core Telemetry & Energy DCIM",
             description:
-              "Deploying production time-series platforms for real-time facility visibility and continuous automated ISO/IEC 30134 PUE Category 2 and WUE calculations.",
+              "Deploying production time-series platforms for facility visibility and continuous calculations aligned with selected ISO/IEC 30134 PUE and WUE definitions, subject to documented measurement boundaries.",
           },
           {
             meta: "PHASE 3 · MONTHS 13–18",
@@ -426,11 +426,11 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
         path: "/infrastructure/ai-ready",
       },
       {
-        title: "Accelerated Compute",
+        title: "Compute Systems",
         path: "/infrastructure/compute",
       },
       {
-        title: "Connected Stack Architecture",
+        title: "Infrastructure Architecture",
         path: "/infrastructure/architecture",
       },
     ],
@@ -451,7 +451,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
         title: "The Physics of AI Infrastructure",
         body: [
           "Modern foundation model training and high-concurrency inference clusters behave fundamentally differently from traditional enterprise virtualization workloads. AI workloads generate sustained, synchronized electrical surges, where thousands of tensor cores simultaneously spike from idle to maximum TDP (700W to 1000W+ per silicon die).",
-          "This synchronized operational profile creates severe electrical di/dt transients on facility busways and generates concentrated heat fluxes exceeding 80 W/cm² at the silicon die surface—far beyond the thermodynamic dissipation limit of conventional air cooling.",
+          "This modeled reference profile can create substantial electrical di/dt transients on facility busways and concentrated heat flux at the silicon die surface; the 80 W/cm² figure is an illustrative planning assumption, not a GreenNext measurement.",
         ],
         cards: [
           {
@@ -464,7 +464,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
             meta: "HEAT REMOVAL",
             title: "Direct-to-Chip Liquid Cooling",
             description:
-              "Micro-channel copper cold plates capturing 70–80% of heat directly at the GPU/CPU die, transferring thermal energy to warm-water secondary loops operating at 30°C–35°C supply temperatures.",
+              "Micro-channel copper cold plates can capture a substantial share of heat directly at the GPU/CPU die; the 70–80% figure and 30°C–35°C supply range are illustrative planning assumptions that depend on equipment and system design.",
           },
           {
             meta: "FABRIC SYNCHRONIZATION",
@@ -496,15 +496,15 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     },
     relatedPages: [
       {
-        title: "Accelerated Compute",
+        title: "Compute Systems",
         path: "/infrastructure/compute",
       },
       {
-        title: "Thermal Management & Cooling",
+        title: "Cooling Efficiency",
         path: "/energy/cooling",
       },
       {
-        title: "Connected Stack Architecture",
+        title: "Infrastructure Architecture",
         path: "/infrastructure/architecture",
       },
       {
@@ -519,7 +519,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     parentPath: "/infrastructure",
     route: "/infrastructure/compute",
     isConceptual: true,
-    title: "Accelerated Compute Systems",
+    title: "Compute Systems",
     eyebrow: "Infrastructure",
     h1: "High-Throughput Silicon Architectures for AI Training and Inference",
     intro:
@@ -574,11 +574,11 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
         path: "/infrastructure/ai-ready",
       },
       {
-        title: "High-Throughput Storage",
+        title: "Storage & Data",
         path: "/infrastructure/storage",
       },
       {
-        title: "Lossless Network Fabrics",
+        title: "Network & Connectivity",
         path: "/infrastructure/network",
       },
     ],
@@ -589,7 +589,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     parentPath: "/infrastructure",
     route: "/infrastructure/storage",
     isConceptual: true,
-    title: "High-Throughput Storage Architecture",
+    title: "Storage & Data",
     eyebrow: "Infrastructure",
     h1: "Resilient Data Infrastructure for Demanding Workloads",
     intro:
@@ -635,15 +635,15 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     },
     relatedPages: [
       {
-        title: "Accelerated Compute",
+        title: "Compute Systems",
         path: "/infrastructure/compute",
       },
       {
-        title: "Lossless Network Fabrics",
+        title: "Network & Connectivity",
         path: "/infrastructure/network",
       },
       {
-        title: "Connected Stack Architecture",
+        title: "Infrastructure Architecture",
         path: "/infrastructure/architecture",
       },
     ],
@@ -654,7 +654,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     parentPath: "/infrastructure",
     route: "/infrastructure/network",
     isConceptual: true,
-    title: "Lossless Network & Connectivity",
+        title: "Network & Connectivity",
     eyebrow: "Infrastructure",
     h1: "The Connectivity Layer That Holds the Stack Together",
     intro:
@@ -719,7 +719,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     parentPath: "/infrastructure",
     route: "/infrastructure/architecture",
     isConceptual: true,
-    title: "Connected Stack Architecture",
+    title: "Infrastructure Architecture",
     eyebrow: "Infrastructure",
     h1: "One Connected Operational Stack",
     intro:
@@ -746,13 +746,13 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
           },
           {
             meta: "LAYER 03 · COMPUTE",
-            title: "Accelerated Compute",
+            title: "Compute Systems",
             description:
               "High-density GPU/ASIC servers, multi-socket host CPUs, high-speed PCIe Gen5/CXL buses, and hardware root-of-trust cryptoprocessors.",
           },
           {
             meta: "LAYER 04 · STORAGE",
-            title: "Storage & Data Layer",
+            title: "Storage & Data",
             description:
               "Tiered NVMe-oF parallel filesystems, GPUDirect storage engines, and high-capacity erasure-coded object storage repositories.",
           },
@@ -812,7 +812,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     parentPath: "/infrastructure",
     route: "/infrastructure/cybersecurity",
     isConceptual: true,
-    title: "Cybersecurity & Infrastructure Protection",
+        title: "Cybersecurity & Protection",
     eyebrow: "Infrastructure",
     h1: "Defense-in-Depth for AI-Ready Digital Infrastructure",
     intro:
@@ -876,7 +876,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
         path: "/infrastructure/architecture",
       },
       {
-        title: "Lossless Network Fabrics",
+        title: "Network & Connectivity",
         path: "/infrastructure/network",
       },
       {
@@ -890,7 +890,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Infrastructure",
     parentPath: "/infrastructure",
     route: "/infrastructure/facility-engineering",
-    title: "Facility Engineering & Civil Infrastructure",
+    title: "Facility Engineering",
     eyebrow: "Infrastructure",
     h1: "Civil, Structural, and Environmental Facility Engineering for High-Density Data Centers",
     intro:
@@ -989,8 +989,8 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
         path: "/infrastructure/ai-ready",
       },
       {
-        title: "Power Systems",
-        path: "/infrastructure/power-systems",
+        title: "Energy Efficiency & Power Infrastructure",
+        path: "/energy",
       },
       {
         title: "Fire Protection & Safety",
@@ -1007,7 +1007,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Infrastructure",
     parentPath: "/infrastructure",
     route: "/infrastructure/fire-safety",
-    title: "Fire Protection, Suppression & Life Safety",
+        title: "Fire Protection & Safety",
     eyebrow: "Infrastructure",
     h1: "Multi-Hazard Fire Detection, Suppression, and Containment for Mission-Critical Facilities",
     intro:
@@ -1114,8 +1114,8 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
         path: "/infrastructure/commissioning",
       },
       {
-        title: "Power Systems",
-        path: "/infrastructure/power-systems",
+        title: "Energy Efficiency & Power Infrastructure",
+        path: "/energy",
       },
     ],
   },
@@ -1124,7 +1124,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Infrastructure",
     parentPath: "/infrastructure",
     route: "/infrastructure/commissioning",
-    title: "Commissioning, Testing & Handover (Cx)",
+        title: "Commissioning & Testing",
     eyebrow: "Infrastructure",
     h1: "The 5-Level Commissioning Framework: From Factory Acceptance to Integrated Systems Testing",
     intro:
@@ -1231,8 +1231,8 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
         path: "/automation/operations",
       },
       {
-        title: "Power Systems",
-        path: "/infrastructure/power-systems",
+        title: "Energy Efficiency & Power Infrastructure",
+        path: "/energy",
       },
     ],
   },
@@ -1241,7 +1241,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Infrastructure",
     parentPath: "/infrastructure",
     route: "/infrastructure/environmental-monitoring",
-    title: "Environmental Monitoring & Thermal Compliance",
+        title: "Environmental Monitoring",
     eyebrow: "Infrastructure",
     h1: "Continuous Thermal Envelopes, Humidity Tracking, and ASHRAE TC 9.9 Compliance",
     intro:
@@ -1345,24 +1345,25 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Energy",
     parentPath: "/",
     route: "/energy",
+    isConceptual: true,
     title: "Energy Efficiency & Power Infrastructure",
     eyebrow: "Energy",
     h1: "Every Watt Matters",
     intro:
-      "GreenNext approaches energy efficiency not as a static compliance checkbox, but as an active thermodynamic and electrical engineering discipline. We co-optimize power distribution, thermal cooling systems, and workload execution to maximize compute output per kilowatt-hour.",
+      "GreenNext presents energy efficiency as a conceptual thermodynamic and electrical engineering discipline. Reference architectures combine power distribution, thermal cooling systems, and workload planning to explore compute output per kilowatt-hour.",
     sections: [
       {
         title: "Energy as an Operational Discipline",
         body: [
           "In AI-scale digital infrastructure, electrical power is both the primary operational cost and the ultimate physical ceiling on compute expansion. Sourcing and delivering multi-megawatt power blocks to high-density server halls requires rigorous engineering: every stage of voltage transformation, distribution conversion, and mechanical heat removal must be measured and optimized.",
-          "GreenNext establishes an end-to-end energy architecture that tracks power from utility high-voltage substations down to individual accelerator silicon rails, eliminating stranded capacity and aligning mechanical cooling with real-time IT thermal dissipation.",
+          "GreenNext develops reference architectures for tracing power from utility high-voltage substations toward accelerator silicon rails, with the goal of evaluating stranded capacity and aligning mechanical cooling with modeled IT thermal dissipation.",
         ],
         cards: [
           {
             meta: "SUB-CIRCUIT METERING",
             title: "Granular Power Monitoring",
             description:
-              "High-speed Modbus and BACnet telemetry capturing real-time active power (kW), apparent power (kVA), power factor, and harmonic distortion across all electrical distribution tiers.",
+              "A reference telemetry architecture designed to capture active power (kW), apparent power (kVA), power factor, and harmonic distortion across electrical distribution tiers when connected to suitable meters.",
           },
           {
             meta: "THERMODYNAMIC BALANCE",
@@ -1380,7 +1381,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
             meta: "TREND MODELING",
             title: "Predictive Energy Analytics",
             description:
-              "Time-series modeling of power draw trends, phase imbalance detection, and automated ISO/IEC 30134-2 PUE Category 2 compliance reporting.",
+              "Time-series modeling of power draw trends, phase imbalance detection, and reporting aligned with documented ISO/IEC 30134-2 PUE measurement definitions; not a compliance certification.",
           },
         ],
         callout:
@@ -1396,6 +1397,39 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
           "Dynamic Thermal Control: Variable-frequency fluid pumps and dry coolers calibrated to server exhaust heat fluxes",
           "Demand-Side Orchestration: Scheduling non-urgent deep learning checkpointing and batch inference during off-peak windows",
           "Continuous Optimization: Closed-loop tuning of setpoints to drive PUE toward theoretical thermodynamic minimums",
+        ],
+      },
+      {
+        title: "From Incoming Power to Useful Compute",
+        body: [
+          "A complete energy review follows the physical path of electricity: utility interconnection and substation transformation, switchgear and UPS conditioning, battery and generator-backed resilience, busways and PDUs, IT equipment, and the cooling systems that remove the resulting heat.",
+          "Measurement points should be defined at the utility entrance, UPS output, distribution equipment, and IT load boundary so facility energy, IT energy, cooling overhead, and PUE are not conflated. These are reference-design considerations rather than GreenNext operational measurements.",
+        ],
+        cards: [
+          {
+            meta: "INCOMING POWER & RESILIENCE",
+            title: "Grid, Transformers, UPS & Backup",
+            description:
+              "Reference planning for utility feeders, medium-voltage transformation, switchgear, UPS systems, transfer equipment, batteries, and generator runtime under defined redundancy scenarios.",
+          },
+          {
+            meta: "DISTRIBUTION & MEASUREMENT",
+            title: "Following Power to the IT Load",
+            description:
+              "A measurement-boundary approach can distinguish utility input, UPS output, busway or PDU distribution, and rack or equipment load while accounting for conversion and distribution losses.",
+          },
+          {
+            meta: "RENEWABLES & STORAGE",
+            title: "Matching Clean Energy to Demand",
+            description:
+              "Planning models can evaluate solar, wind, battery storage, grid imports, renewable matching, and intermittency without implying a deployed renewable supply or storage system.",
+          },
+          {
+            meta: "HEAT REUSE",
+            title: "Waste Heat Recovery Constraints",
+            description:
+              "Heat exchangers may support water preheating, nearby process loads, or other reuse cases when temperature grade, continuous demand, distance, controls, and economics are suitable; feasibility is site-specific.",
+          },
         ],
       },
     ],
@@ -1423,7 +1457,8 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Energy",
     parentPath: "/energy",
     route: "/energy/monitoring",
-    title: "Granular Power Monitoring",
+    isConceptual: true,
+    title: "Power Monitoring",
     eyebrow: "Energy",
     h1: "Knowing Where Every Watt Goes",
     intro:
@@ -1432,7 +1467,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
       {
         title: "Granular Monitoring Tiers",
         body: [
-          "Legacy data centers rely on monthly utility utility bills or coarse facility-level meters, leaving operators blind to internal inefficiencies, phase imbalances, and localized stranded capacity. To manage high-density AI clusters, power telemetry must be captured continuously at multiple physical tiers.",
+          "Legacy data centers may rely on monthly utility bills or coarse facility-level meters, limiting visibility into internal inefficiencies, phase imbalances, and localized stranded capacity. For high-density AI planning, a reference telemetry approach can capture data at multiple physical tiers.",
           "GreenNext specifies a four-tier electrical monitoring hierarchy connecting utility interconnects to individual server components:",
         ],
         cards: [
@@ -1458,14 +1493,14 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
             meta: "TIER 04 · RACKS & ACCELERATORS",
             title: "Rack & System Telemetry",
             description:
-              "Smart rack PDUs with outlet-level switching and server Baseboard Management Controllers (BMCs) reporting real-time CPU, GPU, and memory rail consumption.",
+              "Reference rack telemetry using outlet-level switching and server Baseboard Management Controllers (BMCs) to expose CPU, GPU, and memory rail consumption when supported by deployed equipment.",
           },
         ],
       },
       {
         title: "Operational Value of Continuous Monitoring",
         body: [
-          "Continuous high-frequency power telemetry enables operators to identify stranded capacity—power reserved during provisioning that is never actually consumed—allowing facilities to safely increase rack compute density without requiring costly electrical service upgrades. Furthermore, tracking power factor (PF) and total harmonic distortion (THD) prevents premature transformer overheating and capacitor bank degradation.",
+          "An illustrative high-frequency power telemetry approach can help operators identify stranded capacity—power reserved during provisioning that is never actually consumed—and investigate opportunities for safer rack-density planning. Power factor (PF) and total harmonic distortion (THD) measurements can also support investigation of transformer heating and capacitor-bank stress.",
         ],
       },
     ],
@@ -1493,7 +1528,8 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Energy",
     parentPath: "/energy",
     route: "/energy/cooling",
-    title: "Thermal Management & Cooling Efficiency",
+    isConceptual: true,
+    title: "Cooling Efficiency",
     eyebrow: "Energy",
     h1: "Thermal Management as an Energy Discipline",
     intro:
@@ -1502,21 +1538,21 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
       {
         title: "The Problem of Over-Cooling",
         body: [
-          "Cooling infrastructure traditionally accounts for 30% to 40% of total data center electricity consumption. To prevent thermal hotspots, legacy facility managers traditionally over-provisioned air conditioning units, pumping chilled air at 18°C throughout entire server halls regardless of actual workload intensity.",
-          "In AI facilities with 40 kW to 100+ kW racks, air cooling alone is physically incapable of removing heat fluxes exceeding 80 W/cm² at the silicon surface. GreenNext models hybrid precision thermal architectures that deploy liquid directly to high-heat silicon dies while optimizing residual air cooling for low-density chassis components.",
+          "Cooling infrastructure is often estimated at roughly 30% to 40% of total data center electricity consumption, but the share depends on facility design, climate, operating conditions, and measurement boundary. Legacy designs may over-provision air conditioning to reduce hotspot risk regardless of actual workload intensity.",
+          "In high-density AI facilities, air cooling may be insufficient for some silicon heat-flux profiles. GreenNext models hybrid precision thermal architectures that deploy liquid directly to high-heat silicon dies while optimizing residual air cooling for lower-density chassis components; actual performance is configuration-dependent.",
         ],
         cards: [
           {
             meta: "DIRECT HEAT REMOVAL",
             title: "Direct-to-Chip Liquid Cooling",
             description:
-              "Copper micro-channel cold plates mounted directly on GPUs and CPUs, removing 70–80% of total rack heat using secondary treated water loops operating at 30°C–35°C supply temperatures.",
+              "Copper micro-channel cold plates mounted directly on GPUs and CPUs can remove a substantial share of rack heat using secondary treated-water loops; the 70–80% planning range is configuration-dependent and not a GreenNext measurement.",
           },
           {
             meta: "MECHANICAL EFFICIENCY",
             title: "Dry Coolers & Free Cooling",
             description:
-              "Utilizing warm-water return loops (45°C–50°C) that enable year-round compressor-free dry cooling across South Indian ambient temperatures, drastically reducing chiller plant run hours.",
+              "Warm-water return loops in the 45°C–50°C range may support compressor-free dry-cooling periods; year-round performance and chiller-run-hour reductions depend on site climate, heat-rejection design, and operating conditions.",
           },
           {
             meta: "AIRFLOW CONTAINMENT",
@@ -1563,7 +1599,8 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Energy",
     parentPath: "/energy",
     route: "/energy/workload-aware",
-    title: "Workload-Aware Energy Orchestration",
+    isConceptual: true,
+    title: "Workload-Aware Resources",
     eyebrow: "Energy",
     h1: "Matching Infrastructure Resources to Actual Demand",
     intro:
@@ -1573,7 +1610,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
         title: "Eliminating the Overprovisioning Gap",
         body: [
           "In conventional enterprise IT, digital infrastructure is statically provisioned for rare peak load scenarios. As a result, servers, transformers, and cooling pumps run continuously at inefficient partial loads, wasting substantial baseline power.",
-          "Workload-aware infrastructure establishes a direct communication link between cluster orchestrators (Kubernetes, Slurm, Ray) and facility DCIM systems. By exposing real-time power availability, thermal headroom, and electrical tariff schedules to the scheduler, compute jobs can be dynamically matched to physical capacity.",
+          "A workload-aware reference architecture can connect cluster orchestrators (Kubernetes, Slurm, Ray) with facility DCIM systems. If suitable integrations are deployed, power availability, thermal headroom, and tariff schedules could inform compute-capacity planning.",
         ],
         cards: [
           {
@@ -1627,7 +1664,8 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Energy",
     parentPath: "/energy",
     route: "/energy/analytics",
-    title: "Predictive Energy Analytics",
+    isConceptual: true,
+    title: "Energy Analytics",
     eyebrow: "Energy",
     h1: "Understanding Energy Consumption Over Time",
     intro:
@@ -1697,7 +1735,8 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Energy",
     parentPath: "/energy",
     route: "/energy/optimization",
-    title: "Operational Energy Optimization",
+    isConceptual: true,
+    title: "Operational Optimization",
     eyebrow: "Energy",
     h1: "Energy Efficiency as an Ongoing Operational Discipline",
     intro:
@@ -1857,7 +1896,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Automation",
     parentPath: "/automation",
     route: "/automation/monitoring",
-    title: "Full-Stack Telemetry Monitoring",
+    title: "Intelligent Monitoring",
     eyebrow: "Automation",
     h1: "Continuous Operational Visibility Across Infrastructure",
     intro:
@@ -1927,7 +1966,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Automation",
     parentPath: "/automation",
     route: "/automation/anomaly",
-    title: "Algorithmic Anomaly Detection",
+    title: "Anomaly Detection",
     eyebrow: "Automation",
     h1: "Identifying What Matters in a High-Volume Signal Environment",
     intro:
@@ -1997,7 +2036,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Automation",
     parentPath: "/automation",
     route: "/automation/alerts",
-    title: "Contextual Alerting & Incident Routing",
+    title: "Automated Alerts",
     eyebrow: "Automation",
     h1: "Routing the Right Information to the Right People at the Right Time",
     intro:
@@ -2067,7 +2106,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Automation",
     parentPath: "/automation",
     route: "/automation/capacity",
-    title: "Proactive Capacity Planning",
+    title: "Capacity Management",
     eyebrow: "Automation",
     h1: "Understanding Infrastructure Headroom Before It Becomes a Constraint",
     intro:
@@ -2137,7 +2176,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Automation",
     parentPath: "/automation",
     route: "/automation/reporting",
-    title: "Operational & Executive Reporting",
+    title: "Operational Reporting",
     eyebrow: "Automation",
     h1: "Consistent, Structured Visibility Into Infrastructure Operations",
     intro:
@@ -2207,7 +2246,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Automation",
     parentPath: "/automation",
     route: "/automation/operations",
-    title: "Data Center Operations & Field Maintainability",
+    title: "Operations & Maintenance",
     eyebrow: "Automation",
     h1: "Operational Discipline, Change Governance, and Field Maintainability for Mission-Critical Facilities",
     intro:
@@ -2427,7 +2466,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Regions",
     parentPath: "/regions",
     route: "/regions/overview",
-    title: "Regional Strategy Overview",
+    title: "Regional Network Overview",
     eyebrow: "Regions",
     h1: "Building a Distributed Digital Infrastructure Network Across South India",
     intro:
@@ -2482,7 +2521,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
         path: "/regions",
       },
       {
-        title: "Lossless Network Fabrics",
+        title: "Network & Connectivity",
         path: "/infrastructure/network",
       },
       {
@@ -2609,7 +2648,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Sustainability",
     parentPath: "/",
     route: "/sustainability",
-    title: "Sustainability & Carbon Strategy",
+    title: "Sustainability Framework",
     eyebrow: "Sustainability",
     h1: "Digital Growth Without Ignoring Resource Efficiency",
     intro:
@@ -2696,7 +2735,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Sustainability",
     parentPath: "/sustainability",
     route: "/sustainability/energy-aware",
-    title: "Energy-Aware Infrastructure Design",
+    title: "Energy-Aware Infrastructure",
     eyebrow: "Sustainability",
     h1: "Infrastructure Designed With Energy Visibility Built In",
     intro:
@@ -2719,7 +2758,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
             meta: "POWER SENSING",
             title: "Native Sub-Circuit Telemetry",
             description:
-              "Embedding calibrated Class 0.5S digital power meters at every circuit breaker, providing verified ISO/IEC 30134-2 Category 2 PUE measurement capabilities out of the box.",
+              "Embedding calibrated Class 0.5S digital power meters at selected circuit boundaries to support documented ISO/IEC 30134-2 PUE measurement; deployment and verification remain site-specific.",
           },
           {
             meta: "GRID INTERACTION",
@@ -2760,7 +2799,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Sustainability",
     parentPath: "/sustainability",
     route: "/sustainability/efficient-cooling",
-    title: "Efficient Thermal & Cooling Systems",
+    title: "Efficient Cooling",
     eyebrow: "Sustainability",
     h1: "Cooling Systems Designed for Efficiency, Not Excess Capacity",
     intro:
@@ -2789,7 +2828,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
             meta: "ECONOMIZER OPERATION",
             title: "Extended Free-Cooling Windows",
             description:
-              "Operating secondary fluid loops at elevated water temperatures (such as ASHRAE W4 guidelines) expands economizer hours, reducing reliance on mechanical refrigeration while balancing thermal headroom.",
+              "Operating secondary fluid loops at elevated water temperatures, such as ASHRAE W32/W40/W45 liquid-cooling classes, may expand economizer hours; outcomes depend on equipment limits, climate, water quality, and heat-rejection design.",
           },
         ],
       },
@@ -2824,7 +2863,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Sustainability",
     parentPath: "/sustainability",
     route: "/sustainability/resource-optimization",
-    title: "Resource Optimization & Waste Reduction",
+    title: "Resource Optimization",
     eyebrow: "Sustainability",
     h1: "Using What Is Needed, Not What Is Provisioned",
     intro:
@@ -2888,7 +2927,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Sustainability",
     parentPath: "/sustainability",
     route: "/sustainability/sustainable-growth",
-    title: "Sustainable Digital Infrastructure Growth",
+    title: "Sustainable Digital Growth",
     eyebrow: "Sustainability",
     h1: "Growing Digital Capacity Without Proportional Growth in Resource Use",
     intro:
@@ -3281,7 +3320,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
     category: "Industries",
     parentPath: "/icp",
     route: "/icp/data-center-operators",
-    title: "Data Center Operators & Colocation Providers",
+    title: "Data Center Operators & Colocation",
     eyebrow: "Industry Segment 01",
     h1: "Colocation Operators & Wholesale Data Center Providers",
     intro:
@@ -3372,7 +3411,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
         title: "PUE Visibility, Sub-Metering and Tenant Billing",
         body: [
           "Colocation enterprise tenants increasingly demand auditable, granular power usage effectiveness (PUE) metrics and sub-metered energy bills. Operators that rely on facility-level estimates risk customer disputes and lost credibility.",
-          "GreenNext designs ISO/IEC 30134-2 compliant sub-metering architectures that measure power at the utility entrance, UPS output, PDU, and rack-level tap-off boxes, establishing defensible Category 2 and 3 PUE reporting.",
+          "GreenNext designs sub-metering architectures informed by ISO/IEC 30134-2 measurement concepts, with utility-entrance, UPS-output, PDU, and rack-level boundaries documented for site-specific PUE reporting.",
         ],
       },
       {
@@ -3495,7 +3534,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
         title: "Direct-to-Chip (D2C) & Immersion Thermal Topologies",
         body: [
           "Air cooling cannot dissipate heat fluxes exceeding 50 to 100 W/cm² at modern accelerator dies. Hyperscale AI facilities require direct-to-chip (D2C) cold plates or precision immersion cooling topologies.",
-          "GreenNext models the entire thermodynamic dissipation chain: from silicone thermal interface materials (TIM) and micro-channel copper cold plates, through secondary fluid loops operating at ASHRAE W3/W4 water temperatures (32°C to 45°C), to outdoor heat dissipation.",
+          "GreenNext models the thermodynamic dissipation chain: from silicon thermal interface materials (TIM) and micro-channel copper cold plates, through secondary fluid loops that may use ASHRAE W32/W40/W45 water-temperature classes, to outdoor heat dissipation.",
         ],
         cards: [
           {
@@ -3505,7 +3544,7 @@ export const PAGES_CONTENT: Record<string, DedicatedPageData> = {
               "Distributing treated coolant directly across GPU and HBM silicon with flow rates calibrated to prevent localized boiling.",
           },
           {
-            meta: "ASHRAE W4 COMPLIANCE",
+            meta: "ASHRAE W45 REFERENCE",
             title: "Warm-Water Cooling (up to 45°C)",
             description:
               "Eliminating mechanical chillers in favor of dry coolers, drastically reducing parasitic cooling energy and improving PUE.",

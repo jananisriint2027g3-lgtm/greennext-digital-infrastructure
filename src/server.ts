@@ -2,8 +2,16 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { ANALYTICS_ENRICHMENT_PATH, handleAnalyticsRequest } from "./lib/analytics-enrichment.server";
-import { CRON_DAILY_ANALYSIS_PATH, handleCronDailyAnalysisRequest } from "./lib/cron-handler.server";
+import {
+  ANALYTICS_ENRICHMENT_PATH,
+  handleAnalyticsRequest,
+} from "./lib/analytics-enrichment.server";
+import {
+  CRON_DAILY_ANALYSIS_PATH,
+  handleCronDailyAnalysisRequest,
+} from "./lib/cron-handler.server";
+import { JIRA_WEBHOOK_PATH, handleJiraWebhookRequest } from "./lib/jira-webhook.server";
+import { handleLinkedInApprovalRequest } from "./lib/linkedin-approval.server";
 import { handleReportCronRequest, isReportCronPath } from "./lib/report-trigger.server";
 
 type ServerEntry = {
@@ -56,6 +64,15 @@ export default {
       }
       if (pathname === CRON_DAILY_ANALYSIS_PATH) {
         return await handleCronDailyAnalysisRequest(request, env);
+      }
+      if (pathname === JIRA_WEBHOOK_PATH) {
+        return await handleJiraWebhookRequest(request, env);
+      }
+      if (
+        pathname.startsWith("/linkedin/approvals/") ||
+        pathname.startsWith("/api/linkedin/proposals/")
+      ) {
+        return await handleLinkedInApprovalRequest(request, env);
       }
       if (isReportCronPath(pathname)) {
         return await handleReportCronRequest(request, env);

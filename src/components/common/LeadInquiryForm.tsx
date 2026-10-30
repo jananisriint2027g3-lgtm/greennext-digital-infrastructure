@@ -435,7 +435,7 @@ export function LeadInquiryForm({ leadType, onLeadTypeChange }: LeadFormProps) {
           placeholder="City, state, or country"
         />
         <div>
-          <label className="label">
+          <label htmlFor="lead-topic" className="label">
             {leadType === LEAD_TYPES.session
               ? "Session / consultation topic *"
               : leadType === LEAD_TYPES.partner
@@ -445,6 +445,7 @@ export function LeadInquiryForm({ leadType, onLeadTypeChange }: LeadFormProps) {
                   : "Inquiry topic *"}
           </label>
           <select
+            id="lead-topic"
             value={form.topic}
             onChange={(e) => set("topic", e.target.value)}
             className={`input ${errors["topic"] ? "border-red-500/70" : ""}`}
@@ -458,8 +459,11 @@ export function LeadInquiryForm({ leadType, onLeadTypeChange }: LeadFormProps) {
         </div>
       </div>
       <div>
-        <label className="label">Message *</label>
+        <label htmlFor="lead-message" className="label">
+          Message *
+        </label>
         <textarea
+          id="lead-message"
           rows={5}
           value={form.message}
           onChange={(e) => set("message", e.target.value)}

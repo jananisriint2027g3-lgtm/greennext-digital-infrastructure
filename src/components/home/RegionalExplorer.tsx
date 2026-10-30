@@ -208,6 +208,13 @@ export function RegionalExplorer() {
     REGIONAL_PORTFOLIO[0]!;
   const activeRegion: RegionInfo =
     REGIONS_DATA[selectedRegionId] ?? fallbackRegion(activePortfolio);
+  const snapshotFields = [
+    activePortfolio.land,
+    activePortfolio.sitePower,
+    activePortfolio.itLoad,
+    activePortfolio.cooling,
+    activePortfolio.connectivity,
+  ];
 
   const statePaths = useMemo(
     () =>
@@ -289,7 +296,7 @@ export function RegionalExplorer() {
       {/* Main Split Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start mb-8">
         {/* ── LEFT: Premium Geographic Map ─────────────────────────────── */}
-        <div className="lg:col-span-6 relative rounded-xl border border-[#1E3445] bg-[#07111D] overflow-hidden p-3 sm:p-4 shadow-2xl">
+        <div className="lg:col-span-6 relative flex flex-col rounded-xl border border-[#1E3445] bg-[#07111D] overflow-hidden p-3 sm:p-4 shadow-2xl">
           <div
             className="relative w-full aspect-[10/11] lg:aspect-[5/6] overflow-hidden rounded-lg touch-none"
             aria-label="Interactive conceptual South India regional map"
@@ -325,7 +332,10 @@ export function RegionalExplorer() {
               dragState.current = null;
             }}
           >
-            <div className="absolute right-3 top-3 z-10 flex flex-col gap-1 rounded-lg border border-[#334155] bg-[#05080F]/90 p-1 shadow-lg backdrop-blur-sm">
+            <div
+              className="absolute right-3 top-3 z-10 flex flex-col gap-1 rounded-lg border border-[#334155] bg-[#05080F]/90 p-1 shadow-lg backdrop-blur-sm"
+              onPointerDown={(event) => event.stopPropagation()}
+            >
               <button
                 type="button"
                 onClick={() => updateMapScale(mapScale + 0.25)}
@@ -351,7 +361,7 @@ export function RegionalExplorer() {
                 aria-label="Reset regional map view"
                 title="Reset view"
               >
-                1:1
+                {mapScale.toFixed(1)}:1
               </button>
             </div>
             <svg
@@ -586,8 +596,10 @@ export function RegionalExplorer() {
                 return (
                   <g
                     key={id}
+                    data-region-marker={id}
                     className="focus:outline-none focus-visible:outline-none"
                     style={{ cursor: "pointer", outline: "none" }}
+                    onPointerDown={(event) => event.stopPropagation()}
                     onClick={() => {
                       setSelectedRegionId(id);
                       trackEvent({
@@ -755,13 +767,116 @@ export function RegionalExplorer() {
               ILLUSTRATIVE
             </span>
           </div>
+
+          {/* Compact planning snapshot uses the same selected node as the map and dossier. */}
+          <section
+            className="mt-5 rounded-lg border border-[#1E293B] bg-[#0B0F17] p-4"
+            aria-labelledby="regional-infrastructure-snapshot"
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-[#10B981]">
+                  Planning snapshot
+                </span>
+                <h4
+                  id="regional-infrastructure-snapshot"
+                  className="text-sm font-semibold text-white"
+                >
+                  {activeRegion.name} infrastructure profile
+                </h4>
+              </div>
+              <span className="text-[9px] font-mono uppercase tracking-wide text-[#64748B]">
+                {activePortfolio.status}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {snapshotFields.map((field) => (
+                <div
+                  key={field.label}
+                  className="rounded-md border border-[#1E293B] bg-[#121824] p-2.5"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-[9px] font-mono uppercase tracking-wide text-[#64748B]">
+                      {field.label}
+                    </span>
+                    <span className="text-[9px] uppercase tracking-wide text-[#10B981]">
+                      {field.status}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-[#CBD5E1]">{field.value}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-[10px] leading-relaxed text-[#64748B]">
+              Planning references only; these fields do not confirm operating facilities, secured
+              utility capacity, customer deployments, or measured performance.
+            </p>
+          </section>
+
+          <section
+            className="mt-4 rounded-lg border border-[#1E293B] bg-[#0B0F17] p-4"
+            aria-labelledby="regional-network-guide"
+          >
+            <div className="flex items-center gap-2">
+              <Globe2 size={14} className="text-[#10B981]" aria-hidden="true" />
+              <h4 id="regional-network-guide" className="text-sm font-semibold text-white">
+                Regional Network Guide
+              </h4>
+            </div>
+
+            <div className="mt-3">
+              <span className="text-[9px] font-mono uppercase tracking-wider text-[#64748B]">
+                7 regional planning nodes
+              </span>
+              <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 sm:grid-cols-3">
+                {Object.values(MAP_LOCATIONS).map((location) => (
+                  <span
+                    key={location.code}
+                    className="flex items-center gap-1.5 text-[11px] text-[#CBD5E1]"
+                  >
+                    <CheckCircle2
+                      size={11}
+                      className="shrink-0 text-[#10B981]"
+                      aria-hidden="true"
+                    />
+                    {location.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 border-t border-[#1E293B] pt-3 sm:grid-cols-2">
+              <div>
+                <span className="text-[9px] font-mono uppercase tracking-wider text-[#10B981]">
+                  Conceptual network
+                </span>
+                <p className="mt-1 text-[11px] leading-relaxed text-[#94A3B8]">
+                  Illustrates GreenNext&apos;s regional digital infrastructure planning
+                  relationships; it does not represent verified physical network connections.
+                </p>
+              </div>
+              <div>
+                <span className="text-[9px] font-mono uppercase tracking-wider text-[#10B981]">
+                  Explore locations
+                </span>
+                <p className="mt-1 text-[11px] leading-relaxed text-[#94A3B8]">
+                  Select a map marker to explore the corresponding regional information.
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-3 border-t border-[#1E293B] pt-3 text-[10px] leading-relaxed text-[#64748B]">
+              Planning references only; regional locations do not confirm operational facilities or
+              deployed infrastructure.
+            </p>
+          </section>
         </div>
 
         {/* ── RIGHT: Regional Dossier ───────────────────────────────────── */}
         <div className="lg:col-span-6 flex flex-col rounded-xl border border-[#1E293B] bg-[#0B0F17] p-5 sm:p-6 shadow-lg">
           <div>
             {/* Region header */}
-            <div className="flex items-center justify-between gap-4 pb-5 mb-6 border-b border-[#1E293B]">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-5 mb-6 border-b border-[#1E293B]">
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <div className="w-2.5 h-2.5 rounded-full bg-[#10B981] shadow-[0_0_8px_#10B981]" />

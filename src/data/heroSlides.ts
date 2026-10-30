@@ -23,7 +23,7 @@ export const HERO_SLIDES: HeroSlide[] = [
     eyebrow: "South India · Intelligent Infrastructure",
     headline: "Intelligent Infrastructure for a Sustainable Digital Future",
     description:
-      "GreenNext connects AI-driven data center infrastructure, energy efficiency, and intelligent automation to build resilient digital ecosystems across South India.",
+      "GreenNext explores how AI-ready data center infrastructure, energy-aware operations, and intelligent automation can support resilient digital systems across South India.",
     primaryCta: {
       label: "Explore Our Infrastructure →",
       path: "/infrastructure",
@@ -104,7 +104,7 @@ export const HERO_SLIDES: HeroSlide[] = [
       label: "View Regional Dashboard",
       path: "/regions/overview#dashboard",
     },
-    conceptTag: "FOUR-NODE DISTRIBUTED TOPOLOGY",
+    conceptTag: "SEVEN-LOCATION REGIONAL TOPOLOGY",
     schematicType: "regional",
   },
 ];

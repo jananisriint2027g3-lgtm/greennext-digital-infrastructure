@@ -249,6 +249,21 @@ test("KPI 9: Energy Consumption and Operating Cost", () => {
   assert.equal(cost.monthlyCost, 46267);
   assert.equal(cost.annualCost, 46267 * 12);
   assert.ok(cost.carbonEmissionsKgCo2 > 0);
+
+  // Invalid or incomplete inputs must not be replaced with silent fallback assumptions.
+  const missingUnits = calculateEnergyAndCost(0, 700, 24, 30, 1.35, 8.5);
+  assert.equal(missingUnits.status, "invalid");
+  assert.equal(missingUnits.facilityEnergyKwh, null);
+
+  const invalidHours = calculateEnergyAndCost(8, 700, 25, 30, 1.35, 8.5);
+  assert.equal(invalidHours.status, "invalid");
+
+  const nonFiniteTariff = calculateEnergyAndCost(8, 700, 24, 30, 1.35, Number.NaN);
+  assert.equal(nonFiniteTariff.status, "invalid");
+
+  const zeroTariff = calculateEnergyAndCost(8, 700, 24, 30, 1.35, 0);
+  assert.equal(zeroTariff.status, "valid");
+  assert.equal(zeroTariff.monthlyCost, 0);
 });
 
 test("KPI 10: Maintenance Compliance (PMC% & PMP%)", () => {

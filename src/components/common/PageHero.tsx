@@ -39,7 +39,7 @@ export function PageHero({
         }}
       />
 
-      <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="gn-container relative z-10">
         <Breadcrumbs items={breadcrumbs} />
 
         <div className="max-w-4xl">
