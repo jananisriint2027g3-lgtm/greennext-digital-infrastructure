@@ -25,6 +25,12 @@ export function DashboardPreview() {
   const activeMetric: DashboardRegionMetric =
     DASHBOARD_METRICS[selectedRegionKey] ?? DASHBOARD_METRICS["madurai"]!;
   const activeRegion = REGIONS_DATA[selectedRegionKey];
+  const isTelemetryUnavailable = [
+    activeMetric.compute,
+    activeMetric.power,
+    activeMetric.cooling,
+    activeMetric.network,
+  ].some((value) => value == null);
   const formatValue = (value: number | null | undefined, suffix = "") =>
     value == null ? "—" : `${value}${suffix}`;
 
@@ -34,28 +40,28 @@ export function DashboardPreview() {
       value: activeMetric.compute,
       icon: Cpu,
       color: "#06B6D4",
-      sub: activeMetric.compute == null ? "Not connected" : "Illustrative workload signal",
+      sub: activeMetric.compute == null ? "No live telemetry" : "Illustrative workload signal",
     },
     {
       label: "Energy Monitoring",
       value: activeMetric.power,
       icon: Zap,
       color: "#F59E0B",
-      sub: activeMetric.power == null ? "Not connected" : "Illustrative power load",
+      sub: activeMetric.power == null ? "No live telemetry" : "Illustrative power load",
     },
     {
       label: "Cooling Status",
       value: activeMetric.cooling,
       icon: Snowflake,
       color: "#38BDF8",
-      sub: activeMetric.cooling == null ? "Not connected" : "Illustrative thermal loop",
+      sub: activeMetric.cooling == null ? "No live telemetry" : "Illustrative thermal loop",
     },
     {
       label: "Network Connectivity",
       value: activeMetric.network,
       icon: Network,
       color: "#10B981",
-      sub: activeMetric.network == null ? "Not connected" : "Illustrative link health",
+      sub: activeMetric.network == null ? "No live telemetry" : "Illustrative link health",
     },
   ];
 
@@ -135,10 +141,9 @@ export function DashboardPreview() {
                   <span>Automation Events</span>
                 </span>
                 <span className="font-mono text-white font-bold">
-                  {formatValue(activeMetric.events)}{" "}
-                  <span className="text-[10px] font-normal text-[#64748B]">
-                    {activeMetric.events == null ? "not connected" : "/ 24h · demo"}
-                  </span>
+                  {activeMetric.events == null
+                    ? "— Not connected"
+                    : `${activeMetric.events} / 24h · demo`}
                 </span>
               </div>
 
@@ -148,10 +153,9 @@ export function DashboardPreview() {
                   <span>Open Alerts</span>
                 </span>
                 <span className="font-mono text-white font-bold">
-                  {formatValue(activeMetric.alerts)}{" "}
-                  <span className="text-[10px] font-normal text-[#64748B]">
-                    {activeMetric.alerts == null ? "not connected" : "illustrative"}
-                  </span>
+                  {activeMetric.alerts == null
+                    ? "— Not connected"
+                    : `${activeMetric.alerts} illustrative`}
                 </span>
               </div>
             </div>
@@ -243,10 +247,16 @@ export function DashboardPreview() {
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#1E293B]">
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-wider text-[#64748B] block">
-                  Illustrative telemetry model
+                  {isTelemetryUnavailable
+                    ? "Illustrative demo fallback"
+                    : "Illustrative telemetry model"}
                 </span>
                 <h5 id="dashboard-chart-title" className="text-xs font-semibold text-white">
-                  24-Hour Operational Pattern (Illustrative Signal Curve)
+                  24-Hour Operational Pattern (
+                  {isTelemetryUnavailable
+                    ? "Illustrative Demo Fallback"
+                    : "Illustrative Signal Curve"}
+                  )
                 </h5>
               </div>
               <span className="text-[10px] font-mono text-[#10B981] bg-[#10B981]/10 px-2 py-0.5 rounded">
@@ -256,14 +266,16 @@ export function DashboardPreview() {
 
             <div className="mb-3 flex items-center justify-between text-[10px] font-mono text-[#64748B]">
               <span>Relative signal index (%)</span>
-              <span>Illustrative / demo data</span>
+              <span>
+                {isTelemetryUnavailable ? "Illustrative demo fallback" : "Illustrative / demo data"}
+              </span>
             </div>
 
             {/* Simulated Hourly Bar Chart */}
             <div
               className="relative h-32 flex items-end gap-1 sm:gap-1.5 border-b border-l border-[#334155] bg-[linear-gradient(to_bottom,transparent_24%,rgba(71,85,105,0.18)_25%,transparent_26%,transparent_49%,rgba(71,85,105,0.18)_50%,transparent_51%,transparent_74%,rgba(71,85,105,0.18)_75%,transparent_76%)] px-2 pt-4 pb-1"
               role="img"
-              aria-label="Illustrative hourly signal pattern ranging from 34 to 84 percent; this is not live telemetry."
+              aria-label={`${isTelemetryUnavailable ? "Illustrative demo fallback" : "Illustrative hourly signal"} pattern ranging from 34 to 84 percent; this is not live telemetry.`}
             >
               {HOURLY_ACTIVITY_PATTERN.map((val, idx) => (
                 <div
