@@ -2,7 +2,6 @@ import { useState } from "react";
 import { InternalLink as Link } from "../common/InternalLink";
 import {
   DASHBOARD_METRICS,
-  HOURLY_ACTIVITY_PATTERN,
   DASHBOARD_DISCLAIMER,
   DashboardRegionMetric,
 } from "../../data/dashboard";
@@ -31,6 +30,9 @@ export function DashboardPreview() {
     activeMetric.cooling,
     activeMetric.network,
   ].some((value) => value == null);
+  const hourlyPattern = activeMetric.hourlyPattern;
+  const hourlyMinimum = Math.min(...hourlyPattern);
+  const hourlyMaximum = Math.max(...hourlyPattern);
   const formatValue = (value: number | null | undefined, suffix = "") =>
     value == null ? "—" : `${value}${suffix}`;
 
@@ -271,24 +273,39 @@ export function DashboardPreview() {
               </span>
             </div>
 
-            {/* Simulated Hourly Bar Chart */}
-            <div
-              className="relative h-32 flex items-end gap-1 sm:gap-1.5 border-b border-l border-[#334155] bg-[linear-gradient(to_bottom,transparent_24%,rgba(71,85,105,0.18)_25%,transparent_26%,transparent_49%,rgba(71,85,105,0.18)_50%,transparent_51%,transparent_74%,rgba(71,85,105,0.18)_75%,transparent_76%)] px-2 pt-4 pb-1"
-              role="img"
-              aria-label={`${isTelemetryUnavailable ? "Illustrative demo fallback" : "Illustrative hourly signal"} pattern ranging from 34 to 84 percent; this is not live telemetry.`}
-            >
-              {HOURLY_ACTIVITY_PATTERN.map((val, idx) => (
-                <div
-                  key={idx}
-                  className="flex-1 bg-gradient-to-t from-[#10B981]/40 via-[#06B6D4]/60 to-[#10B981] rounded-t-sm hover:opacity-100 opacity-80 transition-opacity relative group"
-                  style={{ height: `${val}%` }}
-                >
-                  <div className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block z-20 px-1.5 py-0.5 rounded bg-[#070A0E] border border-[#334155] text-[9px] font-mono text-white whitespace-nowrap">
-                    {val}%
-                  </div>
+            {/* Simulated Hourly Bar Chart or explicit unavailable fallback */}
+            {isTelemetryUnavailable ? (
+              <div
+                className="relative h-32 flex items-center justify-center border-b border-l border-[#334155] bg-[linear-gradient(135deg,rgba(71,85,105,0.12)_25%,transparent_25%,transparent_50%,rgba(71,85,105,0.12)_50%,rgba(71,85,105,0.12)_75%,transparent_75%)] bg-[length:18px_18px] px-4"
+                role="img"
+                aria-label="Illustrative demo fallback: no connected hourly telemetry is available for this planning region."
+              >
+                <div className="rounded-lg border border-dashed border-[#64748B] bg-[#070A0E]/80 px-4 py-3 text-center">
+                  <p className="text-[10px] font-mono uppercase tracking-wide text-[#CBD5E1]">
+                    Illustrative demo fallback
+                  </p>
+                  <p className="mt-1 text-[10px] text-[#64748B]">No connected hourly telemetry</p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div
+                className="relative h-32 flex items-end gap-1 sm:gap-1.5 border-b border-l border-[#334155] bg-[linear-gradient(to_bottom,transparent_24%,rgba(71,85,105,0.18)_25%,transparent_26%,transparent_49%,rgba(71,85,105,0.18)_50%,transparent_51%,transparent_74%,rgba(71,85,105,0.18)_75%,transparent_76%)] px-2 pt-4 pb-1"
+                role="img"
+                aria-label={`Illustrative hourly signal pattern ranging from ${hourlyMinimum} to ${hourlyMaximum} percent; this is not live telemetry.`}
+              >
+                {hourlyPattern.map((val, idx) => (
+                  <div
+                    key={idx}
+                    className="flex-1 bg-gradient-to-t from-[#10B981]/40 via-[#06B6D4]/60 to-[#10B981] rounded-t-sm hover:opacity-100 opacity-80 transition-opacity relative group"
+                    style={{ height: `${val}%` }}
+                  >
+                    <div className="absolute -top-7 left-1/2 -translate-x-1/2 hidden group-hover:block z-20 px-1.5 py-0.5 rounded bg-[#070A0E] border border-[#334155] text-[9px] font-mono text-white whitespace-nowrap">
+                      {val}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* X-Axis Timeline */}
             <div className="flex items-center justify-between text-[10px] font-mono text-[#64748B] pt-2">
