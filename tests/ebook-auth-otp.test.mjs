@@ -27,6 +27,9 @@ function compileTsModule(relSource, relDest) {
 
   transpiled = transpiled.replace(/from\s+['"]\.\/redis\.server['"]/g, "from './redis.server.mjs'");
   transpiled = transpiled.replace(/from\s+['"]\.\/firebase-auth['"]/g, "from './firebase-auth.mjs'");
+  transpiled = transpiled.replace(/from\s+['"]\.\/visitor-email-apps-script\.server['"]/g, "from './visitor-email-apps-script.server.mjs'");
+  transpiled = transpiled.replace(/from\s+['"]\.\/email-templates\/ebook-otp-template['"]/g, "from './ebook-otp-template.mjs'");
+  transpiled = transpiled.replace(/from\s+['"]\.\/email-templates\/ebook-welcome-template['"]/g, "from './ebook-welcome-template.mjs'");
   fs.writeFileSync(destPath, transpiled, "utf8");
   return destPath;
 }
@@ -36,6 +39,8 @@ const otpPath = compileTsModule("src/lib/otp.server.ts", "otp.server.mjs");
 const drivePath = compileTsModule("src/lib/ebook-drive.server.ts", "ebook-drive.server.mjs");
 const welcomeTplPath = compileTsModule("src/lib/email-templates/ebook-welcome-template.ts", "ebook-welcome-template.mjs");
 const otpTplPath = compileTsModule("src/lib/email-templates/ebook-otp-template.ts", "ebook-otp-template.mjs");
+compileTsModule("src/lib/visitor-email-apps-script.server.ts", "visitor-email-apps-script.server.mjs");
+const ebookEmailPath = compileTsModule("src/lib/ebook-email.server.ts", "ebook-email.server.mjs");
 const firebasePath = compileTsModule("src/lib/firebase-auth.ts", "firebase-auth.mjs");
 const sessionFnPath = compileTsModule("src/lib/ebook-session.server-fn.ts", "ebook-session.server-fn.mjs");
 
@@ -43,6 +48,7 @@ const { generateEbookOtp, verifyEbookOtp } = await import(`file://${otpPath.repl
 const { fetchPrivateEbookPdf } = await import(`file://${drivePath.replace(/\\/g, "/")}`);
 const { renderEbookWelcomeEmail } = await import(`file://${welcomeTplPath.replace(/\\/g, "/")}`);
 const { renderEbookOtpEmail } = await import(`file://${otpTplPath.replace(/\\/g, "/")}`);
+const { sendEbookOtpEmail } = await import(`file://${ebookEmailPath.replace(/\\/g, "/")}`);
 const {
   firebaseRegisterEmail,
   firebaseLoginEmail,
@@ -157,6 +163,105 @@ test("OTP: concurrent generation attempts for same email are blocked by cooldown
   ]);
   const successes = results.filter((r) => r.success);
   assert.equal(successes.length, 1);
+});
+
+test("OTP email dispatch: reports success only after Apps Script confirms delivery", async () => {
+  const oldUrl = process.env.VISITOR_EMAIL_APPS_SCRIPT_URL;
+  const oldSecret = process.env.VISITOR_EMAIL_SECRET;
+  const oldFetch = global.fetch;
+  try {
+    process.env.VISITOR_EMAIL_APPS_SCRIPT_URL = "https://script.google.com/macros/s/test/exec";
+    process.env.VISITOR_EMAIL_SECRET = "test-secret";
+    global.fetch = async () => new Response(JSON.stringify({ success: true, status: "sent", deliveryRef: "mailapp_test" }), { status: 200 });
+    const result = await sendEbookOtpEmail("Reader", "reader@example.com", "123456");
+    assert.equal(result.success, true);
+    assert.equal(result.status, "sent");
+  } finally {
+    global.fetch = oldFetch;
+    if (oldUrl === undefined) delete process.env.VISITOR_EMAIL_APPS_SCRIPT_URL; else process.env.VISITOR_EMAIL_APPS_SCRIPT_URL = oldUrl;
+    if (oldSecret === undefined) delete process.env.VISITOR_EMAIL_SECRET; else process.env.VISITOR_EMAIL_SECRET = oldSecret;
+  }
+});
+
+test("OTP email dispatch: returns failure when Apps Script rejects delivery", async () => {
+  const oldUrl = process.env.VISITOR_EMAIL_APPS_SCRIPT_URL;
+  const oldSecret = process.env.VISITOR_EMAIL_SECRET;
+  const oldFetch = global.fetch;
+  try {
+    process.env.VISITOR_EMAIL_APPS_SCRIPT_URL = "https://script.google.com/macros/s/test/exec";
+    process.env.VISITOR_EMAIL_SECRET = "test-secret";
+    global.fetch = async () => new Response(JSON.stringify({ success: false, status: "quota_exhausted", error: "Daily email quota exhausted." }), { status: 200 });
+    const result = await sendEbookOtpEmail("Reader", "reader@example.com", "123456");
+    assert.equal(result.success, false);
+    assert.equal(result.status, "quota_exhausted");
+    assert.match(result.error, /quota/i);
+  } finally {
+    global.fetch = oldFetch;
+    if (oldUrl === undefined) delete process.env.VISITOR_EMAIL_APPS_SCRIPT_URL; else process.env.VISITOR_EMAIL_APPS_SCRIPT_URL = oldUrl;
+    if (oldSecret === undefined) delete process.env.VISITOR_EMAIL_SECRET; else process.env.VISITOR_EMAIL_SECRET = oldSecret;
+  }
+});
+
+test("OTP email dispatch: fails when the Apps Script URL is missing", async () => {
+  const oldValues = {
+    visitorUrl: process.env.VISITOR_EMAIL_APPS_SCRIPT_URL,
+    reportUrl: process.env.REPORT_APPS_SCRIPT_URL,
+    analyticsUrl: process.env.ANALYTICS_APPS_SCRIPT_URL,
+    visitorSecret: process.env.VISITOR_EMAIL_SECRET,
+    reportSecret: process.env.REPORT_TRIGGER_SECRET,
+  };
+  try {
+    delete process.env.VISITOR_EMAIL_APPS_SCRIPT_URL;
+    delete process.env.REPORT_APPS_SCRIPT_URL;
+    delete process.env.ANALYTICS_APPS_SCRIPT_URL;
+    process.env.VISITOR_EMAIL_SECRET = "test-secret";
+    delete process.env.REPORT_TRIGGER_SECRET;
+    const result = await sendEbookOtpEmail("Reader", "reader@example.com", "123456");
+    assert.equal(result.success, false);
+    assert.equal(result.status, "not_configured");
+    assert.match(result.error, /not configured/i);
+  } finally {
+    for (const [key, value] of Object.entries({
+      VISITOR_EMAIL_APPS_SCRIPT_URL: oldValues.visitorUrl,
+      REPORT_APPS_SCRIPT_URL: oldValues.reportUrl,
+      ANALYTICS_APPS_SCRIPT_URL: oldValues.analyticsUrl,
+      VISITOR_EMAIL_SECRET: oldValues.visitorSecret,
+      REPORT_TRIGGER_SECRET: oldValues.reportSecret,
+    })) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+  }
+});
+
+test("OTP email dispatch: fails when the shared secret is missing", async () => {
+  const oldValues = {
+    visitorUrl: process.env.VISITOR_EMAIL_APPS_SCRIPT_URL,
+    reportUrl: process.env.REPORT_APPS_SCRIPT_URL,
+    analyticsUrl: process.env.ANALYTICS_APPS_SCRIPT_URL,
+    visitorSecret: process.env.VISITOR_EMAIL_SECRET,
+    reportSecret: process.env.REPORT_TRIGGER_SECRET,
+  };
+  try {
+    process.env.VISITOR_EMAIL_APPS_SCRIPT_URL = "https://script.google.com/macros/s/test/exec";
+    delete process.env.REPORT_APPS_SCRIPT_URL;
+    delete process.env.ANALYTICS_APPS_SCRIPT_URL;
+    delete process.env.VISITOR_EMAIL_SECRET;
+    delete process.env.REPORT_TRIGGER_SECRET;
+    const result = await sendEbookOtpEmail("Reader", "reader@example.com", "123456");
+    assert.equal(result.success, false);
+    assert.equal(result.status, "not_configured");
+    assert.match(result.error, /not configured/i);
+  } finally {
+    for (const [key, value] of Object.entries({
+      VISITOR_EMAIL_APPS_SCRIPT_URL: oldValues.visitorUrl,
+      REPORT_APPS_SCRIPT_URL: oldValues.reportUrl,
+      ANALYTICS_APPS_SCRIPT_URL: oldValues.analyticsUrl,
+      VISITOR_EMAIL_SECRET: oldValues.visitorSecret,
+      REPORT_TRIGGER_SECRET: oldValues.reportSecret,
+    })) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+  }
 });
 
 // ─── 3. Firebase Auth Input Validation & Security Tests ───────────────────────

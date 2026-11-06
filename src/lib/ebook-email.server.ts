@@ -33,14 +33,14 @@ export async function sendEbookOtpEmail(
     otpCode,
   });
 
-  // If simulation or Apps Script is unconfigured locally, provide safe simulation response
+  // Ebook OTP delivery must never be reported as successful without a real
+  // Apps Script endpoint and matching shared secret. This is intentionally
+  // separate from simulation behavior used by unrelated report/analytics flows.
   if (!url || !secret) {
-    console.info(`[Ebook OTP Simulation] To: ${email} | Name: ${name} | Code: ${otpCode}`);
     return {
-      success: true,
-      status: "simulated_sent",
-      simulated: true,
-      deliveryRef: `sim_otp_${Date.now()}`,
+      success: false,
+      status: "not_configured",
+      error: "Ebook email delivery is not configured. Set the Apps Script URL and matching shared secret before sending verification codes.",
     };
   }
 
@@ -108,7 +108,20 @@ export async function sendEbookWelcomeEmail(
   });
 
   if (!url || !secret) {
-    console.info(`[Ebook Welcome Simulation] To: ${email} | Name: ${name} | Subject: ${rendered.subject}`);
+    if (process.env["NODE_ENV"] === "production") {
+      return {
+        success: false,
+        status: "not_configured",
+        error: "Ebook email delivery is not configured on the server. Set VISITOR_EMAIL_APPS_SCRIPT_URL (or REPORT_APPS_SCRIPT_URL) and the matching shared secret.",
+      };
+    }
+    if (process.env["REPORT_TRIGGER_SIMULATION"] !== "true") {
+      return {
+        success: false,
+        status: "not_configured",
+        error: "Ebook email delivery is not configured. Set the Apps Script URL and shared secret, or explicitly enable local simulation.",
+      };
+    }
     return {
       success: true,
       status: "simulated_sent",

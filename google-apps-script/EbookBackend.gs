@@ -11,7 +11,8 @@
  *   if (payload.action === "ebook_log_activity") return handleEbookLogActivityAction(payload);
  *
  * Security:
- * - Requires payload.secret === Script Property REPORT_TRIGGER_SECRET.
+ * - Requires payload.secret === Script Property VISITOR_EMAIL_SECRET, or the
+ *   legacy REPORT_TRIGGER_SECRET when the dedicated property is absent.
  * - Enforces LockService locks to prevent concurrency race conditions.
  * - Logs all email attempts in the existing 'Email_Log' tab.
  * - Creates 'Ebook_Users' and 'Ebook_Activity' tabs automatically if absent.
@@ -32,7 +33,8 @@ var EBOOK_ACTIVITY_HEADERS = [
  * Dispatches Ebook OTP or Welcome emails via MailApp and logs results to Email_Log.
  */
 function handleEbookDispatchEmailAction(payload) {
-  var storedSecret = PropertiesService.getScriptProperties().getProperty("REPORT_TRIGGER_SECRET");
+  var props = PropertiesService.getScriptProperties();
+  var storedSecret = props.getProperty("VISITOR_EMAIL_SECRET") || props.getProperty("REPORT_TRIGGER_SECRET");
   if (!storedSecret) {
     return jsonResponse(false, "REPORT_TRIGGER_SECRET is not configured in Script Properties.", { status: "not_configured" });
   }
@@ -127,7 +129,8 @@ function handleEbookDispatchEmailAction(payload) {
  * Creates or updates reader records in Ebook_Users tab.
  */
 function handleEbookSyncUserAction(payload) {
-  var storedSecret = PropertiesService.getScriptProperties().getProperty("REPORT_TRIGGER_SECRET");
+  var props = PropertiesService.getScriptProperties();
+  var storedSecret = props.getProperty("VISITOR_EMAIL_SECRET") || props.getProperty("REPORT_TRIGGER_SECRET");
   if (!storedSecret) {
     return jsonResponse(false, "REPORT_TRIGGER_SECRET is not configured.", { status: "not_configured" });
   }
@@ -208,7 +211,8 @@ function handleEbookSyncUserAction(payload) {
  * Appends reader interaction audit events to Ebook_Activity tab.
  */
 function handleEbookLogActivityAction(payload) {
-  var storedSecret = PropertiesService.getScriptProperties().getProperty("REPORT_TRIGGER_SECRET");
+  var props = PropertiesService.getScriptProperties();
+  var storedSecret = props.getProperty("VISITOR_EMAIL_SECRET") || props.getProperty("REPORT_TRIGGER_SECRET");
   if (!storedSecret) {
     return jsonResponse(false, "REPORT_TRIGGER_SECRET is not configured.", { status: "not_configured" });
   }

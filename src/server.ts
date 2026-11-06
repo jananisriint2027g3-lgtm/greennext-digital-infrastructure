@@ -284,18 +284,32 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
       providerId: "password",
     };
     const tokenPayload = signEbookSessionPayload(sessionUser);
+    const isProd = process.env["NODE_ENV"] === "production";
+    const cookie = `__gn_ebook_session=${encodeURIComponent(tokenPayload)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${isProd ? "; Secure" : ""}`;
     void syncEbookUser({ uid: sessionUser.uid, email: sessionUser.email, name, authMethod: "password", emailVerified: false });
     void logEbookActivity({ uid: sessionUser.uid, eventType: "register", status: "SUCCESS" });
 
     // Generate & dispatch OTP — keyed to Firebase UID + normalized email
     const otpRes = await generateEbookOtp(sessionUser.email, sessionUser.uid);
-    if (otpRes.success && otpRes.code) {
-      void sendEbookOtpEmail(name, sessionUser.email, otpRes.code);
-      void logEbookActivity({ uid: sessionUser.uid, eventType: "otp_sent", status: "SUCCESS" });
+    if (!otpRes.success || !otpRes.code) {
+      return new Response(JSON.stringify({ success: false, error: otpRes.error || "Could not create a verification code.", otpSent: false }), {
+        status: 503,
+        headers: { "Content-Type": "application/json", "Set-Cookie": cookie },
+      });
+    }
+    if (otpRes.code) {
+      const emailRes = await sendEbookOtpEmail(name, sessionUser.email, otpRes.code);
+      if (!emailRes.success) {
+        void logEbookActivity({ uid: sessionUser.uid, eventType: "otp_sent", status: "FAILED", metadata: { status: emailRes.status } });
+        return new Response(JSON.stringify({
+          success: false,
+          error: emailRes.error || "Your account was created, but the verification email could not be sent. Please sign in and try again.",
+          otpSent: false,
+        }), { status: 502, headers: { "Content-Type": "application/json", "Set-Cookie": cookie } });
+      }
+      void logEbookActivity({ uid: sessionUser.uid, eventType: "otp_sent", status: "SUCCESS", metadata: { status: emailRes.status } });
     }
 
-    const isProd = process.env["NODE_ENV"] === "production";
-    const cookie = `__gn_ebook_session=${encodeURIComponent(tokenPayload)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${isProd ? "; Secure" : ""}`;
     // Never include otpRes.code in the response body
     return new Response(JSON.stringify({ success: true, user: sanitizeUserForResponse(sessionUser), otpSent: otpRes.success }), {
       headers: { "Content-Type": "application/json", "Set-Cookie": cookie },
@@ -361,8 +375,15 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
       });
     }
     if (otpRes.code) {
-      void sendEbookOtpEmail(name, sessionEmail, otpRes.code);
-      void logEbookActivity({ uid: currentUser.uid, eventType: "otp_sent", status: "SUCCESS" });
+      const emailRes = await sendEbookOtpEmail(name, sessionEmail, otpRes.code);
+      if (!emailRes.success) {
+        void logEbookActivity({ uid: currentUser.uid, eventType: "otp_sent", status: "FAILED", metadata: { status: emailRes.status } });
+        return new Response(JSON.stringify({ success: false, error: emailRes.error || "The verification email could not be sent. Please try again.", cooldownRemaining: 60 }), {
+          status: 502,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      void logEbookActivity({ uid: currentUser.uid, eventType: "otp_sent", status: "SUCCESS", metadata: { status: emailRes.status } });
     }
     return new Response(JSON.stringify({ success: true, cooldownRemaining: 60 }), {
       headers: { "Content-Type": "application/json" },
