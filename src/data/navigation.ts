@@ -525,4 +525,12 @@ export const NAVIGATION_STRUCTURE: NavigationCategory[] = [
     items: regionsAndSustainability.items!.filter((item) => item.path.startsWith("/regions")),
   },
   navigationById("about"),
+  {
+    id: "ebook",
+    label: "GreenNext Ebook",
+    path: "/ebook/auth",
+    description:
+      "Official GreenNext Research Publication (Edition 2.0) — Interactive 10-chapter technical framework.",
+    isDirectLink: true,
+  },
 ];

@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { PAGES_CONTENT } from "../../data/pagesContent";
 import { PageTemplate } from "../../components/templates/PageTemplate";
+import { SustainabilityPlanningInfographic } from "../../components/visuals/InfrastructureInfographics";
 
 export const Route = createFileRoute("/sustainability/$slug")({
   head: ({ params }) => {
@@ -44,5 +45,14 @@ function SustainabilitySubmenuPage() {
     ); */
   }
 
-  return <PageTemplate data={page} />;
+  return (
+    <div>
+      <PageTemplate data={page} />
+      {(slug === "energy-aware" || slug === "sustainable-growth" || slug === "resource-optimization") && (
+        <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+          <SustainabilityPlanningInfographic />
+        </section>
+      )}
+    </div>
+  );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronDown, Menu, X, ArrowRight } from "../icons";
+import { BookOpen } from "lucide-react";
 import { NAVIGATION_STRUCTURE } from "../../data/navigation";
 import { trackEvent } from "../../lib/analytics";
 
@@ -161,30 +162,32 @@ export function SiteHeader() {
           : "bg-[#070A0E]/80 backdrop-blur-sm border-b border-[#1E293B]/60 py-4"
       }`}
     >
-      <div className="gn-container flex items-center justify-between">
+      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-8 2xl:px-10 flex items-center justify-between gap-3 lg:gap-4 xl:gap-6">
         {/* Brand Logo */}
-        <Link
-          to="/"
-          className="flex items-center gap-2 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981] rounded-lg py-1"
-          aria-label="GreenNext Home"
-        >
-          <img
-            src="/images/greennext-logo.png"
-            alt="GreenNext - Digital Infrastructure"
-            width={160}
-            height={36}
-            className="h-8 sm:h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-[1.02]"
-            loading="eager"
-            decoding="async"
-          />
-          <span className="hidden sm:inline-block text-[10px] uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-[#1E293B] text-[#94A3B8] ml-1 self-center border border-[#334155]/50">
-            Infrastructure
-          </span>
-        </Link>
+        <div className="flex shrink-0 items-center mr-1 lg:mr-2 xl:mr-4 2xl:mr-6">
+          <Link
+            to="/"
+            className="flex items-center gap-2 group focus:outline-none focus-visible:ring-2 focus-visible:ring-[#10B981] rounded-lg py-1"
+            aria-label="GreenNext Home"
+          >
+            <img
+              src="/images/greennext-logo.png"
+              alt="GreenNext - Digital Infrastructure"
+              width={160}
+              height={36}
+              className="h-8 sm:h-9 w-auto object-contain transition-transform duration-200 group-hover:scale-[1.02]"
+              loading="eager"
+              decoding="async"
+            />
+            <span className="hidden sm:inline-block xl:hidden 2xl:inline-block text-[10px] uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-[#1E293B] text-[#94A3B8] ml-1 self-center border border-[#334155]/50 whitespace-nowrap">
+              Infrastructure
+            </span>
+          </Link>
+        </div>
 
         {/* Desktop Primary Navigation */}
         <nav
-          className="hidden min-w-0 flex-1 items-center justify-end gap-0.5 xl:flex 2xl:gap-1.5"
+          className="hidden min-w-0 flex-1 items-center justify-end gap-0.5 xl:flex xl:gap-1 2xl:gap-1.5"
           aria-label="Main Navigation"
         >
           {NAVIGATION_STRUCTURE.map((cat) => {
@@ -194,18 +197,29 @@ export function SiteHeader() {
             const hasSubmenu = cat.items && cat.items.length > 0;
 
             if (!hasSubmenu) {
+              const isEbook = cat.id === "ebook";
               return (
                 <Link
                   key={cat.id}
                   to={cat.path}
                   onClick={() => trackNavigation(cat.path)}
-                  className={`shrink-0 whitespace-nowrap px-2 py-1.5 text-[13px] font-medium rounded transition-colors 2xl:px-3 ${
-                    isCurrent
-                      ? "text-[#10B981] bg-[#10B981]/10"
-                      : "text-[#94A3B8] hover:text-white hover:bg-[#121824]"
+                  className={`shrink-0 whitespace-nowrap text-[12px] xl:text-[12.5px] 2xl:text-[13px] rounded transition-all flex items-center gap-1 xl:gap-1.5 px-1.5 xl:px-2 2xl:px-2.5 ${
+                    isEbook
+                      ? isCurrent
+                        ? "py-1.5 font-semibold text-[#10B981] bg-[#10B981]/20 border border-[#10B981]/60 shadow-sm"
+                        : "py-1.5 font-semibold text-[#10B981] bg-[#10B981]/10 border border-[#10B981]/30 hover:bg-[#10B981]/20 hover:border-[#10B981]/60"
+                      : isCurrent
+                        ? "py-1.5 font-medium text-[#10B981] bg-[#10B981]/10"
+                        : "py-1.5 font-medium text-[#94A3B8] hover:text-white hover:bg-[#121824]"
                   }`}
                 >
-                  {cat.label}
+                  {isEbook && <BookOpen size={13} className="text-[#10B981] shrink-0" />}
+                  <span>{cat.label}</span>
+                  {isEbook && (
+                    <span className="text-[8.5px] 2xl:text-[9px] font-mono font-bold uppercase tracking-wider px-1 py-0.2 rounded bg-[#10B981]/20 text-[#10B981] shrink-0">
+                      v2.0
+                    </span>
+                  )}
                 </Link>
               );
             }
@@ -215,7 +229,7 @@ export function SiteHeader() {
             return (
               <div
                 key={cat.id}
-                className="relative"
+                className="relative shrink-0"
                 onMouseEnter={() => handleMouseEnter(cat.id)}
                 onMouseLeave={handleMouseLeave}
                 onFocusCapture={() => handleMouseEnter(cat.id)}
@@ -228,7 +242,7 @@ export function SiteHeader() {
                 <Link
                   to={cat.path}
                   onClick={() => trackNavigation(cat.path)}
-                  className={`shrink-0 whitespace-nowrap px-2 py-1.5 text-[13px] font-medium rounded flex items-center gap-1 transition-colors 2xl:px-3 ${
+                  className={`shrink-0 whitespace-nowrap px-1.5 xl:px-2 2xl:px-2.5 py-1.5 text-[12px] xl:text-[12.5px] 2xl:text-[13px] font-medium rounded flex items-center gap-1 transition-colors ${
                     isCurrent || isOpen
                       ? "text-[#10B981] bg-[#10B981]/10"
                       : "text-[#94A3B8] hover:text-white hover:bg-[#121824]"
@@ -238,8 +252,8 @@ export function SiteHeader() {
                 >
                   <span>{cat.label}</span>
                   <ChevronDown
-                    size={13}
-                    className={`transition-transform duration-200 ${
+                    size={12}
+                    className={`shrink-0 transition-transform duration-200 ${
                       isOpen ? "rotate-180 text-[#10B981]" : "text-[#64748B]"
                     }`}
                   />
@@ -316,7 +330,7 @@ export function SiteHeader() {
         </nav>
 
         {/* Right CTA Actions */}
-        <div className="hidden sm:flex items-center gap-2.5">
+        <div className="hidden sm:flex shrink-0 items-center pl-1 xl:pl-2">
           {/* Primary Contact CTA */}
           <Link
             to="/contact"
@@ -328,10 +342,10 @@ export function SiteHeader() {
                 page: currentPath,
               })
             }
-            className="px-3.5 py-1.5 rounded-lg bg-[#10B981] text-[#070A0E] text-[13px] font-semibold hover:bg-[#34D399] transition-all flex items-center gap-1.5 shadow-lg shadow-[#10B981]/20 hover:shadow-[#10B981]/30"
+            className="px-3 xl:px-3.5 py-1.5 rounded-lg bg-[#10B981] text-[#070A0E] text-[12px] xl:text-[12.5px] 2xl:text-[13px] font-semibold hover:bg-[#34D399] transition-all flex items-center gap-1.5 shadow-lg shadow-[#10B981]/20 hover:shadow-[#10B981]/30 shrink-0 whitespace-nowrap"
           >
             <span>Connect</span>
-            <ArrowRight size={14} />
+            <ArrowRight size={13} className="shrink-0" />
           </Link>
         </div>
 
@@ -375,6 +389,7 @@ export function SiteHeader() {
                 (cat.items && cat.items.some((item) => pathMatches(item.path)));
 
               if (!hasSubmenu) {
+                const isEbook = cat.id === "ebook";
                 return (
                   <Link
                     key={cat.id}
@@ -383,13 +398,25 @@ export function SiteHeader() {
                       closeDropdown();
                       setMobileMenuOpen(false);
                     }}
-                    className={`min-h-[44px] flex items-center p-3 rounded-lg border text-sm font-medium transition-colors ${
-                      isCurrent
-                        ? "bg-[#10B981]/15 border-[#10B981]/40 text-[#10B981]"
-                        : "bg-[#0B0F17] border-[#1E293B] text-white hover:border-[#334155]"
+                    className={`min-h-[44px] flex items-center justify-between p-3 rounded-lg border text-sm transition-all ${
+                      isEbook
+                        ? isCurrent
+                          ? "bg-[#10B981]/20 border-[#10B981]/60 text-[#10B981] font-semibold"
+                          : "bg-[#0B0F17] border-[#10B981]/40 text-[#10B981] hover:bg-[#10B981]/10 font-semibold"
+                        : isCurrent
+                          ? "bg-[#10B981]/15 border-[#10B981]/40 text-[#10B981] font-medium"
+                          : "bg-[#0B0F17] border-[#1E293B] text-white hover:border-[#334155] font-medium"
                     }`}
                   >
-                    {cat.label}
+                    <div className="flex items-center gap-2">
+                      {isEbook && <BookOpen size={16} className="text-[#10B981]" />}
+                      <span>{cat.label}</span>
+                    </div>
+                    {isEbook && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#10B981]/20 text-[#10B981] font-bold">
+                        Edition 2.0
+                      </span>
+                    )}
                   </Link>
                 );
               }

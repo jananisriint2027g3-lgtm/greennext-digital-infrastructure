@@ -116,6 +116,17 @@ function doPost(e) {
       return handleDispatchEmailAction(payload);
     }
 
+    // ── Authenticated Ebook Actions (see EbookBackend.gs) ──
+    if (payload && payload.action === "ebook_dispatch_email") {
+      return handleEbookDispatchEmailAction(payload);
+    }
+    if (payload && payload.action === "ebook_sync_user") {
+      return handleEbookSyncUserAction(payload);
+    }
+    if (payload && payload.action === "ebook_log_activity") {
+      return handleEbookLogActivityAction(payload);
+    }
+
     validateIncomingPayload(payload);
     var targetSheet = payload.sheet;
     greenNextDiag("OPEN SPREADSHEET START", diagStartedAt);

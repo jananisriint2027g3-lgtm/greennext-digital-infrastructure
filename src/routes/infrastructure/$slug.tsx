@@ -5,6 +5,10 @@ import { SevenLayerStack } from "../../components/home/SevenLayerStack";
 import { CybersecurityFramework } from "../../components/infrastructure/CybersecurityFramework";
 import { PowerReliabilityModel } from "../../components/kpi/PowerReliabilityModel";
 import { EnvironmentalComplianceWidget } from "../../components/kpi/EnvironmentalComplianceWidget";
+import {
+  AiComputeCoolingInfographic,
+  RegionalTopologyInfographic,
+} from "../../components/visuals/InfrastructureInfographics";
 
 export const Route = createFileRoute("/infrastructure/$slug")({
   head: ({ params }) => {
@@ -58,6 +62,11 @@ function InfrastructureSubmenuPage() {
             </div>
             <SevenLayerStack />
           </div>
+        </section>
+      )}
+      {(slug === "ai-ready" || slug === "network" || slug === "compute" || slug === "storage") && (
+        <section className="mx-auto max-w-[1340px] px-4 pb-16 sm:px-6 lg:px-8">
+          {slug === "network" ? <RegionalTopologyInfographic /> : <AiComputeCoolingInfographic />}
         </section>
       )}
       {slug === "cybersecurity" && (

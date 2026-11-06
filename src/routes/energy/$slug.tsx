@@ -4,6 +4,10 @@ import { PageTemplate } from "../../components/templates/PageTemplate";
 import { EnergyFlowModel } from "../../components/home/EnergyFlowModel";
 import { PueCalculator } from "../../components/kpi/PueCalculator";
 import { CoolingEfficiencyCalculator } from "../../components/kpi/CoolingEfficiencyCalculator";
+import {
+  PowerMonitoringInfographic,
+  LiquidCoolingArchitectureInfographic,
+} from "../../components/visuals/InfrastructureInfographics";
 
 export const Route = createFileRoute("/energy/$slug")({
   head: ({ params }) => {
@@ -37,11 +41,15 @@ function EnergySubmenuPage() {
       {slug === "monitoring" && (
         <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           <PueCalculator />
+          <div className="mt-10">
+            <PowerMonitoringInfographic />
+          </div>
         </section>
       )}
       {slug === "cooling" && (
-        <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <section className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-10">
           <CoolingEfficiencyCalculator />
+          <LiquidCoolingArchitectureInfographic />
         </section>
       )}
       {slug === "optimization" && (

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { InternalLink as Link } from "../common/InternalLink";
 import { MessageCircle, ExternalLink, ShieldCheck } from "../icons";
+import { BookOpen } from "lucide-react";
 import { NAVIGATION_STRUCTURE } from "../../data/navigation";
 import { WHATSAPP_CONFIG } from "../../data/whatsapp";
 import { WhatsAppDemoModal, openQuickInquiry } from "../common/FloatingContact";
@@ -681,6 +682,65 @@ export function SiteFooter() {
                     Sustainability & ESG
                   </Link>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Dedicated GreenNext Ebook Footer Section */}
+          <div className="mt-10 mb-2 p-6 sm:p-8 rounded-2xl border border-[#10B981]/30 bg-gradient-to-r from-[#0B132B]/90 via-[#0D1B2A]/80 to-[#070A0E] shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-[#10B981]/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="flex items-start gap-4 max-w-2xl">
+                <div className="w-12 h-12 rounded-xl bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981] flex-shrink-0 mt-0.5">
+                  <BookOpen size={24} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#10B981] font-bold px-2 py-0.5 rounded bg-[#10B981]/15 border border-[#10B981]/30">
+                      Official Publication &bull; Edition 2.0
+                    </span>
+                    <span className="text-xs text-[#64748B] font-mono">10 Chapters &bull; 30 Pages</span>
+                  </div>
+                  <h4 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                    Intelligent Infrastructure for a Sustainable Digital Future
+                  </h4>
+                  <p className="text-xs text-[#94A3B8] leading-relaxed mt-1 max-w-xl">
+                    A comprehensive multi-disciplinary framework examining decentralized sovereign AI compute,
+                    liquid cooling architectures, and renewable grid integration across South India.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <Link
+                  to="/ebook/auth"
+                  onClick={() =>
+                    trackEvent({
+                      tab: "Navigation",
+                      event: "nav_footer_click",
+                      value: "/ebook/auth",
+                      page: currentPath,
+                    })
+                  }
+                  className="px-4 py-2.5 rounded-lg bg-[#10B981] hover:bg-[#34D399] text-[#070A0E] text-xs font-bold transition-all shadow-md shadow-[#10B981]/20 flex items-center gap-1.5"
+                >
+                  <BookOpen size={14} />
+                  <span>Access Ebook</span>
+                </Link>
+                <Link
+                  to="/ebook"
+                  onClick={() =>
+                    trackEvent({
+                      tab: "Navigation",
+                      event: "nav_footer_click",
+                      value: "/ebook",
+                      page: currentPath,
+                    })
+                  }
+                  className="px-4 py-2.5 rounded-lg bg-[#1E293B] hover:bg-[#334155] text-white text-xs font-semibold border border-[#334155] transition-all"
+                >
+                  <span>Edition Overview</span>
+                </Link>
               </div>
             </div>
           </div>

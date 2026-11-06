@@ -17,6 +17,11 @@ import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as AboutSlugRouteImport } from './routes/about/$slug'
 import { Route as AutomationIndexRouteImport } from './routes/automation/index'
 import { Route as AutomationSlugRouteImport } from './routes/automation/$slug'
+import { Route as EbookIndexRouteImport } from './routes/ebook/index'
+import { Route as EbookAuthRouteImport } from './routes/ebook/auth'
+import { Route as EbookForgotPasswordRouteImport } from './routes/ebook/forgot-password'
+import { Route as EbookReaderRouteImport } from './routes/ebook/reader'
+import { Route as EbookVerifyOtpRouteImport } from './routes/ebook/verify-otp'
 import { Route as EnergyIndexRouteImport } from './routes/energy/index'
 import { Route as EnergySlugRouteImport } from './routes/energy/$slug'
 import { Route as IcpIndexRouteImport } from './routes/icp/index'
@@ -72,6 +77,31 @@ const AutomationIndexRoute = AutomationIndexRouteImport.update({
 const AutomationSlugRoute = AutomationSlugRouteImport.update({
   id: '/automation/$slug',
   path: '/automation/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EbookIndexRoute = EbookIndexRouteImport.update({
+  id: '/ebook/',
+  path: '/ebook/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EbookAuthRoute = EbookAuthRouteImport.update({
+  id: '/ebook/auth',
+  path: '/ebook/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EbookForgotPasswordRoute = EbookForgotPasswordRouteImport.update({
+  id: '/ebook/forgot-password',
+  path: '/ebook/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EbookReaderRoute = EbookReaderRouteImport.update({
+  id: '/ebook/reader',
+  path: '/ebook/reader',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EbookVerifyOtpRoute = EbookVerifyOtpRouteImport.update({
+  id: '/ebook/verify-otp',
+  path: '/ebook/verify-otp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EnergyIndexRoute = EnergyIndexRouteImport.update({
@@ -165,6 +195,10 @@ export interface FileRoutesByFullPath {
   '/redis-demo': typeof RedisDemoRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
+  '/ebook/auth': typeof EbookAuthRoute
+  '/ebook/forgot-password': typeof EbookForgotPasswordRoute
+  '/ebook/reader': typeof EbookReaderRoute
+  '/ebook/verify-otp': typeof EbookVerifyOtpRoute
   '/energy/$slug': typeof EnergySlugRoute
   '/icp/$slug': typeof IcpSlugRoute
   '/infrastructure/$slug': typeof InfrastructureSlugRoute
@@ -177,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/sustainability/$slug': typeof SustainabilitySlugRoute
   '/about/': typeof AboutIndexRoute
   '/automation/': typeof AutomationIndexRoute
+  '/ebook/': typeof EbookIndexRoute
   '/energy/': typeof EnergyIndexRoute
   '/icp/': typeof IcpIndexRoute
   '/infrastructure/': typeof InfrastructureIndexRoute
@@ -191,6 +226,10 @@ export interface FileRoutesByTo {
   '/redis-demo': typeof RedisDemoRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
+  '/ebook/auth': typeof EbookAuthRoute
+  '/ebook/forgot-password': typeof EbookForgotPasswordRoute
+  '/ebook/reader': typeof EbookReaderRoute
+  '/ebook/verify-otp': typeof EbookVerifyOtpRoute
   '/energy/$slug': typeof EnergySlugRoute
   '/icp/$slug': typeof IcpSlugRoute
   '/infrastructure/$slug': typeof InfrastructureSlugRoute
@@ -203,6 +242,7 @@ export interface FileRoutesByTo {
   '/sustainability/$slug': typeof SustainabilitySlugRoute
   '/about': typeof AboutIndexRoute
   '/automation': typeof AutomationIndexRoute
+  '/ebook': typeof EbookIndexRoute
   '/energy': typeof EnergyIndexRoute
   '/icp': typeof IcpIndexRoute
   '/infrastructure': typeof InfrastructureIndexRoute
@@ -218,6 +258,10 @@ export interface FileRoutesById {
   '/redis-demo': typeof RedisDemoRoute
   '/about/$slug': typeof AboutSlugRoute
   '/automation/$slug': typeof AutomationSlugRoute
+  '/ebook/auth': typeof EbookAuthRoute
+  '/ebook/forgot-password': typeof EbookForgotPasswordRoute
+  '/ebook/reader': typeof EbookReaderRoute
+  '/ebook/verify-otp': typeof EbookVerifyOtpRoute
   '/energy/$slug': typeof EnergySlugRoute
   '/icp/$slug': typeof IcpSlugRoute
   '/infrastructure/$slug': typeof InfrastructureSlugRoute
@@ -230,6 +274,7 @@ export interface FileRoutesById {
   '/sustainability/$slug': typeof SustainabilitySlugRoute
   '/about/': typeof AboutIndexRoute
   '/automation/': typeof AutomationIndexRoute
+  '/ebook/': typeof EbookIndexRoute
   '/energy/': typeof EnergyIndexRoute
   '/icp/': typeof IcpIndexRoute
   '/infrastructure/': typeof InfrastructureIndexRoute
@@ -246,6 +291,10 @@ export interface FileRouteTypes {
     | '/redis-demo'
     | '/about/$slug'
     | '/automation/$slug'
+    | '/ebook/auth'
+    | '/ebook/forgot-password'
+    | '/ebook/reader'
+    | '/ebook/verify-otp'
     | '/energy/$slug'
     | '/icp/$slug'
     | '/infrastructure/$slug'
@@ -258,6 +307,7 @@ export interface FileRouteTypes {
     | '/sustainability/$slug'
     | '/about/'
     | '/automation/'
+    | '/ebook/'
     | '/energy/'
     | '/icp/'
     | '/infrastructure/'
@@ -272,6 +322,10 @@ export interface FileRouteTypes {
     | '/redis-demo'
     | '/about/$slug'
     | '/automation/$slug'
+    | '/ebook/auth'
+    | '/ebook/forgot-password'
+    | '/ebook/reader'
+    | '/ebook/verify-otp'
     | '/energy/$slug'
     | '/icp/$slug'
     | '/infrastructure/$slug'
@@ -284,6 +338,7 @@ export interface FileRouteTypes {
     | '/sustainability/$slug'
     | '/about'
     | '/automation'
+    | '/ebook'
     | '/energy'
     | '/icp'
     | '/infrastructure'
@@ -298,6 +353,10 @@ export interface FileRouteTypes {
     | '/redis-demo'
     | '/about/$slug'
     | '/automation/$slug'
+    | '/ebook/auth'
+    | '/ebook/forgot-password'
+    | '/ebook/reader'
+    | '/ebook/verify-otp'
     | '/energy/$slug'
     | '/icp/$slug'
     | '/infrastructure/$slug'
@@ -310,6 +369,7 @@ export interface FileRouteTypes {
     | '/sustainability/$slug'
     | '/about/'
     | '/automation/'
+    | '/ebook/'
     | '/energy/'
     | '/icp/'
     | '/infrastructure/'
@@ -325,6 +385,10 @@ export interface RootRouteChildren {
   RedisDemoRoute: typeof RedisDemoRoute
   AboutSlugRoute: typeof AboutSlugRoute
   AutomationSlugRoute: typeof AutomationSlugRoute
+  EbookAuthRoute: typeof EbookAuthRoute
+  EbookForgotPasswordRoute: typeof EbookForgotPasswordRoute
+  EbookReaderRoute: typeof EbookReaderRoute
+  EbookVerifyOtpRoute: typeof EbookVerifyOtpRoute
   EnergySlugRoute: typeof EnergySlugRoute
   IcpSlugRoute: typeof IcpSlugRoute
   InfrastructureSlugRoute: typeof InfrastructureSlugRoute
@@ -337,6 +401,7 @@ export interface RootRouteChildren {
   SustainabilitySlugRoute: typeof SustainabilitySlugRoute
   AboutIndexRoute: typeof AboutIndexRoute
   AutomationIndexRoute: typeof AutomationIndexRoute
+  EbookIndexRoute: typeof EbookIndexRoute
   EnergyIndexRoute: typeof EnergyIndexRoute
   IcpIndexRoute: typeof IcpIndexRoute
   InfrastructureIndexRoute: typeof InfrastructureIndexRoute
@@ -401,6 +466,41 @@ declare module '@tanstack/react-router' {
       path: '/automation/$slug'
       fullPath: '/automation/$slug'
       preLoaderRoute: typeof AutomationSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ebook/': {
+      id: '/ebook/'
+      path: '/ebook'
+      fullPath: '/ebook/'
+      preLoaderRoute: typeof EbookIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ebook/auth': {
+      id: '/ebook/auth'
+      path: '/ebook/auth'
+      fullPath: '/ebook/auth'
+      preLoaderRoute: typeof EbookAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ebook/forgot-password': {
+      id: '/ebook/forgot-password'
+      path: '/ebook/forgot-password'
+      fullPath: '/ebook/forgot-password'
+      preLoaderRoute: typeof EbookForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ebook/reader': {
+      id: '/ebook/reader'
+      path: '/ebook/reader'
+      fullPath: '/ebook/reader'
+      preLoaderRoute: typeof EbookReaderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ebook/verify-otp': {
+      id: '/ebook/verify-otp'
+      path: '/ebook/verify-otp'
+      fullPath: '/ebook/verify-otp'
+      preLoaderRoute: typeof EbookVerifyOtpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/energy/': {
@@ -525,6 +625,10 @@ const rootRouteChildren: RootRouteChildren = {
   RedisDemoRoute: RedisDemoRoute,
   AboutSlugRoute: AboutSlugRoute,
   AutomationSlugRoute: AutomationSlugRoute,
+  EbookAuthRoute: EbookAuthRoute,
+  EbookForgotPasswordRoute: EbookForgotPasswordRoute,
+  EbookReaderRoute: EbookReaderRoute,
+  EbookVerifyOtpRoute: EbookVerifyOtpRoute,
   EnergySlugRoute: EnergySlugRoute,
   IcpSlugRoute: IcpSlugRoute,
   InfrastructureSlugRoute: InfrastructureSlugRoute,
@@ -537,6 +641,7 @@ const rootRouteChildren: RootRouteChildren = {
   SustainabilitySlugRoute: SustainabilitySlugRoute,
   AboutIndexRoute: AboutIndexRoute,
   AutomationIndexRoute: AutomationIndexRoute,
+  EbookIndexRoute: EbookIndexRoute,
   EnergyIndexRoute: EnergyIndexRoute,
   IcpIndexRoute: IcpIndexRoute,
   InfrastructureIndexRoute: InfrastructureIndexRoute,
