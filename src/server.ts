@@ -24,6 +24,10 @@ import {
 } from "./lib/firebase-auth";
 import { generateEbookOtp, verifyEbookOtp } from "./lib/otp.server";
 import { sendEbookOtpEmail, sendEbookWelcomeEmail } from "./lib/ebook-email.server";
+import {
+  createEbookSessionEnvelope,
+  isEbookSessionEnvelopeFresh,
+} from "./lib/ebook-session";
 
 interface EbookSessionUser {
   uid: string;
@@ -84,23 +88,25 @@ function signEbookSessionPayload(payloadObj: unknown): string {
   return `${b64}.${hmac}`;
 }
 
-function extractVerifiedEbookSession(request: Request): EbookSessionUser | null {
-  const cookieHeader = request.headers.get("cookie") || "";
-  const match = cookieHeader.match(/__gn_ebook_session=([^;]+)/);
-  if (!match) return null;
+function createEbookSessionCookie(user: EbookSessionUser, now = Date.now()): string {
+  const tokenPayload = signEbookSessionPayload(createEbookSessionEnvelope(user, now));
+  const isProd = process.env["NODE_ENV"] === "production";
+  return `__gn_ebook_session=${encodeURIComponent(tokenPayload)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=3600${isProd ? "; Secure" : ""}`;
+}
 
-  const rawToken = decodeURIComponent(match[1]);
+function verifyEbookSessionToken(rawToken: string): string | null {
   const dotIdx = rawToken.lastIndexOf(".");
   if (dotIdx === -1) return null;
 
   const b64 = rawToken.slice(0, dotIdx);
   const signature = rawToken.slice(dotIdx + 1);
+  if (!b64 || !signature) return null;
 
   let expectedHmac: string;
   try {
     expectedHmac = createHmac("sha256", getEbookSessionSecret()).update(b64).digest("hex");
   } catch {
-    return null; // secret unavailable — fail closed
+    return null;
   }
 
   const sigBuf = Buffer.from(signature, "hex");
@@ -109,9 +115,40 @@ function extractVerifiedEbookSession(request: Request): EbookSessionUser | null 
     return null;
   }
 
+  return b64;
+}
+
+function isExpiredEbookSession(request: Request): boolean {
+  const match = (request.headers.get("cookie") || "").match(/__gn_ebook_session=([^;]+)/);
+  if (!match) return false;
+  const encodedToken = match[1];
+  if (!encodedToken) return false;
   try {
-    const jsonStr = Buffer.from(b64, "base64url").toString("utf-8");
-    return JSON.parse(jsonStr) as EbookSessionUser;
+    const rawToken = decodeURIComponent(encodedToken);
+    const b64 = verifyEbookSessionToken(rawToken);
+    if (!b64) return false;
+    const payload = JSON.parse(Buffer.from(b64, "base64url").toString("utf-8"));
+    return !isEbookSessionEnvelopeFresh(payload);
+  } catch {
+    return false;
+  }
+}
+
+function extractVerifiedEbookSession(request: Request): EbookSessionUser | null {
+  const cookieHeader = request.headers.get("cookie") || "";
+  const match = cookieHeader.match(/__gn_ebook_session=([^;]+)/);
+  if (!match) return null;
+  const encodedToken = match[1];
+  if (!encodedToken) return null;
+
+  const rawToken = decodeURIComponent(encodedToken);
+  const b64 = verifyEbookSessionToken(rawToken);
+  if (!b64) return null;
+
+  try {
+    const envelope = JSON.parse(Buffer.from(b64, "base64url").toString("utf-8"));
+    if (!isEbookSessionEnvelopeFresh(envelope)) return null;
+    return envelope.user as EbookSessionUser;
   } catch {
     return null;
   }
@@ -202,6 +239,12 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
   if (pathname === "/api/ebook/session" && request.method === "GET") {
     const user = extractVerifiedEbookSession(request);
     if (!user) {
+      if (!isEbookDevPreview() && isExpiredEbookSession(request)) {
+        return new Response(JSON.stringify({ authenticated: false, user: null, emailVerified: false, ebookAccess: false, sessionExpired: true }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
       if (isEbookDevPreview()) {
         return new Response(
           JSON.stringify({
@@ -230,7 +273,7 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
       emailVerified: Boolean(user.emailVerified),
       ebookAccess: Boolean(user.emailVerified),
       isDevPreview: false,
-    }), { headers: { "Content-Type": "application/json" } });
+    }), { headers: { "Content-Type": "application/json", "Set-Cookie": createEbookSessionCookie(user) } });
   }
 
   // ── POST /api/ebook/login ───────────────────────────────────────────────────
@@ -253,11 +296,9 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
       emailVerified: res.user.emailVerified,
       providerId: res.user.providerId,
     };
-    const tokenPayload = signEbookSessionPayload(sessionUser);
     void syncEbookUser({ uid: sessionUser.uid, email: sessionUser.email, name: sessionUser.displayName, authMethod: "password", emailVerified: sessionUser.emailVerified });
     void logEbookActivity({ uid: sessionUser.uid, eventType: "login_success", status: "SUCCESS" });
-    const isProd = process.env["NODE_ENV"] === "production";
-    const cookie = `__gn_ebook_session=${encodeURIComponent(tokenPayload)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${isProd ? "; Secure" : ""}`;
+    const cookie = createEbookSessionCookie(sessionUser);
     return new Response(JSON.stringify({ success: true, user: sanitizeUserForResponse(sessionUser), emailVerified: sessionUser.emailVerified }), {
       headers: { "Content-Type": "application/json", "Set-Cookie": cookie },
     });
@@ -283,9 +324,7 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
       emailVerified: false, // must remain false until OTP verified
       providerId: "password",
     };
-    const tokenPayload = signEbookSessionPayload(sessionUser);
-    const isProd = process.env["NODE_ENV"] === "production";
-    const cookie = `__gn_ebook_session=${encodeURIComponent(tokenPayload)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${isProd ? "; Secure" : ""}`;
+    const cookie = createEbookSessionCookie(sessionUser);
     void syncEbookUser({ uid: sessionUser.uid, email: sessionUser.email, name, authMethod: "password", emailVerified: false });
     void logEbookActivity({ uid: sessionUser.uid, eventType: "register", status: "SUCCESS" });
 
@@ -339,7 +378,6 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
       emailVerified: true,
       providerId: "google.com",
     };
-    const tokenPayload = signEbookSessionPayload(sessionUser);
     const syncRes = await syncEbookUser({ uid: sessionUser.uid, email: sessionUser.email, name: sessionUser.displayName, authMethod: "google", emailVerified: true });
     if (syncRes.isNew) {
       void sendEbookWelcomeEmail(sessionUser.displayName || "Reader", sessionUser.email);
@@ -347,8 +385,7 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
     }
     void logEbookActivity({ uid: sessionUser.uid, eventType: "login_success", status: "SUCCESS", metadata: { method: "google" } });
 
-    const isProd = process.env["NODE_ENV"] === "production";
-    const cookie = `__gn_ebook_session=${encodeURIComponent(tokenPayload)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${isProd ? "; Secure" : ""}`;
+    const cookie = createEbookSessionCookie(sessionUser);
     return new Response(JSON.stringify({ success: true, user: sanitizeUserForResponse(sessionUser), emailVerified: true }), {
       headers: { "Content-Type": "application/json", "Set-Cookie": cookie },
     });
@@ -371,7 +408,7 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
     if (!otpRes.success) {
       return new Response(JSON.stringify({ success: false, error: otpRes.error, cooldownRemaining: otpRes.cooldownRemaining }), {
         status: 429,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Set-Cookie": createEbookSessionCookie(currentUser) },
       });
     }
     if (otpRes.code) {
@@ -380,13 +417,13 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
         void logEbookActivity({ uid: currentUser.uid, eventType: "otp_sent", status: "FAILED", metadata: { status: emailRes.status } });
         return new Response(JSON.stringify({ success: false, error: emailRes.error || "The verification email could not be sent. Please try again.", cooldownRemaining: 60 }), {
           status: 502,
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Set-Cookie": createEbookSessionCookie(currentUser) },
         });
       }
       void logEbookActivity({ uid: currentUser.uid, eventType: "otp_sent", status: "SUCCESS", metadata: { status: emailRes.status } });
     }
     return new Response(JSON.stringify({ success: true, cooldownRemaining: 60 }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Set-Cookie": createEbookSessionCookie(currentUser) },
     });
   }
 
@@ -440,15 +477,13 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
       emailVerified: true,
       providerId: "password",
     };
-    const tokenPayload = signEbookSessionPayload(updatedUser);
 
     void syncEbookUser({ uid: sessionUid, email: sessionEmail, name, authMethod: "password", emailVerified: true });
     void sendEbookWelcomeEmail(name, sessionEmail);
     void syncEbookUser({ uid: sessionUid, email: sessionEmail, authMethod: "password", emailVerified: true, welcomeEmailSent: true });
     void logEbookActivity({ uid: sessionUid, eventType: "otp_verified", status: "SUCCESS" });
 
-    const isProd = process.env["NODE_ENV"] === "production";
-    const cookie = `__gn_ebook_session=${encodeURIComponent(tokenPayload)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${isProd ? "; Secure" : ""}`;
+    const cookie = createEbookSessionCookie(updatedUser);
     return new Response(JSON.stringify({ success: true, user: sanitizeUserForResponse(updatedUser), emailVerified: true }), {
       headers: { "Content-Type": "application/json", "Set-Cookie": cookie },
     });
@@ -471,14 +506,14 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
 
 async function handleEbookPdfRequest(request: Request, isDownload: boolean): Promise<Response> {
   const user = extractVerifiedEbookSession(request);
-  if (!user && !isEbookDevPreview()) {
+  if (!user) {
     return new Response(JSON.stringify({ error: "Authentication required to access the GreenNext Ebook." }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  if (user && !user.emailVerified && !isEbookDevPreview()) {
+  if (!user.emailVerified) {
     return new Response(JSON.stringify({ error: "Email verification required before accessing the GreenNext Ebook." }), {
       status: 403,
       headers: { "Content-Type": "application/json" },
@@ -503,8 +538,8 @@ async function handleEbookPdfRequest(request: Request, isDownload: boolean): Pro
   });
 
   const disposition = isDownload
-    ? 'attachment; filename="GreenNext_Ebook_v2.pdf"'
-    : 'inline; filename="GreenNext_Ebook_v2.pdf"';
+    ? 'attachment; filename="GreenNext_Ebook_Edition_2.0.pdf"'
+    : 'inline; filename="GreenNext_Ebook_Edition_2.0.pdf"';
 
   return new Response(pdfRes.streamBuffer, {
     status: 200,
@@ -514,6 +549,7 @@ async function handleEbookPdfRequest(request: Request, isDownload: boolean): Pro
       "Content-Disposition": disposition,
       "Cache-Control": "private, no-store, max-age=0, must-revalidate",
       "Pragma": "no-cache",
+      ...(user ? { "Set-Cookie": createEbookSessionCookie(user) } : {}),
     },
   });
 }

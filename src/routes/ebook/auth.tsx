@@ -59,7 +59,11 @@ export function EbookAuthPage() {
   const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("reason") === "session_expired"
+      ? "Your Ebook session expired after 1 hour of inactivity. Please sign in again."
+      : null,
+  );
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Setup Google Identity Services if client ID is configured

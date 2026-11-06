@@ -16,6 +16,7 @@ export interface EbookSessionState {
   emailVerified: boolean;
   ebookAccess: boolean;
   isDevPreview?: boolean;
+  sessionExpired?: boolean;
 }
 
 /**
@@ -77,12 +78,13 @@ export async function getEbookSession(): Promise<EbookSessionState> {
       headers: { Accept: "application/json" },
       credentials: "include",
     });
+    const data = (await res.json()) as EbookSessionState;
     if (res.ok) {
-      const data = (await res.json()) as EbookSessionState;
       if (data && data.authenticated && data.user) {
         return data;
       }
     }
+    if (data?.sessionExpired) return data;
   } catch {
     // Network/fetch error (e.g. offline dev or client-side SSR hydration)
   }

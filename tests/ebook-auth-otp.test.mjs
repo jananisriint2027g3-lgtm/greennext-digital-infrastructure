@@ -43,6 +43,7 @@ compileTsModule("src/lib/visitor-email-apps-script.server.ts", "visitor-email-ap
 const ebookEmailPath = compileTsModule("src/lib/ebook-email.server.ts", "ebook-email.server.mjs");
 const firebasePath = compileTsModule("src/lib/firebase-auth.ts", "firebase-auth.mjs");
 const sessionFnPath = compileTsModule("src/lib/ebook-session.server-fn.ts", "ebook-session.server-fn.mjs");
+const ebookSessionPath = compileTsModule("src/lib/ebook-session.ts", "ebook-session.mjs");
 
 const { generateEbookOtp, verifyEbookOtp } = await import(`file://${otpPath.replace(/\\/g, "/")}`);
 const { fetchPrivateEbookPdf } = await import(`file://${drivePath.replace(/\\/g, "/")}`);
@@ -60,6 +61,11 @@ const {
   getEbookSession,
   DEV_PREVIEW_SESSION,
 } = await import(`file://${sessionFnPath.replace(/\\/g, "/")}`);
+const {
+  EBOOK_SESSION_IDLE_TIMEOUT_MS,
+  createEbookSessionEnvelope,
+  isEbookSessionEnvelopeFresh,
+} = await import(`file://${ebookSessionPath.replace(/\\/g, "/")}`);
 
 // ─── 1. OTP Generation Tests ──────────────────────────────────────────────────
 
@@ -455,6 +461,47 @@ test("PDF Protection: development mode resolves local root ebook master file", a
   }
 });
 
+test("PDF Protection: download route remains authenticated and non-cacheable", () => {
+  const serverSource = fs.readFileSync(path.resolve(repoRoot, "src/server.ts"), "utf8");
+  assert.match(serverSource, /pathname === "\/api\/ebook\/download"/);
+  assert.match(serverSource, /extractVerifiedEbookSession\(request\)/);
+  assert.match(serverSource, /status: 401/);
+  assert.match(serverSource, /if \(!user\.emailVerified\) \{/);
+  assert.match(serverSource, /status: 403/);
+  assert.match(serverSource, /Cache-Control.*private, no-store/);
+  assert.match(serverSource, /Max-Age=3600/);
+});
+
+test("Ebook overview: promotional publication hero is removed while the chapter index remains", () => {
+  const overviewSource = fs.readFileSync(path.resolve(repoRoot, "src/routes/ebook/index.tsx"), "utf8");
+  assert.doesNotMatch(overviewSource, /Official GreenNext Publication/);
+  assert.doesNotMatch(overviewSource, /A comprehensive technical framework examining/);
+  assert.match(overviewSource, /Table of Contents & Chapters/);
+  assert.match(overviewSource, /to="\/ebook\/reader"/);
+});
+
+test("Ebook content parity: reader and overview use the PDF's ten canonical chapter titles", () => {
+  const readerSource = fs.readFileSync(path.resolve(repoRoot, "src/routes/ebook/reader.tsx"), "utf8");
+  const overviewSource = fs.readFileSync(path.resolve(repoRoot, "src/routes/ebook/index.tsx"), "utf8");
+  const canonicalTitles = [
+    "Why AI Changes Infrastructure",
+    "The Seven-Layer Operational Stack",
+    "What ‘AI-Ready’ Really Means",
+    "Energy: The Closed Loop",
+    "Intelligent Automation",
+    "Six Enterprise Use Cases",
+    "A Distributed Regional Model for South India",
+    "Sustainability Without the Spin",
+    "The GreenNext Methodology",
+    "Your Planning Checklist and FAQ",
+  ];
+  for (const title of canonicalTitles) {
+    assert.ok(readerSource.includes(title), `Reader is missing canonical chapter: ${title}`);
+    assert.ok(overviewSource.includes(title), `Overview is missing canonical chapter: ${title}`);
+  }
+  assert.match(readerSource, /\/api\/ebook\/stream#page=/);
+});
+
 // ─── 5. Email Templates Tests ─────────────────────────────────────────────────
 
 test("Ebook Welcome Email: renders approved GreenNext branding and ebook details", () => {
@@ -511,6 +558,54 @@ test("Session Security: tampered session payload or signature is rejected", () =
   // Altered signature fails
   const forgedSig = validSig.slice(0, -2) + "00";
   assert.notEqual(forgedSig, validSig);
+});
+
+test("Session inactivity: a newly authenticated session is fresh", () => {
+  const now = 1_700_000_000_000;
+  const envelope = createEbookSessionEnvelope({ uid: "reader-1" }, now);
+  assert.equal(isEbookSessionEnvelopeFresh(envelope, now), true);
+});
+
+test("Session inactivity: qualifying activity refreshes the idle window", () => {
+  const issuedAt = 1_700_000_000_000;
+  const first = createEbookSessionEnvelope({ uid: "reader-1" }, issuedAt);
+  const activityAt = issuedAt + EBOOK_SESSION_IDLE_TIMEOUT_MS - 1;
+  assert.equal(isEbookSessionEnvelopeFresh(first, activityAt), true);
+
+  const refreshed = createEbookSessionEnvelope(first.user, activityAt);
+  assert.equal(isEbookSessionEnvelopeFresh(refreshed, activityAt + EBOOK_SESSION_IDLE_TIMEOUT_MS - 1), true);
+});
+
+test("Session inactivity: session expires at 60 minutes without activity", () => {
+  const now = 1_700_000_000_000;
+  const envelope = createEbookSessionEnvelope({ uid: "reader-1" }, now);
+  assert.equal(isEbookSessionEnvelopeFresh(envelope, now + EBOOK_SESSION_IDLE_TIMEOUT_MS), false);
+  assert.equal(isEbookSessionEnvelopeFresh(envelope, now + EBOOK_SESSION_IDLE_TIMEOUT_MS + 1), false);
+});
+
+test("Session inactivity: legacy or malformed unsigned payloads are rejected", () => {
+  assert.equal(isEbookSessionEnvelopeFresh({ uid: "reader-1" }, Date.now()), false);
+  assert.equal(isEbookSessionEnvelopeFresh({ user: { uid: "reader-1" }, issuedAt: Date.now() }, Date.now()), false);
+});
+
+test("Session expiry detection verifies the HMAC before parsing expiry", () => {
+  const serverSource = fs.readFileSync(path.resolve(repoRoot, "src/server.ts"), "utf8");
+  const verifierStart = serverSource.indexOf("function verifyEbookSessionToken");
+  const expiryStart = serverSource.indexOf("function isExpiredEbookSession");
+  assert.ok(verifierStart >= 0 && expiryStart > verifierStart);
+  const verifier = serverSource.slice(verifierStart, expiryStart);
+  const expiryHelper = serverSource.slice(expiryStart, serverSource.indexOf("function extractVerifiedEbookSession", expiryStart));
+  assert.match(verifier, /getEbookSessionSecret/);
+  assert.match(verifier, /timingSafeEqual/);
+  assert.match(expiryHelper, /verifyEbookSessionToken\(rawToken\)/);
+  assert.ok(expiryHelper.indexOf("verifyEbookSessionToken(rawToken)") < expiryHelper.indexOf("JSON\.parse"));
+});
+
+test("Reader activity: scrolling uses the throttled activity handler and is cleaned up", () => {
+  const readerSource = fs.readFileSync(path.resolve(repoRoot, "src/routes/ebook/reader.tsx"), "utf8");
+  assert.match(readerSource, /addEventListener\("wheel", reportActivity/);
+  assert.match(readerSource, /removeEventListener\("wheel", reportActivity/);
+  assert.match(readerSource, /5 \* 60 \* 1000/);
 });
 
 // ─── 7. Local Development Ebook Preview & Security Enforcement Tests ───────────
