@@ -299,6 +299,10 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
     void syncEbookUser({ uid: sessionUser.uid, email: sessionUser.email, name: sessionUser.displayName, authMethod: "password", emailVerified: sessionUser.emailVerified });
     void logEbookActivity({ uid: sessionUser.uid, eventType: "login_success", status: "SUCCESS" });
     const cookie = createEbookSessionCookie(sessionUser);
+    if (sessionUser.emailVerified) {
+      // Session cookie is prepared before the post-authentication welcome dispatch.
+      void sendEbookWelcomeEmail(sessionUser.displayName || "Reader", sessionUser.email);
+    }
     return new Response(JSON.stringify({ success: true, user: sanitizeUserForResponse(sessionUser), emailVerified: sessionUser.emailVerified }), {
       headers: { "Content-Type": "application/json", "Set-Cookie": cookie },
     });
@@ -379,13 +383,14 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
       providerId: "google.com",
     };
     const syncRes = await syncEbookUser({ uid: sessionUser.uid, email: sessionUser.email, name: sessionUser.displayName, authMethod: "google", emailVerified: true });
-    if (syncRes.isNew) {
-      void sendEbookWelcomeEmail(sessionUser.displayName || "Reader", sessionUser.email);
-      void syncEbookUser({ uid: sessionUser.uid, email: sessionUser.email, authMethod: "google", emailVerified: true, welcomeEmailSent: true });
-    }
     void logEbookActivity({ uid: sessionUser.uid, eventType: "login_success", status: "SUCCESS", metadata: { method: "google" } });
 
     const cookie = createEbookSessionCookie(sessionUser);
+    // Apps Script deduplicates successful welcome deliveries by recipient.
+    void sendEbookWelcomeEmail(sessionUser.displayName || "Reader", sessionUser.email);
+    if (syncRes.isNew) {
+      void syncEbookUser({ uid: sessionUser.uid, email: sessionUser.email, authMethod: "google", emailVerified: true, welcomeEmailSent: true });
+    }
     return new Response(JSON.stringify({ success: true, user: sanitizeUserForResponse(sessionUser), emailVerified: true }), {
       headers: { "Content-Type": "application/json", "Set-Cookie": cookie },
     });
@@ -479,11 +484,12 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
     };
 
     void syncEbookUser({ uid: sessionUid, email: sessionEmail, name, authMethod: "password", emailVerified: true });
-    void sendEbookWelcomeEmail(name, sessionEmail);
-    void syncEbookUser({ uid: sessionUid, email: sessionEmail, authMethod: "password", emailVerified: true, welcomeEmailSent: true });
     void logEbookActivity({ uid: sessionUid, eventType: "otp_verified", status: "SUCCESS" });
 
     const cookie = createEbookSessionCookie(updatedUser);
+    // The verified session is prepared before dispatching the one-time welcome email.
+    void sendEbookWelcomeEmail(name, sessionEmail);
+    void syncEbookUser({ uid: sessionUid, email: sessionEmail, authMethod: "password", emailVerified: true, welcomeEmailSent: true });
     return new Response(JSON.stringify({ success: true, user: sanitizeUserForResponse(updatedUser), emailVerified: true }), {
       headers: { "Content-Type": "application/json", "Set-Cookie": cookie },
     });

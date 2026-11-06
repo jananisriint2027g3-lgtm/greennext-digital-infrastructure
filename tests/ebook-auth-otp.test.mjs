@@ -472,6 +472,34 @@ test("PDF Protection: download route remains authenticated and non-cacheable", (
   assert.match(serverSource, /Max-Age=3600/);
 });
 
+test("Ebook authentication: welcome email is post-session and success-only", () => {
+  const serverSource = fs.readFileSync(path.resolve(repoRoot, "src/server.ts"), "utf8");
+  const loginStart = serverSource.indexOf('pathname === "/api/ebook/login"');
+  const registerStart = serverSource.indexOf('pathname === "/api/ebook/register"');
+  const loginBlock = serverSource.slice(loginStart, registerStart);
+  const verifyStart = serverSource.indexOf('pathname === "/api/ebook/verify-otp"');
+  const logoutStart = serverSource.indexOf('pathname === "/api/ebook/logout"');
+  const verifyBlock = serverSource.slice(verifyStart, logoutStart);
+  assert.match(loginBlock, /const cookie = createEbookSessionCookie\(sessionUser\)/);
+  assert.match(loginBlock, /if \(sessionUser\.emailVerified\)/);
+  assert.ok(loginBlock.indexOf("createEbookSessionCookie(sessionUser)") < loginBlock.indexOf("sendEbookWelcomeEmail"));
+  assert.doesNotMatch(loginBlock.slice(0, loginBlock.indexOf("const sessionUser")), /sendEbookWelcomeEmail/);
+  assert.match(verifyBlock, /const cookie = createEbookSessionCookie\(updatedUser\)/);
+  assert.ok(verifyBlock.indexOf("createEbookSessionCookie(updatedUser)") < verifyBlock.indexOf("sendEbookWelcomeEmail"));
+  assert.doesNotMatch(verifyBlock.slice(0, verifyBlock.indexOf("const updatedUser")), /sendEbookWelcomeEmail/);
+});
+
+test("Ebook session: SSR restoration forwards the HttpOnly cookie", () => {
+  const sessionSource = fs.readFileSync(path.resolve(repoRoot, "src/lib/ebook-session.server-fn.ts"), "utf8");
+  const ssrSource = fs.readFileSync(path.resolve(repoRoot, "src/lib/ebook-session-request.server.ts"), "utf8");
+  const serverSource = fs.readFileSync(path.resolve(repoRoot, "src/server.ts"), "utf8");
+  assert.match(ssrSource, /getRequestHeader\("cookie"\)/);
+  assert.match(ssrSource, /Cookie: cookieHeader/);
+  assert.match(sessionSource, /getEbookSessionServerFn = createServerFn/);
+  assert.match(serverSource, /Path=\/; HttpOnly; SameSite=Lax; Max-Age=3600/);
+  assert.match(serverSource, /Set-Cookie.*createEbookSessionCookie\(user\)/s);
+});
+
 test("Ebook overview: promotional publication hero is removed while the chapter index remains", () => {
   const overviewSource = fs.readFileSync(path.resolve(repoRoot, "src/routes/ebook/index.tsx"), "utf8");
   assert.doesNotMatch(overviewSource, /Official GreenNext Publication/);
@@ -501,6 +529,16 @@ test("Ebook reader: web chapters are primary and the protected PDF opens on dema
   assert.match(readerSource, /src="\/api\/ebook\/stream"/);
   assert.match(readerSource, /href="\/api\/ebook\/download"/);
   assert.doesNotMatch(readerSource, /key=\{currentChapter\.id\}[^>]*src=\{`\/api\/ebook\/stream/);
+});
+
+test("Ebook reader: light theme has scoped contrast tokens and preserves theme switching", () => {
+  const readerSource = fs.readFileSync(path.resolve(repoRoot, "src/routes/ebook/reader.tsx"), "utf8");
+  assert.match(readerSource, /data-theme=\{readingTheme\}/);
+  assert.match(readerSource, /--reader-primary: #0F172A/);
+  assert.match(readerSource, /\[class\*=\"text-white\"\]/);
+  assert.match(readerSource, /input::placeholder/);
+  assert.match(readerSource, /setReadingTheme\(\(theme\) => theme === "dark" \? "light" : "dark"\)/);
+  assert.match(readerSource, /greennext-ebook-reader-preferences/);
 });
 
 test("Ebook content parity: reader and overview use the PDF's ten canonical chapter titles", () => {

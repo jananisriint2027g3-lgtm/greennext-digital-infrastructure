@@ -577,7 +577,58 @@ export function EbookReaderPage() {
 
   const progressPercentage = Math.round((completedChapters.length / CHAPTERS.length) * 100);
   return (
-    <div className="min-h-screen bg-[#070A0E] text-[#E2E8F0] flex flex-col">
+    <div className="ebook-reader min-h-screen bg-[#070A0E] text-[#E2E8F0] flex flex-col" data-theme={readingTheme}>
+      <style>{`
+        .ebook-reader {
+          --reader-bg: #070A0E;
+          --reader-surface: #0A0F1D;
+          --reader-surface-raised: #0F172A;
+          --reader-border: #1E293B;
+          --reader-border-strong: #334155;
+          --reader-primary: #E2E8F0;
+          --reader-secondary: #CBD5E1;
+          --reader-muted: #94A3B8;
+          --reader-subtle: #64748B;
+        }
+        .ebook-reader[data-theme="light"] {
+          --reader-bg: #F8FAFC;
+          --reader-surface: #FFFFFF;
+          --reader-surface-raised: #F1F5F9;
+          --reader-border: #CBD5E1;
+          --reader-border-strong: #94A3B8;
+          --reader-primary: #0F172A;
+          --reader-secondary: #334155;
+          --reader-muted: #475569;
+          --reader-subtle: #64748B;
+          color: var(--reader-primary);
+          background: var(--reader-bg);
+        }
+        .ebook-reader[data-theme="light"] [class*="text-white"] { color: var(--reader-primary) !important; }
+        .ebook-reader[data-theme="light"] [class*="text-[#E2E8F0]"] { color: var(--reader-primary) !important; }
+        .ebook-reader[data-theme="light"] [class*="text-[#CBD5E1]"] { color: var(--reader-secondary) !important; }
+        .ebook-reader[data-theme="light"] [class*="text-[#94A3B8]"] { color: var(--reader-muted) !important; }
+        .ebook-reader[data-theme="light"] [class*="text-[#64748B]"] { color: var(--reader-subtle) !important; }
+        .ebook-reader[data-theme="light"] [class*="text-[#475569]"] { color: var(--reader-muted) !important; }
+        .ebook-reader[data-theme="light"] [class*="bg-[#070A0E]"],
+        .ebook-reader[data-theme="light"] [class*="bg-[#050811]"],
+        .ebook-reader[data-theme="light"] [class*="bg-[#0A0F1D]"],
+        .ebook-reader[data-theme="light"] [class*="bg-[#0B132B]"],
+        .ebook-reader[data-theme="light"] [class*="bg-[#0F172A]"],
+        .ebook-reader[data-theme="light"] [class*="bg-[#1E293B]"] { background-color: var(--reader-surface) !important; }
+        .ebook-reader[data-theme="light"] [class*="border-[#1E293B]"],
+        .ebook-reader[data-theme="light"] [class*="border-[#334155]"] { border-color: var(--reader-border) !important; }
+        .ebook-reader[data-theme="light"] input,
+        .ebook-reader[data-theme="light"] textarea,
+        .ebook-reader[data-theme="light"] select { color: var(--reader-primary); background-color: var(--reader-surface); border-color: var(--reader-border-strong); }
+        .ebook-reader[data-theme="light"] input::placeholder,
+        .ebook-reader[data-theme="light"] textarea::placeholder { color: var(--reader-subtle); opacity: 1; }
+        .ebook-reader[data-theme="light"] button:focus-visible,
+        .ebook-reader[data-theme="light"] a:focus-visible,
+        .ebook-reader[data-theme="light"] input:focus-visible { outline: 2px solid #047857; outline-offset: 2px; }
+        .ebook-reader[data-theme="light"] [class*="hover:bg-[#1E293B]"]:hover { background-color: #E2E8F0 !important; }
+        .ebook-reader[data-theme="light"] [class*="hover:bg-[#334155]"]:hover { background-color: #CBD5E1 !important; }
+        .ebook-reader[data-theme="light"] [class*="disabled:opacity-30"]:disabled { color: #94A3B8 !important; }
+      `}</style>
       <header className="border-b border-[#1E293B] bg-[#0A0F1D]/95 backdrop-blur px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-40">
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => setSidebarOpen((open) => !open)} className="lg:hidden p-2 rounded-lg bg-[#1E293B] text-white" aria-label="Toggle table of contents"><BookOpen className="w-4 h-4" /></button>

@@ -9,6 +9,7 @@
  */
 
 import { type FirebaseUserRecord } from "./firebase-auth";
+import { createServerFn } from "@tanstack/react-start";
 
 export interface EbookSessionState {
   authenticated: boolean;
@@ -71,7 +72,7 @@ export const DEV_PREVIEW_SESSION: EbookSessionState = {
   isDevPreview: true,
 };
 
-export async function getEbookSession(): Promise<EbookSessionState> {
+async function readEbookSessionFromBrowser(): Promise<EbookSessionState> {
   try {
     const res = await fetch("/api/ebook/session", {
       method: "GET",
@@ -95,6 +96,28 @@ export async function getEbookSession(): Promise<EbookSessionState> {
   }
 
   return { authenticated: false, user: null, emailVerified: false, ebookAccess: false, isDevPreview: false };
+}
+
+/** Reads the session through the current SSR request so the HttpOnly cookie survives refresh/direct navigation. */
+export const getEbookSessionServerFn = createServerFn({ method: "GET" }).handler(async () => {
+  const { readEbookSessionFromSsrRequest } = await import("./ebook-session-request.server");
+  const session = await readEbookSessionFromSsrRequest();
+  if (session) return session;
+  if (isEbookDevPreview()) return DEV_PREVIEW_SESSION;
+  return { authenticated: false, user: null, emailVerified: false, ebookAccess: false, isDevPreview: false };
+});
+
+export async function getEbookSession(): Promise<EbookSessionState> {
+  if (typeof window === "undefined") {
+    try {
+      return await getEbookSessionServerFn();
+    } catch {
+      // Direct unit calls do not have a TanStack Start request context.
+      if (isEbookDevPreview()) return DEV_PREVIEW_SESSION;
+      return { authenticated: false, user: null, emailVerified: false, ebookAccess: false, isDevPreview: false };
+    }
+  }
+  return readEbookSessionFromBrowser();
 }
 
 export async function loginEbookEmail(email: string, password: string): Promise<{ success: boolean; user?: FirebaseUserRecord; emailVerified?: boolean; error?: string }> {
