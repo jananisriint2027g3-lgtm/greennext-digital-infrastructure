@@ -67,6 +67,12 @@ const {
   isEbookSessionEnvelopeFresh,
 } = await import(`file://${ebookSessionPath.replace(/\\/g, "/")}`);
 
+test("Ebook reader: uses default typography without font-size controls", () => {
+  const readerSource = fs.readFileSync(path.resolve(repoRoot, "src/routes/ebook/reader.tsx"), "utf8");
+  assert.doesNotMatch(readerSource, /Reading text size|setTextSize|textSize|A−|A\+/);
+  assert.match(readerSource, /text-base leading-8 text-\[#CBD5E1\]/);
+});
+
 // ─── 1. OTP Generation Tests ──────────────────────────────────────────────────
 
 test("OTP: generates valid 6-digit numeric code with 5-minute TTL", async () => {

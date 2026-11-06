@@ -447,7 +447,6 @@ export function EbookReaderPage() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
-  const [textSize, setTextSize] = useState<"small" | "comfortable" | "large">("comfortable");
   const [readingTheme, setReadingTheme] = useState<"dark" | "light">("dark");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -462,13 +461,11 @@ export function EbookReaderPage() {
   const searchableChapters = useMemo(() => CHAPTERS.map((chapter) => ({ chapter, text: [chapter.title, chapter.summary, ...chapter.readingSections.map((section) => `${section.heading} ${section.body}`), ...chapter.terminology.map((item) => `${item.term} ${item.definition}`)].join(" ").toLowerCase() })), []);
   const searchResults = searchQuery.trim().length < 2 ? [] : searchableChapters.filter((entry) => entry.text.includes(searchQuery.trim().toLowerCase())).map((entry) => entry.chapter);
   const themeClasses = readingTheme === "light" ? "bg-[#F8FAFC] text-[#0F172A]" : "bg-[#050811] text-[#E2E8F0]";
-  const contentTextClass = textSize === "small" ? "text-sm leading-7" : textSize === "large" ? "text-lg leading-9" : "text-base leading-8";
 
   useEffect(() => {
     try {
-      const saved = JSON.parse(window.localStorage.getItem("greennext-ebook-reader-preferences") || "null") as { chapter?: number; textSize?: typeof textSize; theme?: typeof readingTheme; bookmarks?: string[]; completed?: number[] } | null;
+      const saved = JSON.parse(window.localStorage.getItem("greennext-ebook-reader-preferences") || "null") as { chapter?: number; theme?: typeof readingTheme; bookmarks?: string[]; completed?: number[] } | null;
       if (saved?.chapter && saved.chapter >= 1 && saved.chapter <= CHAPTERS.length) setActiveChapterNum(saved.chapter);
-      if (saved?.textSize) setTextSize(saved.textSize);
       if (saved?.theme) setReadingTheme(saved.theme);
       if (Array.isArray(saved?.bookmarks)) setBookmarks(saved.bookmarks.filter((value): value is string => typeof value === "string"));
       if (Array.isArray(saved?.completed)) setCompletedChapters(saved.completed.filter((value): value is number => Number.isInteger(value)));
@@ -479,11 +476,11 @@ export function EbookReaderPage() {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem("greennext-ebook-reader-preferences", JSON.stringify({ chapter: activeChapterNum, textSize, theme: readingTheme, bookmarks, completed: completedChapters }));
+      window.localStorage.setItem("greennext-ebook-reader-preferences", JSON.stringify({ chapter: activeChapterNum, theme: readingTheme, bookmarks, completed: completedChapters }));
     } catch {
       // Reader remains functional when browser storage is unavailable.
     }
-  }, [activeChapterNum, bookmarks, completedChapters, readingTheme, textSize]);
+  }, [activeChapterNum, bookmarks, completedChapters, readingTheme]);
 
   useEffect(() => {
     if (session?.sessionExpired) {
@@ -642,7 +639,6 @@ export function EbookReaderPage() {
           <button type="button" onClick={() => setSearchOpen((open) => !open)} className="inline-flex items-center gap-1.5 rounded-lg bg-[#1E293B] px-3 py-1.5 text-xs font-medium text-[#CBD5E1]" aria-label="Search the Ebook"><Search className="h-3.5 w-3.5" />Search</button>
           <button type="button" onClick={() => setGlossaryOpen((open) => !open)} className="hidden items-center gap-1.5 rounded-lg bg-[#1E293B] px-3 py-1.5 text-xs font-medium text-[#CBD5E1] sm:inline-flex">Glossary</button>
           <button type="button" onClick={() => setBookmarksOpen((open) => !open)} className="inline-flex items-center gap-1.5 rounded-lg bg-[#1E293B] px-3 py-1.5 text-xs font-medium text-[#CBD5E1]" aria-label="View bookmarks"><Bookmark className="h-3.5 w-3.5" />{bookmarks.length}</button>
-          <div className="hidden items-center gap-1 rounded-lg border border-[#334155] p-0.5 md:flex" aria-label="Reading text size"><button type="button" onClick={() => setTextSize("small")} className={`px-2 py-1 text-[10px] ${textSize === "small" ? "bg-[#10B981] text-[#070A0E]" : "text-[#94A3B8]"}`}>A−</button><button type="button" onClick={() => setTextSize("comfortable")} className={`px-2 py-1 text-[10px] ${textSize === "comfortable" ? "bg-[#10B981] text-[#070A0E]" : "text-[#94A3B8]"}`}>A</button><button type="button" onClick={() => setTextSize("large")} className={`px-2 py-1 text-[10px] ${textSize === "large" ? "bg-[#10B981] text-[#070A0E]" : "text-[#94A3B8]"}`}>A+</button></div>
           <button type="button" onClick={() => setReadingTheme((theme) => theme === "dark" ? "light" : "dark")} className="hidden rounded-lg bg-[#1E293B] p-2 text-[#CBD5E1] md:inline-flex" aria-label="Toggle reading theme">{readingTheme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}</button>
           <a href="/api/ebook/download" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#10B981] text-[#070A0E]"><Download className="w-3.5 h-3.5" />Download Ebook (PDF)</a>
           <button type="button" onClick={handleLogout} disabled={loggingOut} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1E293B] text-[#CBD5E1] disabled:opacity-50"><LogOut className="w-3.5 h-3.5" />Sign Out</button>
@@ -667,7 +663,7 @@ export function EbookReaderPage() {
 
           <section className="space-y-5 border-y border-[#1E293B] py-8"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2 text-[#10B981]"><FileText className="h-5 w-5" /><span className="text-[10px] font-mono font-bold uppercase tracking-widest">Original publication</span></div><p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#94A3B8]">The web edition below is the primary reading experience. Open the protected source PDF only when you want to inspect the original page design, diagrams, tables, glossary, or next steps.</p></div><button type="button" onClick={() => setPdfPreviewOpen(true)} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-[#10B981]/50 px-4 py-2.5 text-xs font-bold text-[#10B981] transition-colors hover:bg-[#10B981]/10"><FileText className="h-4 w-4" />Preview original PDF</button></div></section>
 
-          <section className="space-y-6" aria-labelledby="chapter-reading-title"><div className="flex items-end justify-between gap-4"><div><span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#38BDF8]">Web edition</span><h2 id="chapter-reading-title" className="mt-1 text-xl font-semibold text-white">Read the chapter</h2></div><span className="hidden text-xs text-[#64748B] sm:block">Source pages {currentChapter.sourcePages[0]}–{currentChapter.sourcePages[1]}</span></div><div className="max-w-4xl space-y-8">{currentChapter.readingSections.map((section) => <article key={section.heading} className="group space-y-2"><div className="flex items-start justify-between gap-4"><h3 className="text-lg font-semibold text-white">{section.heading}</h3><button type="button" onClick={() => toggleBookmark(section.heading)} className={`rounded-md p-1.5 transition-colors ${bookmarks.includes(section.heading) ? "text-[#10B981]" : "text-[#475569] hover:text-[#CBD5E1]"}`} aria-label={`${bookmarks.includes(section.heading) ? "Remove" : "Add"} bookmark for ${section.heading}`}><Bookmark className="h-4 w-4" fill={bookmarks.includes(section.heading) ? "currentColor" : "none"} /></button></div><p className={`${contentTextClass} text-[#CBD5E1]`}>{section.body}</p></article>)}</div><InteractiveChapterExperience chapter={currentChapter} /></section>
+          <section className="space-y-6" aria-labelledby="chapter-reading-title"><div className="flex items-end justify-between gap-4"><div><span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#38BDF8]">Web edition</span><h2 id="chapter-reading-title" className="mt-1 text-xl font-semibold text-white">Read the chapter</h2></div><span className="hidden text-xs text-[#64748B] sm:block">Source pages {currentChapter.sourcePages[0]}–{currentChapter.sourcePages[1]}</span></div><div className="max-w-4xl space-y-8">{currentChapter.readingSections.map((section) => <article key={section.heading} className="group space-y-2"><div className="flex items-start justify-between gap-4"><h3 className="text-lg font-semibold text-white">{section.heading}</h3><button type="button" onClick={() => toggleBookmark(section.heading)} className={`rounded-md p-1.5 transition-colors ${bookmarks.includes(section.heading) ? "text-[#10B981]" : "text-[#475569] hover:text-[#CBD5E1]"}`} aria-label={`${bookmarks.includes(section.heading) ? "Remove" : "Add"} bookmark for ${section.heading}`}><Bookmark className="h-4 w-4" fill={bookmarks.includes(section.heading) ? "currentColor" : "none"} /></button></div><p className="text-base leading-8 text-[#CBD5E1]">{section.body}</p></article>)}</div><InteractiveChapterExperience chapter={currentChapter} /></section>
 
           <section className="space-y-4 border-t border-[#1E293B] pt-8"><div><span className="text-[11px] font-mono uppercase tracking-widest text-[#38BDF8]">Supplementary study companion</span><h2 className="text-xl font-bold text-white mt-1">Study this chapter</h2><p className="text-xs text-[#94A3B8] mt-1">The sections below are study aids derived from the canonical source and are not additional publication claims.</p></div><div className="grid gap-6 md:grid-cols-2"><div className="p-5 rounded-xl bg-[#0A0F1D] border border-[#1E293B]"><h3 className="text-sm font-bold text-white mb-3">Learning objectives</h3><StudyList items={currentChapter.learningObjectives} /></div><div className="p-5 rounded-xl bg-[#0A0F1D] border border-[#1E293B]"><h3 className="text-sm font-bold text-white mb-3">Practical relevance</h3><p className="text-sm text-[#CBD5E1] leading-relaxed">{currentChapter.practicalRelevance}</p></div></div></section>
 
