@@ -487,9 +487,20 @@ test("Shared footer: Ebook discovery appears once without replacing the protecte
   assert.match(footerSource, /to="\/ebook"/);
   assert.match(footerSource, /to="\/ebook\/auth"/);
   assert.match(footerSource, /Factual Status/);
-  assert.match(readerSource, /Protected reader · Edition 2\.0/);
+  assert.doesNotMatch(readerSource, /Protected reader · Edition 2\.0/);
+  assert.match(footerSource, /currentPath !== "\/ebook\/reader"/);
   assert.match(readerSource, /\/api\/ebook\/download/);
-  assert.match(readerSource, /\/api\/ebook\/stream#page=/);
+  assert.match(readerSource, /\/api\/ebook\/stream/);
+});
+
+test("Ebook reader: web chapters are primary and the protected PDF opens on demand", () => {
+  const readerSource = fs.readFileSync(path.resolve(repoRoot, "src/routes/ebook/reader.tsx"), "utf8");
+  assert.match(readerSource, /readingSections/);
+  assert.match(readerSource, /Read the chapter/);
+  assert.match(readerSource, /setPdfPreviewOpen\(true\)/);
+  assert.match(readerSource, /src="\/api\/ebook\/stream"/);
+  assert.match(readerSource, /href="\/api\/ebook\/download"/);
+  assert.doesNotMatch(readerSource, /key=\{currentChapter\.id\}[^>]*src=\{`\/api\/ebook\/stream/);
 });
 
 test("Ebook content parity: reader and overview use the PDF's ten canonical chapter titles", () => {
@@ -511,7 +522,7 @@ test("Ebook content parity: reader and overview use the PDF's ten canonical chap
     assert.ok(readerSource.includes(title), `Reader is missing canonical chapter: ${title}`);
     assert.ok(overviewSource.includes(title), `Overview is missing canonical chapter: ${title}`);
   }
-  assert.match(readerSource, /\/api\/ebook\/stream#page=/);
+  assert.match(readerSource, /readingSections/);
 });
 
 // ─── 5. Email Templates Tests ─────────────────────────────────────────────────

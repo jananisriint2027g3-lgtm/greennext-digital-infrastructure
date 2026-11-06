@@ -687,7 +687,7 @@ export function SiteFooter() {
           </div>
 
           {/* Publication discovery — one shared Ebook promotion for the site */}
-          <section className="mt-10 border-y border-[#10B981]/20 py-8 sm:py-9" aria-labelledby="footer-ebook-title">
+          {currentPath !== "/ebook/reader" && <section className="mt-10 border-y border-[#10B981]/20 py-8 sm:py-9" aria-labelledby="footer-ebook-title">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl space-y-3">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] font-mono uppercase tracking-[0.18em] text-[#10B981]">
@@ -718,7 +718,7 @@ export function SiteFooter() {
                 </Link>
               </div>
             </div>
-          </section>
+          </section>}
 
           {/* Factual Disclaimer & Copyright Bar */}
           <div className="pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs text-[#64748B]">
