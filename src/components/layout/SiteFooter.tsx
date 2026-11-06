@@ -686,64 +686,39 @@ export function SiteFooter() {
             </div>
           </div>
 
-          {/* Dedicated GreenNext Ebook Footer Section */}
-          <div className="mt-10 mb-2 p-6 sm:p-8 rounded-2xl border border-[#10B981]/30 bg-gradient-to-r from-[#0B132B]/90 via-[#0D1B2A]/80 to-[#070A0E] shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-[#10B981]/5 rounded-full blur-3xl pointer-events-none" />
-            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-              <div className="flex items-start gap-4 max-w-2xl">
-                <div className="w-12 h-12 rounded-xl bg-[#10B981]/15 border border-[#10B981]/30 flex items-center justify-center text-[#10B981] flex-shrink-0 mt-0.5">
-                  <BookOpen size={24} />
+          {/* Publication discovery — one shared Ebook promotion for the site */}
+          <section className="mt-10 border-y border-[#10B981]/20 py-8 sm:py-9" aria-labelledby="footer-ebook-title">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-3xl space-y-3">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] font-mono uppercase tracking-[0.18em] text-[#10B981]">
+                  <span className="inline-flex items-center gap-2"><BookOpen size={14} /> GreenNext publication</span>
+                  <span className="text-[#475569]">Edition 2.0 · 30 pages · 10 chapters</span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#10B981] font-bold px-2 py-0.5 rounded bg-[#10B981]/15 border border-[#10B981]/30">
-                      Official Publication &bull; Edition 2.0
-                    </span>
-                    <span className="text-xs text-[#64748B] font-mono">10 Chapters &bull; 30 Pages</span>
-                  </div>
-                  <h4 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-                    Intelligent Infrastructure for a Sustainable Digital Future
-                  </h4>
-                  <p className="text-xs text-[#94A3B8] leading-relaxed mt-1 max-w-xl">
-                    A comprehensive multi-disciplinary framework examining decentralized sovereign AI compute,
-                    liquid cooling architectures, and renewable grid integration across South India.
-                  </p>
-                </div>
+                <h2 id="footer-ebook-title" className="max-w-2xl text-xl sm:text-2xl font-semibold tracking-tight text-white">
+                  Intelligent Infrastructure for a Sustainable Digital Future
+                </h2>
+                <p className="max-w-2xl text-sm leading-relaxed text-[#94A3B8]">
+                  A source-grounded guide to AI-ready infrastructure, energy-aware operations, intelligent automation, and regional planning across South India.
+                </p>
               </div>
-
-              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                <Link
-                  to="/ebook/auth"
-                  onClick={() =>
-                    trackEvent({
-                      tab: "Navigation",
-                      event: "nav_footer_click",
-                      value: "/ebook/auth",
-                      page: currentPath,
-                    })
-                  }
-                  className="px-4 py-2.5 rounded-lg bg-[#10B981] hover:bg-[#34D399] text-[#070A0E] text-xs font-bold transition-all shadow-md shadow-[#10B981]/20 flex items-center gap-1.5"
-                >
-                  <BookOpen size={14} />
-                  <span>Access Ebook</span>
-                </Link>
+              <div className="flex shrink-0 flex-wrap gap-3">
                 <Link
                   to="/ebook"
-                  onClick={() =>
-                    trackEvent({
-                      tab: "Navigation",
-                      event: "nav_footer_click",
-                      value: "/ebook",
-                      page: currentPath,
-                    })
-                  }
-                  className="px-4 py-2.5 rounded-lg bg-[#1E293B] hover:bg-[#334155] text-white text-xs font-semibold border border-[#334155] transition-all"
+                  onClick={() => trackEvent({ tab: "Navigation", event: "nav_footer_click", value: "/ebook", page: currentPath })}
+                  className="inline-flex items-center justify-center rounded-lg border border-[#334155] bg-[#0F172A] px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:border-[#10B981]/50 hover:text-[#10B981]"
                 >
-                  <span>Edition Overview</span>
+                  Publication overview
+                </Link>
+                <Link
+                  to="/ebook/auth"
+                  onClick={() => trackEvent({ tab: "Navigation", event: "nav_footer_click", value: "/ebook/auth", page: currentPath })}
+                  className="inline-flex items-center justify-center rounded-lg bg-[#10B981] px-4 py-2.5 text-xs font-bold text-[#070A0E] transition-colors hover:bg-[#34D399]"
+                >
+                  Access the Ebook
                 </Link>
               </div>
             </div>
-          </div>
+          </section>
 
           {/* Factual Disclaimer & Copyright Bar */}
           <div className="pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs text-[#64748B]">

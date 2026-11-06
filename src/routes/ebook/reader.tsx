@@ -371,8 +371,26 @@ export function EbookReaderPage() {
         </aside>
         {sidebarOpen && <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
-        <main className="flex-1 bg-[#050811] px-4 py-8 sm:px-8 sm:py-12 lg:px-12 max-w-6xl mx-auto w-full space-y-10">
-          <header className="border-b border-[#1E293B] pb-8 space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><span className="font-mono text-xs font-bold uppercase tracking-widest text-[#10B981]">Chapter {String(currentChapter.num).padStart(2, "0")} of 10</span><span className="text-xs font-mono text-[#64748B]">PDF pages {currentChapter.sourcePages[0]}–{currentChapter.sourcePages[1]}</span></div><h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">{currentChapter.title}</h1><div className="p-4 rounded-xl bg-[#0F172A] border border-[#1E293B] text-sm text-[#CBD5E1] leading-relaxed"><strong className="text-white block mb-1">Chapter summary</strong>{currentChapter.summary}</div></header>
+        <main className="flex-1 bg-[#050811] px-4 py-8 sm:px-8 sm:py-12 lg:px-14 max-w-7xl mx-auto w-full space-y-12">
+          <section className="border-b border-[#1E293B] pb-10" aria-labelledby="publication-masthead">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
+              <div className="space-y-5">
+                <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-[0.2em] text-[#10B981]"><span className="h-px w-8 bg-[#10B981]" /> Protected reader · Edition 2.0</div>
+                <div className="space-y-3">
+                  <p className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-white sm:text-5xl">Intelligent Infrastructure for a Sustainable Digital Future</p>
+                  <p id="publication-masthead" className="max-w-2xl text-sm leading-relaxed text-[#94A3B8] sm:text-base">A practical publication on AI-ready, energy-aware infrastructure planning across South India. Read the canonical pages alongside a focused study companion for each chapter.</p>
+                </div>
+              </div>
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-l border-[#1E293B] pl-5 text-xs text-[#94A3B8]">
+                <div><dt className="font-mono uppercase tracking-wider text-[#64748B]">Chapters</dt><dd className="mt-1 text-lg font-semibold text-white">10</dd></div>
+                <div><dt className="font-mono uppercase tracking-wider text-[#64748B]">Pages</dt><dd className="mt-1 text-lg font-semibold text-white">30</dd></div>
+                <div><dt className="font-mono uppercase tracking-wider text-[#64748B]">Edition</dt><dd className="mt-1 text-lg font-semibold text-white">2.0</dd></div>
+                <div><dt className="font-mono uppercase tracking-wider text-[#64748B]">Access</dt><dd className="mt-1 text-lg font-semibold text-[#10B981]">Verified</dd></div>
+              </dl>
+            </div>
+          </section>
+
+          <header className="space-y-4 border-b border-[#1E293B] pb-8"><div className="flex flex-wrap items-center justify-between gap-3"><span className="font-mono text-xs font-bold uppercase tracking-widest text-[#10B981]">Chapter {String(currentChapter.num).padStart(2, "0")} of 10</span><span className="text-xs font-mono text-[#64748B]">PDF pages {currentChapter.sourcePages[0]}–{currentChapter.sourcePages[1]}</span></div><h1 className="max-w-4xl text-2xl font-semibold leading-tight tracking-tight text-white sm:text-4xl">{currentChapter.title}</h1><p className="max-w-4xl border-l-2 border-[#10B981] pl-4 text-base leading-relaxed text-[#CBD5E1]"><span className="mb-1 block text-[10px] font-mono font-bold uppercase tracking-widest text-[#10B981]">Chapter brief</span>{currentChapter.summary}</p></header>
 
           <section className="space-y-4"><div className="flex items-center justify-between gap-3"><div><h2 className="text-lg font-bold text-white">Canonical publication pages</h2><p className="text-xs text-[#94A3B8] mt-1">The complete PDF remains the source of truth, including its original tables, diagrams, captions, glossary, and next steps.</p></div><FileText className="w-5 h-5 text-[#10B981]" /></div><div className="rounded-xl overflow-hidden border border-[#334155] bg-white"><iframe key={currentChapter.id} title={`${currentChapter.title} source pages`} src={`/api/ebook/stream#page=${currentChapter.sourcePages[0]}`} className="w-full h-[720px]" /></div><p className="text-xs text-[#64748B]">Source range: pages {currentChapter.sourcePages[0]}–{currentChapter.sourcePages[1]}. Use the PDF viewer to read the complete protected publication; pages 29–30 contain the glossary and next steps.</p></section>
 

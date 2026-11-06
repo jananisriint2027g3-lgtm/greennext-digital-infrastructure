@@ -480,6 +480,18 @@ test("Ebook overview: promotional publication hero is removed while the chapter 
   assert.match(overviewSource, /to="\/ebook\/reader"/);
 });
 
+test("Shared footer: Ebook discovery appears once without replacing the protected reader", () => {
+  const footerSource = fs.readFileSync(path.resolve(repoRoot, "src/components/layout/SiteFooter.tsx"), "utf8");
+  const readerSource = fs.readFileSync(path.resolve(repoRoot, "src/routes/ebook/reader.tsx"), "utf8");
+  assert.equal((footerSource.match(/Publication discovery/g) || []).length, 1);
+  assert.match(footerSource, /to="\/ebook"/);
+  assert.match(footerSource, /to="\/ebook\/auth"/);
+  assert.match(footerSource, /Factual Status/);
+  assert.match(readerSource, /Protected reader · Edition 2\.0/);
+  assert.match(readerSource, /\/api\/ebook\/download/);
+  assert.match(readerSource, /\/api\/ebook\/stream#page=/);
+});
+
 test("Ebook content parity: reader and overview use the PDF's ten canonical chapter titles", () => {
   const readerSource = fs.readFileSync(path.resolve(repoRoot, "src/routes/ebook/reader.tsx"), "utf8");
   const overviewSource = fs.readFileSync(path.resolve(repoRoot, "src/routes/ebook/index.tsx"), "utf8");
