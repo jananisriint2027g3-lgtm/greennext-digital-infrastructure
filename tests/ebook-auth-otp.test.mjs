@@ -30,6 +30,8 @@ function compileTsModule(relSource, relDest) {
   transpiled = transpiled.replace(/from\s+['"]\.\/visitor-email-apps-script\.server['"]/g, "from './visitor-email-apps-script.server.mjs'");
   transpiled = transpiled.replace(/from\s+['"]\.\/email-templates\/ebook-otp-template['"]/g, "from './ebook-otp-template.mjs'");
   transpiled = transpiled.replace(/from\s+['"]\.\/email-templates\/ebook-welcome-template['"]/g, "from './ebook-welcome-template.mjs'");
+  transpiled = transpiled.replace(/from\s+['"]\.\/email-templates\/ebook-download-template['"]/g, "from './ebook-download-template.mjs'");
+  transpiled = transpiled.replace(/from\s+['"]\.\/ebook-welcome-template['"]/g, "from './ebook-welcome-template.mjs'");
   fs.writeFileSync(destPath, transpiled, "utf8");
   return destPath;
 }
@@ -38,6 +40,7 @@ compileTsModule("src/lib/redis.server.ts", "redis.server.mjs");
 const otpPath = compileTsModule("src/lib/otp.server.ts", "otp.server.mjs");
 const drivePath = compileTsModule("src/lib/ebook-drive.server.ts", "ebook-drive.server.mjs");
 const welcomeTplPath = compileTsModule("src/lib/email-templates/ebook-welcome-template.ts", "ebook-welcome-template.mjs");
+const downloadTplPath = compileTsModule("src/lib/email-templates/ebook-download-template.ts", "ebook-download-template.mjs");
 const otpTplPath = compileTsModule("src/lib/email-templates/ebook-otp-template.ts", "ebook-otp-template.mjs");
 compileTsModule("src/lib/visitor-email-apps-script.server.ts", "visitor-email-apps-script.server.mjs");
 const ebookEmailPath = compileTsModule("src/lib/ebook-email.server.ts", "ebook-email.server.mjs");
@@ -48,6 +51,7 @@ const ebookSessionPath = compileTsModule("src/lib/ebook-session.ts", "ebook-sess
 const { generateEbookOtp, verifyEbookOtp } = await import(`file://${otpPath.replace(/\\/g, "/")}`);
 const { fetchPrivateEbookPdf } = await import(`file://${drivePath.replace(/\\/g, "/")}`);
 const { renderEbookWelcomeEmail } = await import(`file://${welcomeTplPath.replace(/\\/g, "/")}`);
+const { renderEbookDownloadEmail } = await import(`file://${downloadTplPath.replace(/\\/g, "/")}`);
 const { renderEbookOtpEmail } = await import(`file://${otpTplPath.replace(/\\/g, "/")}`);
 const { sendEbookOtpEmail } = await import(`file://${ebookEmailPath.replace(/\\/g, "/")}`);
 const {
@@ -71,6 +75,23 @@ test("Ebook reader: uses default typography without font-size controls", () => {
   const readerSource = fs.readFileSync(path.resolve(repoRoot, "src/routes/ebook/reader.tsx"), "utf8");
   assert.doesNotMatch(readerSource, /Reading text size|setTextSize|textSize|A−|A\+/);
   assert.match(readerSource, /text-base leading-8 text-\[#CBD5E1\]/);
+});
+
+test("Ebook emails: preserve branded welcome and download content and protected CTA destinations", () => {
+  const welcome = renderEbookWelcomeEmail({ recipientName: "Dr. Janani Sri", recipientEmail: "reader@example.com" });
+  assert.equal(welcome.firstName, "Janani");
+  assert.match(welcome.subject, /Welcome to GreenNext/);
+  assert.match(welcome.html, /greennext-email-header\.png/);
+  assert.match(welcome.html, /\/ebook\/reader/);
+  assert.match(welcome.html, /GreenNext Team/);
+
+  const download = renderEbookDownloadEmail({ recipientName: "Dr. Janani Sri", recipientEmail: "reader@example.com" });
+  assert.equal(download.subject, "Your GreenNext Ebook Is Ready to Download");
+  assert.equal(download.firstName, "Janani");
+  assert.match(download.html, /greennext-email-header\.png/);
+  assert.match(download.html, /\/api\/ebook\/download/);
+  assert.match(download.html, /Download the GreenNext Ebook/);
+  assert.match(download.plainText, /protected GreenNext download service/);
 });
 
 // ─── 1. OTP Generation Tests ──────────────────────────────────────────────────
@@ -476,6 +497,7 @@ test("PDF Protection: download route remains authenticated and non-cacheable", (
   assert.match(serverSource, /status: 403/);
   assert.match(serverSource, /Cache-Control.*private, no-store/);
   assert.match(serverSource, /Max-Age=3600/);
+  assert.match(serverSource, /if \(isDownload\) dispatchEbookDownloadConfirmationEmail\(user\)/);
 });
 
 test("Ebook authentication: welcome email is post-session and success-only", () => {
@@ -488,11 +510,14 @@ test("Ebook authentication: welcome email is post-session and success-only", () 
   const verifyBlock = serverSource.slice(verifyStart, logoutStart);
   assert.match(loginBlock, /const cookie = createEbookSessionCookie\(sessionUser\)/);
   assert.match(loginBlock, /if \(sessionUser\.emailVerified\)/);
-  assert.ok(loginBlock.indexOf("createEbookSessionCookie(sessionUser)") < loginBlock.indexOf("sendEbookWelcomeEmail"));
-  assert.doesNotMatch(loginBlock.slice(0, loginBlock.indexOf("const sessionUser")), /sendEbookWelcomeEmail/);
+  assert.ok(loginBlock.indexOf("createEbookSessionCookie(sessionUser)") < loginBlock.indexOf("dispatchEbookWelcomeEmail"));
+  assert.doesNotMatch(loginBlock.slice(0, loginBlock.indexOf("const sessionUser")), /dispatchEbookWelcomeEmail/);
   assert.match(verifyBlock, /const cookie = createEbookSessionCookie\(updatedUser\)/);
-  assert.ok(verifyBlock.indexOf("createEbookSessionCookie(updatedUser)") < verifyBlock.indexOf("sendEbookWelcomeEmail"));
-  assert.doesNotMatch(verifyBlock.slice(0, verifyBlock.indexOf("const updatedUser")), /sendEbookWelcomeEmail/);
+  assert.ok(verifyBlock.indexOf("createEbookSessionCookie(updatedUser)") < verifyBlock.indexOf("dispatchEbookWelcomeEmail"));
+  assert.doesNotMatch(verifyBlock.slice(0, verifyBlock.indexOf("const updatedUser")), /dispatchEbookWelcomeEmail/);
+  assert.match(serverSource, /Delivery confirmed/);
+  assert.match(serverSource, /welcomeEmailSent: true/);
+  assert.match(serverSource, /if \(result\.simulated\) return/);
 });
 
 test("Ebook session: SSR restoration forwards the HttpOnly cookie", () => {
@@ -579,13 +604,13 @@ test("Ebook Welcome Email: renders approved GreenNext branding and ebook details
   });
 
   assert.equal(res.firstName, "Asha");
-  assert.match(res.subject, /Intelligent Infrastructure \(Edition 2\.0\)/);
+  assert.equal(res.subject, "Welcome to GreenNext Ebook – AI Infrastructure. Sustainable Progress.");
   assert.match(res.html, /greennext-email-header\.png/);
   assert.match(res.html, /greennext-email-footer\.png/);
-  assert.match(res.html, /Edition 2\.0/);
+  assert.match(res.html, /What you will discover/);
   assert.match(res.html, /https:\/\/greennext-ai\.vercel\.app\/ebook\/reader/);
   assert.match(res.html, /asha@example\.com/);
-  assert.match(res.plainText, /Intelligent Infrastructure for a Sustainable Digital Future/);
+  assert.match(res.plainText, /Why AI is changing infrastructure requirements/);
 });
 
 test("Ebook OTP Email: renders 6-digit numeric code with 5-minute expiry notice", () => {

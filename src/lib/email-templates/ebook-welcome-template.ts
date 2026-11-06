@@ -66,7 +66,7 @@ export function renderEbookWelcomeEmail(options: EbookWelcomeEmailOptions): Rend
   const safeName = escapeHtml(firstName);
   const safeEmail = escapeHtml(options.recipientEmail);
 
-  const subject = `Welcome to GreenNext | Your Ebook Access: Intelligent Infrastructure (Edition 2.0)`;
+  const subject = "Welcome to GreenNext Ebook – AI Infrastructure. Sustainable Progress.";
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -99,61 +99,32 @@ export function renderEbookWelcomeEmail(options: EbookWelcomeEmailOptions): Rend
                 Welcome to GreenNext, ${safeName}
               </h1>
 
+              <p style="margin: 0 0 18px 0; font-size: 15px; line-height: 1.6; color: #94A3B8;">
+                Thank you for choosing to explore the GreenNext Ebook. We are pleased to welcome you to a practical guide to AI-ready infrastructure and sustainable digital progress.
+              </p>
               <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: #94A3B8;">
-                Your GreenNext reader account has been verified. You now have access to our flagship research publication on regional AI compute and sustainable digital architectures.
+                As AI workloads grow, infrastructure planning becomes increasingly complex. Power density, thermal management, energy efficiency, connectivity and operational readiness all play an important role in building reliable infrastructure.
+              </p>
+              <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: #94A3B8;">
+                The decisions made today can influence tomorrow's infrastructure performance, scalability and sustainability.
               </p>
 
-              <!-- Ebook Feature Card -->
+              <!-- What you will discover -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #0F172A; border: 1px solid #1E293B; border-left: 4px solid #10B981; border-radius: 12px; margin-bottom: 32px;">
                 <tr>
                   <td style="padding: 24px;">
-                    <div style="font-size: 11px; font-weight: 700; color: #10B981; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;">
-                      Official Publication &bull; Edition 2.0
-                    </div>
-                    <h2 style="margin: 0 0 10px 0; font-size: 19px; font-weight: 700; color: #FFFFFF; line-height: 1.4;">
-                      Intelligent Infrastructure for a Sustainable Digital Future
-                    </h2>
-                    <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #94A3B8;">
-                      Explore 30 pages and 10 chapters covering macro sovereign AI shifts, regional network topologies across South India, closed-loop telemetry, high-density liquid cooling, and the GreenNext 7-layer infrastructure model.
-                    </p>
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                      <tr>
-                        <td style="border-radius: 8px; background-color: #10B981;">
-                          <a href="${readerUrl}" target="_blank" style="display: inline-block; padding: 12px 24px; font-size: 14px; font-weight: 700; color: #070B14; text-decoration: none; border-radius: 8px; letter-spacing: 0.02em;">
-                            Open Interactive Reader &rarr;
-                          </a>
-                        </td>
-                      </tr>
-                    </table>
+                    <h2 style="margin: 0 0 12px 0; font-size: 19px; font-weight: 700; color: #FFFFFF; line-height: 1.4;">What you will discover</h2>
+                    <p style="margin: 0 0 8px 0; font-size: 14px; line-height: 1.6; color: #94A3B8;">This publication takes you through:</p>
+                    <ul style="margin: 0; padding-left: 20px; color: #CBD5E1; font-size: 14px; line-height: 1.8;"><li>Why AI is changing infrastructure requirements.</li><li>The seven-layer operational stack.</li><li>What AI-ready infrastructure really means.</li><li>Energy management and intelligent automation.</li><li>Enterprise use cases and regional infrastructure planning.</li><li>Sustainability principles and practical planning checklists.</li></ul>
                   </td>
                 </tr>
               </table>
 
-              <!-- What's Inside Grid -->
-              <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 700; color: #FFFFFF; text-transform: uppercase; letter-spacing: 0.05em;">
-                Key Areas Covered
-              </h3>
-
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 32px;">
-                <tr>
-                  <td style="padding: 12px 0; border-bottom: 1px solid #1E293B;">
-                    <strong style="color: #38BDF8; font-size: 14px;">The 7-Layer Intelligent Infrastructure Stack</strong>
-                    <div style="color: #94A3B8; font-size: 13px; line-height: 1.5; margin-top: 4px;">From substation grid pairing and closed-loop thermal control up to accelerated workload orchestration.</div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 12px 0; border-bottom: 1px solid #1E293B;">
-                    <strong style="color: #F59E0B; font-size: 14px;">South India Decentralized Compute Corridors</strong>
-                    <div style="color: #94A3B8; font-size: 13px; line-height: 1.5; margin-top: 4px;">Strategic infrastructure topologies across Madurai, Coimbatore, Trichy, and Mangalore.</div>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 12px 0;">
-                    <strong style="color: #10B981; font-size: 14px;">Real-Time PUE & Thermal Dynamics</strong>
-                    <div style="color: #94A3B8; font-size: 13px; line-height: 1.5; margin-top: 4px;">Liquid immersion cooling models, renewable integration, and closed-loop efficiency calculations.</div>
-                  </td>
-                </tr>
-              </table>
+              <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #94A3B8;">Whether you are exploring new infrastructure opportunities, evaluating existing systems or preparing for future AI workloads, this Ebook provides a structured foundation for informed planning.</p>
+              <h3 style="margin: 0 0 10px 0; font-size: 15px; font-weight: 700; color: #FFFFFF; text-transform: uppercase; letter-spacing: 0.05em;">Your next step</h3>
+              <p style="margin: 0 0 18px 0; font-size: 14px; line-height: 1.6; color: #94A3B8;">Start exploring the chapters at your own pace and discover the concepts, considerations and practical questions that can support your infrastructure decisions.</p>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-bottom: 24px;"><tr><td style="border-radius: 8px; background-color: #10B981;"><a href="${readerUrl}" target="_blank" style="display: inline-block; padding: 12px 24px; font-size: 14px; font-weight: 700; color: #070B14; text-decoration: none; border-radius: 8px; letter-spacing: 0.02em;">Explore the GreenNext Ebook &rarr;</a></td></tr></table>
+              <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #CBD5E1;">We look forward to being part of your learning journey.<br><br>Best regards,<br>GreenNext Team<br><span style="color: #10B981;">AI Infrastructure. Sustainable Progress.</span></p>
 
               <!-- Account Details -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #0A1122; border: 1px solid #1E293B; border-radius: 8px; margin-bottom: 24px;">
@@ -198,22 +169,35 @@ export function renderEbookWelcomeEmail(options: EbookWelcomeEmailOptions): Rend
 </body>
 </html>`;
 
-  const plainText = `WELCOME TO GREENNEXT, ${firstName.toUpperCase()}
-============================================================
+  const plainText = `WELCOME TO GREENNEXT EBOOK, ${firstName.toUpperCase()}
 
-Your GreenNext reader account has been verified. You now have access to our flagship research publication on regional AI compute and sustainable digital architectures.
+Thank you for choosing to explore the GreenNext Ebook. We are pleased to welcome you to a practical guide to AI-ready infrastructure and sustainable digital progress.
 
-PUBLICATION DETAILS:
-Title: Intelligent Infrastructure for a Sustainable Digital Future
-Edition: 2.0 (30 Pages, 10 Chapters)
-Access Reader: ${readerUrl}
+As AI workloads grow, infrastructure planning becomes increasingly complex. Power density, thermal management, energy efficiency, connectivity and operational readiness all play an important role in building reliable infrastructure.
 
-WHAT'S INSIDE:
-- The 7-Layer Intelligent Infrastructure Stack
-- South India Decentralized Compute Corridors (Madurai, Coimbatore, Trichy, Mangalore)
-- Real-Time PUE & Thermal Dynamics (Liquid Cooling & Renewable Pairing)
+The decisions made today can influence tomorrow's infrastructure performance, scalability and sustainability.
 
-Registered Email: ${options.recipientEmail}
+WHAT YOU WILL DISCOVER
+This publication takes you through:
+- Why AI is changing infrastructure requirements.
+- The seven-layer operational stack.
+- What AI-ready infrastructure really means.
+- Energy management and intelligent automation.
+- Enterprise use cases and regional infrastructure planning.
+- Sustainability principles and practical planning checklists.
+
+Whether you are exploring new infrastructure opportunities, evaluating existing systems or preparing for future AI workloads, this Ebook provides a structured foundation for informed planning.
+
+YOUR NEXT STEP
+Start exploring the chapters at your own pace and discover the concepts, considerations and practical questions that can support your infrastructure decisions.
+
+Explore the GreenNext Ebook: ${readerUrl}
+
+We look forward to being part of your learning journey.
+
+Best regards,
+GreenNext Team
+AI Infrastructure. Sustainable Progress.
 
 Website: ${websiteUrl}
 LinkedIn: ${linkedInUrl}

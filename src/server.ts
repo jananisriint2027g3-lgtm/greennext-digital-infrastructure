@@ -23,7 +23,11 @@ import {
   serverMarkEmailVerified,
 } from "./lib/firebase-auth";
 import { generateEbookOtp, verifyEbookOtp } from "./lib/otp.server";
-import { sendEbookOtpEmail, sendEbookWelcomeEmail } from "./lib/ebook-email.server";
+import {
+  sendEbookDownloadConfirmationEmail,
+  sendEbookOtpEmail,
+  sendEbookWelcomeEmail,
+} from "./lib/ebook-email.server";
 import {
   createEbookSessionEnvelope,
   isEbookSessionEnvelopeFresh,
@@ -46,6 +50,76 @@ function sanitizeUserForResponse(user: EbookSessionUser) {
     emailVerified: user.emailVerified,
     providerId: user.providerId,
   };
+}
+
+function maskEbookRecipient(email: string): string {
+  const normalized = email.trim().toLowerCase();
+  const at = normalized.indexOf("@");
+  if (at <= 1) return "[redacted]";
+  return `${normalized.slice(0, 1)}***${normalized.slice(at)}`;
+}
+
+/** Dispatches welcome email after authentication without making access depend on delivery. */
+function dispatchEbookWelcomeEmail(user: EbookSessionUser): void {
+  void sendEbookWelcomeEmail(user.displayName || "Reader", user.email)
+    .then(async (result) => {
+      const logData = {
+        recipient: maskEbookRecipient(user.email),
+        status: result.status,
+        success: result.success,
+        simulated: result.simulated === true,
+        ...(result.deliveryRef ? { deliveryRef: result.deliveryRef } : {}),
+        ...(result.error ? { error: result.error.slice(0, 240) } : {}),
+      };
+      if (!result.success) {
+        console.warn("[Ebook Welcome] Delivery failed", logData);
+        return;
+      }
+      console.info("[Ebook Welcome] Delivery confirmed", logData);
+      if (result.simulated) return;
+
+      const syncResult = await syncEbookUser({
+        uid: user.uid,
+        email: user.email,
+        name: user.displayName || "Reader",
+        authMethod: user.providerId === "google.com" ? "google" : "password",
+        emailVerified: true,
+        welcomeEmailSent: true,
+      });
+      if (!syncResult.success) {
+        console.warn("[Ebook Welcome] Delivery confirmed but account status sync failed", {
+          recipient: maskEbookRecipient(user.email),
+          error: syncResult.error?.slice(0, 240) || "unknown sync error",
+        });
+      }
+    })
+    .catch((error) => {
+      console.warn("[Ebook Welcome] Delivery diagnostic failed", {
+        recipient: maskEbookRecipient(user.email),
+        error: error instanceof Error ? error.message.slice(0, 240) : "unknown error",
+      });
+    });
+}
+
+function dispatchEbookDownloadConfirmationEmail(user: EbookSessionUser): void {
+  void sendEbookDownloadConfirmationEmail(user.displayName || "Reader", user.email)
+    .then((result) => {
+      const logData = {
+        recipient: maskEbookRecipient(user.email),
+        status: result.status,
+        success: result.success,
+        ...(result.deliveryRef ? { deliveryRef: result.deliveryRef } : {}),
+        ...(result.error ? { error: result.error.slice(0, 240) } : {}),
+      };
+      if (result.success) console.info("[Ebook Download] Confirmation delivery", logData);
+      else console.warn("[Ebook Download] Confirmation delivery failed", logData);
+    })
+    .catch((error) => {
+      console.warn("[Ebook Download] Confirmation diagnostic failed", {
+        recipient: maskEbookRecipient(user.email),
+        error: error instanceof Error ? error.message.slice(0, 240) : "unknown error",
+      });
+    });
 }
 
 function getEbookSessionSecret(): string {
@@ -301,7 +375,7 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
     const cookie = createEbookSessionCookie(sessionUser);
     if (sessionUser.emailVerified) {
       // Session cookie is prepared before the post-authentication welcome dispatch.
-      void sendEbookWelcomeEmail(sessionUser.displayName || "Reader", sessionUser.email);
+      dispatchEbookWelcomeEmail(sessionUser);
     }
     return new Response(JSON.stringify({ success: true, user: sanitizeUserForResponse(sessionUser), emailVerified: sessionUser.emailVerified }), {
       headers: { "Content-Type": "application/json", "Set-Cookie": cookie },
@@ -382,15 +456,12 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
       emailVerified: true,
       providerId: "google.com",
     };
-    const syncRes = await syncEbookUser({ uid: sessionUser.uid, email: sessionUser.email, name: sessionUser.displayName, authMethod: "google", emailVerified: true });
+    await syncEbookUser({ uid: sessionUser.uid, email: sessionUser.email, name: sessionUser.displayName, authMethod: "google", emailVerified: true });
     void logEbookActivity({ uid: sessionUser.uid, eventType: "login_success", status: "SUCCESS", metadata: { method: "google" } });
 
     const cookie = createEbookSessionCookie(sessionUser);
     // Apps Script deduplicates successful welcome deliveries by recipient.
-    void sendEbookWelcomeEmail(sessionUser.displayName || "Reader", sessionUser.email);
-    if (syncRes.isNew) {
-      void syncEbookUser({ uid: sessionUser.uid, email: sessionUser.email, authMethod: "google", emailVerified: true, welcomeEmailSent: true });
-    }
+    dispatchEbookWelcomeEmail(sessionUser);
     return new Response(JSON.stringify({ success: true, user: sanitizeUserForResponse(sessionUser), emailVerified: true }), {
       headers: { "Content-Type": "application/json", "Set-Cookie": cookie },
     });
@@ -488,8 +559,7 @@ async function handleEbookAuthApiRequest(request: Request): Promise<Response> {
 
     const cookie = createEbookSessionCookie(updatedUser);
     // The verified session is prepared before dispatching the one-time welcome email.
-    void sendEbookWelcomeEmail(name, sessionEmail);
-    void syncEbookUser({ uid: sessionUid, email: sessionEmail, authMethod: "password", emailVerified: true, welcomeEmailSent: true });
+    dispatchEbookWelcomeEmail(updatedUser);
     return new Response(JSON.stringify({ success: true, user: sanitizeUserForResponse(updatedUser), emailVerified: true }), {
       headers: { "Content-Type": "application/json", "Set-Cookie": cookie },
     });
@@ -542,6 +612,7 @@ async function handleEbookPdfRequest(request: Request, isDownload: boolean): Pro
     status: "SUCCESS",
     metadata: { source: pdfRes.source },
   });
+  if (isDownload) dispatchEbookDownloadConfirmationEmail(user);
 
   const disposition = isDownload
     ? 'attachment; filename="GreenNext_Ebook_Edition_2.0.pdf"'

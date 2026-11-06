@@ -46,7 +46,7 @@ function handleEbookDispatchEmailAction(payload) {
   var email = String(payload.email || "").trim().toLowerCase();
   var name = String(payload.name || "Reader").trim();
   var requestId = String(payload.requestId || ("gn_ebk_" + Date.now()));
-  var formType = subAction === "otp" ? "ebook_otp" : "ebook_welcome";
+  var formType = subAction === "otp" ? "ebook_otp" : (subAction === "download" ? "ebook_download" : "ebook_welcome");
 
   if (!email || email.indexOf("@") === -1) {
     return jsonResponse(false, "Invalid recipient email address.", { status: "invalid" });
@@ -63,15 +63,15 @@ function handleEbookDispatchEmailAction(payload) {
     var rawSs = SpreadsheetApp.openById(RAW_DATA_SPREADSHEET_ID);
     var logSheet = getOrCreateSheet(rawSs, VISITOR_EMAIL_LOG_SHEET, VISITOR_EMAIL_LOG_HEADERS);
 
-    // For Welcome email: Deduplication check so it's sent only once per recipient
-    if (subAction === "welcome") {
+    // Welcome and download confirmations are sent only once per recipient and action.
+    if (subAction === "welcome" || subAction === "download") {
       var lastRow = logSheet.getLastRow();
       if (lastRow > 1) {
         var logs = logSheet.getRange(2, 1, lastRow - 1, 5).getValues();
         var maskedTarget = maskEmailForLog(email);
         for (var i = 0; i < logs.length; i++) {
-          if (logs[i][2] === "ebook_welcome" && logs[i][3] === maskedTarget && logs[i][4] === "SENT") {
-            return jsonResponse(true, "Welcome email already delivered to this reader.", {
+          if (logs[i][2] === formType && logs[i][3] === maskedTarget && logs[i][4] === "SENT") {
+            return jsonResponse(true, subAction === "download" ? "Download confirmation already delivered to this reader." : "Welcome email already delivered to this reader.", {
               status: "already_sent",
               duplicate: true
             });
