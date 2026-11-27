@@ -1,22 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PAGES_CONTENT } from "../../data/pagesContent";
-import { PageTemplate } from "../../components/templates/PageTemplate";
+import { AboutPage } from "../../components/about/AboutPage";
 
 export const Route = createFileRoute("/about/")({
   head: () => ({
     meta: [
-      { title: "About GreenNext | AI-Driven Infrastructure Initiative" },
+      {
+        title: "About Us | Building India's AI Infrastructure Future | GreenNext",
+      },
       {
         name: "description",
         content:
-          "GreenNext brings together infrastructure intelligence, energy efficiency, intelligent automation, and regional digital infrastructure across South India.",
+          "Backed by a group legacy established in 1985 with 40+ years of experience and 7,000+ employees, GreenNext is building intelligent, secure, scalable, and sustainable AI and data center infrastructure in India.",
       },
     ],
   }),
-  component: AboutIndexPage,
+  component: AboutPage,
 });
-
-function AboutIndexPage() {
-  const content = PAGES_CONTENT["about"]!;
-  return <PageTemplate data={content} />;
-}
