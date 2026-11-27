@@ -48,12 +48,7 @@ test("all public submenu destinations are represented and data-driven titles mat
   const navigation = read("src/data/navigation.ts");
   const pages = read("src/data/pagesContent.ts");
   const publicMenus = [
-    ["About", [
-      ["What GreenNext Is", "/about/what-we-are"],
-      ["Why GreenNext Exists", "/about/why-we-exist"],
-      ["The GreenNext Approach", "/about/our-approach"],
-      ["Long-Term Direction", "/about/direction"],
-    ]],
+    // About is now a direct link to the new About Us page — no submenu items.
     ["Infrastructure", [
       ["AI-Ready Infrastructure", "/infrastructure/ai-ready"],
       ["Compute Systems", "/infrastructure/compute"],

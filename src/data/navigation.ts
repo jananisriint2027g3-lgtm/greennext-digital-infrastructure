@@ -20,33 +20,9 @@ const NAVIGATION_CATALOG: NavigationCategory[] = [
     id: "about",
     label: "About",
     path: "/about",
-    description: "The GreenNext initiative, mission, methodology, and long-term direction.",
-    items: [
-      {
-        id: "what-we-are",
-        label: "What GreenNext Is",
-        path: "/about/what-we-are",
-        description: "An AI-driven digital infrastructure initiative for South India.",
-      },
-      {
-        id: "why-we-exist",
-        label: "Why GreenNext Exists",
-        path: "/about/why-we-exist",
-        description: "The infrastructure challenges of AI-era workloads.",
-      },
-      {
-        id: "our-approach",
-        label: "The GreenNext Approach",
-        path: "/about/our-approach",
-        description: "The Understand → Intelligence → Optimize methodology.",
-      },
-      {
-        id: "direction",
-        label: "Long-Term Direction",
-        path: "/about/direction",
-        description: "Building sustainable digital infrastructure across South India.",
-      },
-    ],
+    description:
+      "Our group legacy, leadership, mission, vision, and commitment to building India's AI infrastructure future.",
+    isDirectLink: true,
   },
   {
     id: "infrastructure",
